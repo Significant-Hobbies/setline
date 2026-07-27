@@ -1,43 +1,94 @@
-/** Cloudflare Worker entry point for the vinext-starter template. */
-import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
+/** Cloudflare Worker entry point for Setline. */
 import handler from "vinext/server/app-router-entry";
+import { createAuth, isGoogleConfigured, type SetlineBindings } from "./auth";
+import { handlePrivateState } from "./state";
 
-interface Env {
-  ASSETS: Fetcher;
-  DB: D1Database;
-  IMAGES: {
-    input(stream: ReadableStream): {
-      transform(options: Record<string, unknown>): {
-        output(options: { format: string; quality: number }): Promise<{ response(): Response }>;
-      };
-    };
-  };
+const SECURITY_HEADERS = {
+  "Cache-Control": "no-store",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+};
+
+function withApiHeaders(response: Response) {
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(name, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
-interface ExecutionContext {
-  waitUntil(promise: Promise<unknown>): void;
-  passThroughOnException(): void;
+function json(payload: unknown, status = 200) {
+  return withApiHeaders(Response.json(payload, { status }));
 }
-
-// Image security config. SVG sources with .svg extension auto-skip the
-// optimization endpoint on the client side (served directly, no proxy).
-// To route SVGs through the optimizer (with security headers), set
-// dangerouslyAllowSVG: true in next.config.js and uncomment below:
-// const imageConfig: ImageConfig = { dangerouslyAllowSVG: true };
 
 const worker = {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: SetlineBindings,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname === "/_vinext/image") {
-      const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
-      return handleImageOptimization(request, {
-        fetchAsset: (path) => env.ASSETS.fetch(new Request(new URL(path, request.url))),
-        transformImage: async (body, { width, format, quality }) => {
-          const result = await env.IMAGES.input(body).transform(width > 0 ? { width } : {}).output({ format, quality });
-          return result.response();
-        },
-      }, allowedWidths);
+    if (url.pathname === "/api/health" && request.method === "GET") {
+      return json({
+        ok: true,
+        auth: { googleConfigured: isGoogleConfigured(env) },
+        storage: "d1",
+      });
+    }
+
+    if (url.pathname === "/api/auth/config" && request.method === "GET") {
+      return json({ googleConfigured: isGoogleConfigured(env) });
+    }
+
+    if (url.pathname.startsWith("/api/auth/")) {
+      if (
+        url.pathname.endsWith("/sign-in/social") &&
+        request.method === "POST" &&
+        !isGoogleConfigured(env)
+      ) {
+        return json(
+          {
+            code: "OAUTH_NOT_CONFIGURED",
+            message: "Google sign-in is not configured in this environment.",
+          },
+          503,
+        );
+      }
+      const response = await createAuth(env, request.url).handler(request);
+      return withApiHeaders(response);
+    }
+
+    if (url.pathname === "/api/app/state") {
+      try {
+        return withApiHeaders(await handlePrivateState(request, env));
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            event: "setline_state_error",
+            method: request.method,
+            path: url.pathname,
+            message: error instanceof Error ? error.message : "Unknown error",
+          }),
+        );
+        return json(
+          {
+            code: "STATE_UNAVAILABLE",
+            message: "Private workout state is temporarily unavailable.",
+          },
+          503,
+        );
+      }
+    }
+
+    if (url.pathname.startsWith("/api/")) {
+      return json({ code: "NOT_FOUND", message: "API route not found." }, 404);
     }
 
     return handler.fetch(request, env, ctx);

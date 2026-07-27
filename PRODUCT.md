@@ -32,8 +32,9 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 - Exercise and set order is programme data, not a suggestion. The player follows
   the saved sequence exactly; the user may explicitly skip the current set, but
   Setline never silently jumps ahead or reorders the session.
-- Data is device-local in this release and is not represented as backed up or synchronized.
-- Accounts, cloud sync, reminders, authoring/import/export, full analytics, accepted progression recommendations, internal AI, Health integrations, sensors, social features, and coaching remain deferred.
+- Workout actions are device-first and remain usable offline. Optional Google sign-in
+  synchronizes one private whole-state copy without merging or reordering sets.
+- Reminders, authoring/import/export, full analytics, accepted progression recommendations, internal AI, Health integrations, sensors, social features, and coaching remain deferred.
 - Kilograms are the sample programme's default unit.
 
 ## Brand Commitments

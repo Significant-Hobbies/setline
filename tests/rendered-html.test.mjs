@@ -23,33 +23,40 @@ async function render(pathname = "/") {
   );
 }
 
-test("server-renders the Setline workout overview", async () => {
+test("server-renders the Setline restoration shell and public legal pages", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
   assert.match(html, /<title>Setline — Workout execution tracker<\/title>/i);
-  assert.match(html, /Upper A is set\./);
-  assert.match(html, /Start workout/);
-  assert.match(html, /Ready without a signal/);
-  assert.match(html, /SAMPLE/);
+  assert.match(html, /SETLINE · LOADING/);
+  assert.match(html, /Restoring this device’s saved state\./);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview|react-loading-skeleton/i);
+
+  const [privacy, terms] = await Promise.all([render("/privacy"), render("/terms")]);
+  assert.equal(privacy.status, 200);
+  assert.equal(terms.status, 200);
+  assert.match(await privacy.text(), /Privacy notice/);
+  assert.match(await terms.text(), /Terms of use/);
 });
 
 test("ships the installable offline shell and local workout state", async () => {
-  const [manifest, serviceWorker, page] = await Promise.all([
+  const [manifest, serviceWorker, page, workoutState] = await Promise.all([
     readFile(new URL("../app/manifest.ts", import.meta.url), "utf8"),
     readFile(new URL("../public/sw.js", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/workout-state.ts", import.meta.url), "utf8"),
   ]);
 
   assert.match(manifest, /display:\s*"standalone"/);
   assert.match(manifest, /icon-192\.png/);
-  assert.match(serviceWorker, /setline-shell-v1/);
+  assert.match(serviceWorker, /setline-shell-v2/);
   assert.match(serviceWorker, /caches\.match/);
-  assert.match(page, /setline:v1/);
-  assert.match(page, /restEndsAt/);
+  assert.match(serviceWorker, /url\.pathname\.startsWith\("\/api\/"\)/);
+  assert.match(workoutState, /setline:v1/);
+  assert.match(workoutState, /restEndsAt/);
+  assert.match(workoutState, /WORKOUT_SET_IDS/);
   assert.match(page, /localStorage/);
   assert.match(page, /ORDER LOCKED · SESSION PLAN/);
   assert.match(page, /quality: null/);

@@ -1,5 +1,13 @@
-const CACHE_NAME = "setline-shell-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/favicon.png"];
+const CACHE_NAME = "setline-shell-v2";
+const APP_SHELL = [
+  "/",
+  "/privacy",
+  "/terms",
+  "/manifest.webmanifest",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/favicon.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -19,22 +27,28 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) {
+  const url = new URL(event.request.url);
+  if (
+    event.request.method !== "GET" ||
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith("/api/")
+  ) {
     return;
   }
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const copy = response.clone();
+    (async () => {
+      try {
+        const response = await fetch(event.request);
         if (response.ok) {
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)));
         }
         return response;
-      })
-      .catch(async () => {
+      } catch {
         const cached = await caches.match(event.request);
         return cached ?? caches.match("/");
-      }),
+      }
+    })(),
   );
 });

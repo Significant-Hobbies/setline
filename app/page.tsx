@@ -8,11 +8,40 @@ FIRST VIEWPORT: Today's Upper A fills the screen with session facts and one unmi
 FORM: Scoreboard split, the selected first-ranked staging from three probes; direction seed 9666e5f2.
 */
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type SetStateAction,
+} from "react";
+import Link from "next/link";
+import {
+  bindStateToAccount,
+  clearStateAccountBinding,
+  getAccountState,
+  getGoogleConfiguration,
+  getStateAccountId,
+  signInWithGoogle,
+  signOutAccount,
+  startDeviceOnlyMode,
+  type AccountState,
+} from "./lib/auth-client";
+import { readCloudState, writeCloudState } from "./lib/cloud-sync";
+import {
+  emptyStoredState,
+  parseStoredStateJson,
+  PENDING_SYNC_KEY,
+  STORAGE_KEY,
+  updateStoredState,
+  type HistoryEntry,
+  type SetRecord,
+  type StoredState,
+  type WorkoutSession,
+} from "./lib/workout-state";
 
 type View = "today" | "programme" | "history" | "progress";
-type SessionPhase = "active" | "rest" | "summary";
-type SetStatus = "pending" | "completed" | "skipped";
 type SetType = "Warm-up" | "Working";
 
 type PlannedSet = {
@@ -28,52 +57,12 @@ type PlannedSet = {
   previous: string;
 };
 
-type SetRecord = {
-  setId: string;
-  status: SetStatus;
-  actualWeight: number;
-  actualReps: number;
-  actualRpe: number | null;
-  completedAt: number | null;
-};
-
-type WorkoutSession = {
-  id: string;
-  startedAt: number;
-  completedAt: number | null;
-  phase: SessionPhase;
-  activeIndex: number;
-  restEndsAt: number | null;
-  pausedRestSeconds: number | null;
-  plannedRestSeconds: number;
-  records: SetRecord[];
-  quality: number | null;
-};
-
-type HistoryEntry = {
-  id: string;
-  completedAt: number;
-  durationSeconds: number;
-  completedSets: number;
-  skippedSets: number;
-  workingVolume: number;
-  warmupVolume: number;
-  averageRpe: number | null;
-  quality: number | null;
-};
-
-type StoredState = {
-  version: 1;
-  session: WorkoutSession | null;
-  history: HistoryEntry[];
-};
-
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-const STORAGE_KEY = "setline:v1";
+type SyncStatus = "local" | "syncing" | "synced" | "offline" | "error";
 
 const workoutSets: PlannedSet[] = [
   {
@@ -301,34 +290,160 @@ function statusLabel(record: SetRecord, index: number, activeIndex: number) {
 
 export default function SetlineApp() {
   const [view, setView] = useState<View>("today");
-  const [session, setSession] = useState<WorkoutSession | null>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [workoutState, setWorkoutState] = useState<StoredState>(emptyStoredState);
   const [hydrated, setHydrated] = useState(false);
   const [now, setNow] = useState(0);
   const [online, setOnline] = useState(true);
   const [notice, setNotice] = useState("");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [accountState, setAccountState] = useState<AccountState | null>(null);
+  const [googleConfigured, setGoogleConfigured] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
+  const workoutStateRef = useRef(workoutState);
+  const lastSyncedAtRef = useRef(0);
+  const cloudReadyRef = useRef(false);
+  const syncTimerRef = useRef<number | null>(null);
+
+  const session = workoutState.session;
+  const history = workoutState.history;
+
+  const setSession = useCallback((next: SetStateAction<WorkoutSession | null>) => {
+    setWorkoutState((current) =>
+      updateStoredState(current, {
+        session:
+          typeof next === "function"
+            ? (next as (previous: WorkoutSession | null) => WorkoutSession | null)(
+                current.session,
+              )
+            : next,
+      }),
+    );
+  }, []);
+
+  const setHistory = useCallback((next: SetStateAction<HistoryEntry[]>) => {
+    setWorkoutState((current) =>
+      updateStoredState(current, {
+        history:
+          typeof next === "function"
+            ? (next as (previous: HistoryEntry[]) => HistoryEntry[])(current.history)
+            : next,
+      }),
+    );
+  }, []);
+
+  const pushCurrentState = useCallback(async () => {
+    if (accountState?.status !== "authenticated" || !navigator.onLine) {
+      setSyncStatus(accountState?.status === "authenticated" ? "offline" : "local");
+      return;
+    }
+
+    setSyncStatus("syncing");
+    const localState = workoutStateRef.current;
+    const result = await writeCloudState(localState);
+
+    if (result.status === "ok") {
+      lastSyncedAtRef.current = result.state.updatedAt;
+      cloudReadyRef.current = true;
+      localStorage.removeItem(PENDING_SYNC_KEY);
+      setSyncStatus("synced");
+      setAccountState((current) =>
+        current?.status === "authenticated" && current.offline
+          ? { ...current, offline: false }
+          : current,
+      );
+      return;
+    }
+
+    if (result.status === "conflict") {
+      lastSyncedAtRef.current = result.state.updatedAt;
+      cloudReadyRef.current = true;
+      workoutStateRef.current = result.state;
+      setWorkoutState(result.state);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(result.state));
+      localStorage.removeItem(PENDING_SYNC_KEY);
+      setSyncStatus("synced");
+      setNotice("A newer account copy was restored on this device.");
+      return;
+    }
+
+    if (result.status === "unauthorized") {
+      cloudReadyRef.current = false;
+      startDeviceOnlyMode();
+      setAccountState({ status: "local" });
+      setSyncStatus("local");
+      setNotice("Your Google session ended. Workout data remains on this device.");
+      return;
+    }
+
+    localStorage.setItem(PENDING_SYNC_KEY, "true");
+    setSyncStatus("error");
+  }, [accountState]);
+
+  const reconcileCloudState = useCallback(async () => {
+    if (accountState?.status !== "authenticated" || !navigator.onLine) {
+      setSyncStatus(accountState?.status === "authenticated" ? "offline" : "local");
+      return;
+    }
+
+    setSyncStatus("syncing");
+    const result = await readCloudState();
+    if (result.status === "unauthorized") {
+      cloudReadyRef.current = false;
+      startDeviceOnlyMode();
+      setAccountState({ status: "local" });
+      setSyncStatus("local");
+      return;
+    }
+    if (result.status === "unavailable") {
+      cloudReadyRef.current = false;
+      setSyncStatus("error");
+      return;
+    }
+
+    const localState = workoutStateRef.current;
+    if (!result.state || localState.updatedAt > result.state.updatedAt) {
+      await pushCurrentState();
+      return;
+    }
+
+    lastSyncedAtRef.current = result.state.updatedAt;
+    cloudReadyRef.current = true;
+    localStorage.removeItem(PENDING_SYNC_KEY);
+    if (result.state.updatedAt > localState.updatedAt) {
+      workoutStateRef.current = result.state;
+      setWorkoutState(result.state);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(result.state));
+      setNotice("Your latest account copy is ready.");
+    }
+    setSyncStatus("synced");
+    setAccountState((current) =>
+      current?.status === "authenticated" && current.offline
+        ? { ...current, offline: false }
+        : current,
+    );
+  }, [accountState, pushCurrentState]);
 
   useEffect(() => {
-    let restoredSession: WorkoutSession | null = null;
-    let restoredHistory: HistoryEntry[] = [];
+    let restoredState = emptyStoredState();
     let restorationNotice = "";
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = parseStoredStateJson(raw);
 
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const stored = JSON.parse(raw) as StoredState;
-        if (stored.version === 1) {
-          restoredSession = stored.session;
-          restoredHistory = Array.isArray(stored.history) ? stored.history : [];
-        }
-      }
-    } catch {
+    if (parsed) {
+      restoredState = parsed;
+    } else if (raw) {
       restorationNotice = "Local workout data could not be restored. A fresh session is ready.";
     }
 
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
+    const onOnline = () => {
+      setOnline(true);
+    };
+    const onOffline = () => {
+      setOnline(false);
+      setSyncStatus((current) => (current === "local" ? current : "offline"));
+    };
     const onVisibility = () => setNow(Date.now());
     const onInstallPrompt = (event: Event) => {
       event.preventDefault();
@@ -343,15 +458,46 @@ export default function SetlineApp() {
     queueMicrotask(() => {
       setNow(Date.now());
       setOnline(navigator.onLine);
-      setSession(restoredSession);
-      setHistory(restoredHistory);
+      workoutStateRef.current = restoredState;
+      setWorkoutState(restoredState);
       if (restorationNotice) setNotice(restorationNotice);
       setHydrated(true);
     });
 
+    void Promise.all([getAccountState(), getGoogleConfiguration()]).then(
+      ([nextAccountState, configured]) => {
+        if (nextAccountState.status === "authenticated") {
+          const stateAccountId = getStateAccountId();
+          if (stateAccountId && stateAccountId !== nextAccountState.account.id) {
+            const resetState = emptyStoredState();
+            workoutStateRef.current = resetState;
+            setWorkoutState(resetState);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(resetState));
+            setNotice("This Google account will use its own private workout copy.");
+          }
+          bindStateToAccount(nextAccountState.account.id);
+        }
+        if (nextAccountState.status === "anonymous" && parsed) {
+          startDeviceOnlyMode();
+          setAccountState({ status: "local" });
+          setSyncStatus("local");
+        } else {
+          setAccountState(nextAccountState);
+          setSyncStatus(
+            nextAccountState.status === "authenticated"
+              ? navigator.onLine
+                ? "syncing"
+                : "offline"
+              : "local",
+          );
+        }
+        setGoogleConfigured(configured);
+      },
+    );
+
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {
-        // Offline is an enhancement; workout storage remains device-local.
+        // Workout storage remains device-local even if shell caching is unavailable.
       });
     }
 
@@ -365,9 +511,40 @@ export default function SetlineApp() {
 
   useEffect(() => {
     if (!hydrated) return;
-    const stored: StoredState = { version: 1, session, history };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-  }, [hydrated, history, session]);
+    workoutStateRef.current = workoutState;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(workoutState));
+
+    if (
+      accountState?.status !== "authenticated" ||
+      !cloudReadyRef.current ||
+      workoutState.updatedAt <= lastSyncedAtRef.current
+    ) {
+      return;
+    }
+
+    localStorage.setItem(PENDING_SYNC_KEY, "true");
+    if (!online) {
+      queueMicrotask(() => setSyncStatus("offline"));
+      return;
+    }
+    queueMicrotask(() => setSyncStatus("syncing"));
+    if (syncTimerRef.current !== null) window.clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = window.setTimeout(() => {
+      void pushCurrentState();
+    }, 700);
+  }, [accountState, hydrated, online, pushCurrentState, workoutState]);
+
+  useEffect(() => {
+    if (!hydrated || accountState?.status !== "authenticated") return;
+    queueMicrotask(() => void reconcileCloudState());
+  }, [accountState?.status, hydrated, online, reconcileCloudState]);
+
+  useEffect(
+    () => () => {
+      if (syncTimerRef.current !== null) window.clearTimeout(syncTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!session) return;
@@ -392,6 +569,66 @@ export default function SetlineApp() {
       currentRecord.actualReps > 0,
   );
 
+  const beginGoogleSignIn = async () => {
+    if (
+      accountState?.status === "local" &&
+      !window.confirm(
+        "Sign in and sync this device’s workout copy to your private Setline account copy?",
+      )
+    ) {
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Google sign-in could not start.");
+      setAuthBusy(false);
+    }
+  };
+
+  const continueOnDevice = () => {
+    startDeviceOnlyMode();
+    setAccountState({ status: "local" });
+    setSyncStatus("local");
+    setAuthError("");
+    setNotice("Device-only mode is ready. Nothing is sent to an account.");
+  };
+
+  const signOut = async () => {
+    if (
+      !window.confirm(
+        "Sign out and remove this account’s workout copy from this device? The private account copy remains available after you sign in again.",
+      )
+    ) {
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      await signOutAccount();
+      cloudReadyRef.current = false;
+      lastSyncedAtRef.current = 0;
+      localStorage.removeItem(PENDING_SYNC_KEY);
+      localStorage.removeItem(STORAGE_KEY);
+      clearStateAccountBinding();
+      const resetState = emptyStoredState();
+      workoutStateRef.current = resetState;
+      setWorkoutState(resetState);
+      setAccountState({ status: "anonymous" });
+      setSyncStatus("local");
+      setNotice("Signed out. This device copy was removed; your account copy remains.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Sign-out could not be completed.";
+      setAuthError(message);
+      setNotice(message);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const navigate = (nextView: View) => {
     setView(nextView);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -399,7 +636,11 @@ export default function SetlineApp() {
 
   const startWorkout = () => {
     setSession((existing) => existing ?? makeSession());
-    setNotice("Upper A started. Progress is saved on this device.");
+    setNotice(
+      accountState?.status === "authenticated"
+        ? "Upper A started. Progress saves on this device first, then syncs."
+        : "Upper A started. Progress is saved on this device.",
+    );
     setNow(Date.now());
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
   };
@@ -558,7 +799,11 @@ export default function SetlineApp() {
     setHistory((entries) => [entry, ...entries]);
     setSession(null);
     setView("history");
-    setNotice("Workout saved to local history.");
+    setNotice(
+      accountState?.status === "authenticated"
+        ? "Workout saved on this device. Account sync is queued."
+        : "Workout saved to device history.",
+    );
   };
 
   const installApp = async () => {
@@ -572,9 +817,13 @@ export default function SetlineApp() {
     if (!window.confirm("Clear this device’s Setline session and recorded workout history?")) {
       return;
     }
-    localStorage.removeItem(STORAGE_KEY);
-    setSession(null);
-    setHistory([]);
+    setWorkoutState((current) =>
+      updateStoredState(current, {
+        session: null,
+        history: [],
+      }),
+    );
+    clearStateAccountBinding();
     setNotice("Local Setline data cleared.");
   };
 
@@ -585,6 +834,22 @@ export default function SetlineApp() {
     setSession(null);
     setNotice("Workout discarded.");
   };
+
+  if (!hydrated || accountState === null) {
+    return <AccountLoading />;
+  }
+
+  if (accountState.status === "anonymous") {
+    return (
+      <AccountChoice
+        busy={authBusy}
+        error={authError}
+        googleConfigured={googleConfigured}
+        onDeviceOnly={continueOnDevice}
+        onGoogle={() => void beginGoogleSignIn()}
+      />
+    );
+  }
 
   if (session) {
     return (
@@ -606,7 +871,7 @@ export default function SetlineApp() {
         <div className="workout-progress" aria-label={`${metrics?.completedSets ?? 0} of ${workoutSets.length} sets completed`}>
           <span
             style={{
-              width: `${((metrics?.completedSets ?? 0) / workoutSets.length) * 100}%`,
+              transform: `scaleX(${(metrics?.completedSets ?? 0) / workoutSets.length})`,
             }}
           />
         </div>
@@ -622,7 +887,9 @@ export default function SetlineApp() {
                 <span className="section-code">SESSION COMPLETE</span>
                 <h1>Upper A is on the record.</h1>
               </div>
-              <span className="quality-stamp">LOCAL</span>
+              <span className="quality-stamp">
+                {accountState.status === "authenticated" ? "SYNC" : "LOCAL"}
+              </span>
             </div>
 
             <div className="summary-lead">
@@ -671,7 +938,11 @@ export default function SetlineApp() {
             </button>
             <button className="action-slab" onClick={saveWorkout}>
               Save workout
-              <span>Stored on this device</span>
+              <span>
+                {accountState.status === "authenticated"
+                  ? "Save locally, then sync"
+                  : "Stored on this device"}
+              </span>
             </button>
           </section>
         ) : (
@@ -875,8 +1146,29 @@ export default function SetlineApp() {
         <div className="header-actions">
           <span className={online ? "connection-state" : "connection-state offline"}>
             <i />
-            {online ? "Local ready" : "Offline"}
+            {accountState.status === "authenticated"
+              ? syncStatus === "syncing"
+                ? "Syncing"
+                : syncStatus === "synced"
+                  ? "Synced"
+                  : syncStatus === "error"
+                    ? "Sync pending"
+                    : syncStatus === "offline"
+                      ? "Offline · local"
+                      : "Account ready"
+              : online
+                ? "Device only"
+                : "Offline · device"}
           </span>
+          <AccountControl
+            accountState={accountState}
+            busy={authBusy}
+            googleConfigured={googleConfigured}
+            onGoogle={() => void beginGoogleSignIn()}
+            onRetry={() => void reconcileCloudState()}
+            onSignOut={() => void signOut()}
+            syncStatus={syncStatus}
+          />
           {installPrompt ? (
             <button className="install-button" onClick={installApp}>
               Install
@@ -891,11 +1183,17 @@ export default function SetlineApp() {
 
       {view === "today" ? (
         <TodayView
+          accountState={accountState}
           onStart={startWorkout}
           onViewProgramme={() => navigate("programme")}
         />
       ) : null}
-      {view === "programme" ? <ProgrammeView onClear={clearLocalData} /> : null}
+      {view === "programme" ? (
+        <ProgrammeView
+          accountState={accountState}
+          onClear={clearLocalData}
+        />
+      ) : null}
       {view === "history" ? <HistoryView history={history} /> : null}
       {view === "progress" ? <ProgressView history={history} /> : null}
 
@@ -921,10 +1219,158 @@ export default function SetlineApp() {
   );
 }
 
+function AccountLoading() {
+  return (
+    <main className="account-shell" aria-busy="true">
+      <section className="account-board loading">
+        <span className="section-code">SETLINE · LOADING</span>
+        <h1>Your plan is coming back.</h1>
+        <p>Restoring this device’s saved state.</p>
+      </section>
+    </main>
+  );
+}
+
+function AccountChoice({
+  busy,
+  error,
+  googleConfigured,
+  onDeviceOnly,
+  onGoogle,
+}: {
+  busy: boolean;
+  error: string;
+  googleConfigured: boolean;
+  onDeviceOnly: () => void;
+  onGoogle: () => void;
+}) {
+  return (
+    <main className="account-shell">
+      <section className="account-board">
+        <div className="account-wordmark">SETLINE</div>
+        <div className="account-heading">
+          <span className="section-code">ACCOUNT OR DEVICE · YOUR CALL</span>
+          <h1>Keep the plan close.</h1>
+          <p>
+            Google sign-in keeps one private Setline workout copy available across devices. Device-only
+            mode keeps everything in this browser.
+          </p>
+        </div>
+
+        <div className="account-facts" aria-label="Storage choices">
+          <div>
+            <strong>Google sync</strong>
+            <span>Private D1 copy · basic Google identity scopes</span>
+          </div>
+          <div>
+            <strong>Device only</strong>
+            <span>No account · full offline workout player</span>
+          </div>
+          <div>
+            <strong>Both modes</strong>
+            <span>Sets save locally before any network request</span>
+          </div>
+        </div>
+
+        <button
+          className="google-action"
+          disabled={!googleConfigured || busy}
+          onClick={onGoogle}
+          type="button"
+        >
+          <span aria-hidden="true">G</span>
+          {busy ? "Opening Google…" : "Continue with Google"}
+        </button>
+        {!googleConfigured ? (
+          <p className="account-availability">Google sign-in is not configured in this environment.</p>
+        ) : null}
+        <button className="secondary-action account-local-action" onClick={onDeviceOnly} type="button">
+          Use this device only
+        </button>
+        {error ? (
+          <p className="input-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <p className="account-legal">
+          By continuing with Google, you agree to the <Link href="/terms">terms</Link>{" "}
+          and acknowledge the <Link href="/privacy">privacy notice</Link>.
+        </p>
+      </section>
+    </main>
+  );
+}
+
+function AccountControl({
+  accountState,
+  busy,
+  googleConfigured,
+  onGoogle,
+  onRetry,
+  onSignOut,
+  syncStatus,
+}: {
+  accountState: Exclude<AccountState, { status: "anonymous" }>;
+  busy: boolean;
+  googleConfigured: boolean;
+  onGoogle: () => void;
+  onRetry: () => void;
+  onSignOut: () => void;
+  syncStatus: SyncStatus;
+}) {
+  if (accountState.status === "local") {
+    return (
+      <button
+        className="account-compact"
+        disabled={!googleConfigured || busy}
+        onClick={onGoogle}
+        type="button"
+      >
+        {busy ? "Opening…" : "Sign in & sync"}
+      </button>
+    );
+  }
+
+  const syncLabel =
+    syncStatus === "syncing"
+      ? "Syncing now"
+      : syncStatus === "synced"
+        ? "Private copy synced"
+        : syncStatus === "offline"
+          ? "Offline · saved locally"
+          : syncStatus === "error"
+            ? "Sync pending"
+            : "Account ready";
+
+  return (
+    <details className="account-menu">
+      <summary>
+        <span>{accountState.account.name.split(" ")[0] || "Account"}</span>
+      </summary>
+      <div>
+        <strong>{accountState.account.name}</strong>
+        <span>{accountState.account.email}</span>
+        <small>{syncLabel}</small>
+        {syncStatus === "error" ? (
+          <button disabled={busy} onClick={onRetry} type="button">
+            Retry sync
+          </button>
+        ) : null}
+        <button disabled={busy} onClick={onSignOut} type="button">
+          {busy ? "Signing out…" : "Sign out"}
+        </button>
+      </div>
+    </details>
+  );
+}
+
 function TodayView({
+  accountState,
   onStart,
   onViewProgramme,
 }: {
+  accountState: Exclude<AccountState, { status: "anonymous" }>;
   onStart: () => void;
   onViewProgramme: () => void;
 }) {
@@ -1018,14 +1464,24 @@ function TodayView({
         <span className="local-mark">L</span>
         <div>
           <strong>Ready without a signal.</strong>
-          <p>Active workouts and recorded history stay on this device. Cloud backup is not included yet.</p>
+          <p>
+            {accountState.status === "authenticated"
+              ? "Workout actions save on this device first. Your private account copy catches up when a connection is available."
+              : "Active workouts and recorded history stay on this device. Nothing is sent to an account."}
+          </p>
         </div>
       </aside>
     </div>
   );
 }
 
-function ProgrammeView({ onClear }: { onClear: () => void }) {
+function ProgrammeView({
+  accountState,
+  onClear,
+}: {
+  accountState: Exclude<AccountState, { status: "anonymous" }>;
+  onClear: () => void;
+}) {
   return (
     <div className="page-view programme-view">
       <section className="page-heading">
@@ -1066,12 +1522,22 @@ function ProgrammeView({ onClear }: { onClear: () => void }) {
             </div>
             <div>
               <dt>Storage</dt>
-              <dd>Device local</dd>
+              <dd>
+                {accountState.status === "authenticated"
+                  ? "Device first · account sync"
+                  : "Device only"}
+              </dd>
             </div>
           </dl>
-          <button className="danger-link" onClick={onClear}>
-            Clear local workout data
-          </button>
+          {accountState.status === "local" ? (
+            <button className="danger-link" onClick={onClear}>
+              Clear local workout data
+            </button>
+          ) : (
+            <p className="storage-help">
+              Sign out and choose device-only mode before clearing this device copy.
+            </p>
+          )}
         </aside>
       </div>
     </div>
@@ -1232,12 +1698,12 @@ function RestBoard({
       <div className={restSeconds <= 10 ? "rest-progress warning" : "rest-progress"} aria-hidden="true">
         <span
           style={{
-            width: `${Math.min(
-              100,
+            transform: `scaleX(${Math.min(
+              1,
               session.plannedRestSeconds
-                ? (restSeconds / session.plannedRestSeconds) * 100
+                ? restSeconds / session.plannedRestSeconds
                 : 0,
-            )}%`,
+            )})`,
           }}
         />
       </div>

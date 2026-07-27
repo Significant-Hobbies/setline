@@ -81,4 +81,5 @@ Color never carries status alone. Every state has text, position, or shape suppo
 ## Intentional Exceptions
 
 - The sample programme is preloaded so the player can be evaluated immediately; it is not represented as imported user data.
-- Device-local persistence is an MVP constraint and must be visible in settings/history language until cloud sync exists.
+- Device-first persistence remains visible in settings and workout copy. Signed-in
+  users receive a private account copy; device-only users receive no cloud claim.
