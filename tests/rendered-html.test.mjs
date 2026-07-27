@@ -42,11 +42,12 @@ test("server-renders the Setline restoration shell and public legal pages", asyn
 });
 
 test("ships the installable offline shell and local workout state", async () => {
-  const [manifest, serviceWorker, page, workoutState] = await Promise.all([
+  const [manifest, serviceWorker, page, workoutState, authSchema] = await Promise.all([
     readFile(new URL("../app/manifest.ts", import.meta.url), "utf8"),
     readFile(new URL("../public/sw.js", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/workout-state.ts", import.meta.url), "utf8"),
+    readFile(new URL("../worker/schema.ts", import.meta.url), "utf8"),
   ]);
 
   assert.match(manifest, /display:\s*"standalone"/);
@@ -57,6 +58,10 @@ test("ships the installable offline shell and local workout state", async () => 
   assert.match(workoutState, /setline:v1/);
   assert.match(workoutState, /restEndsAt/);
   assert.match(workoutState, /WORKOUT_SET_IDS/);
+  assert.match(
+    authSchema,
+    /expiresAt:\s*integer\("expiresAt",\s*\{\s*mode:\s*"timestamp"\s*\}\)\.notNull\(\)/,
+  );
   assert.match(page, /localStorage/);
   assert.match(page, /ORDER LOCKED · SESSION PLAN/);
   assert.match(page, /quality: null/);
