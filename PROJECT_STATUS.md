@@ -16,11 +16,13 @@ The first release is a mobile-first web/PWA workout player. It includes a sample
 ## Timeline
 
 - 2026-07-27 — Scoped and built the first Setline workout-player release from the supplied PRD.
+- 2026-07-27 — Published version 1 as an owner-only Sites deployment.
 
 ## Products
 
 - `foundry/apps/setline/` — installable mobile-first Setline web app.
-- Private Sites deployment — owner-only hosted preview for this release.
+- [Private Sites deployment](https://setline-workout.sarthak927.chatgpt.site) —
+  owner-only hosted release.
 
 ## Features (shipped)
 
