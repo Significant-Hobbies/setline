@@ -1,0 +1,76 @@
+{
+  "$schema": "fleet.design-review.v1",
+  "version": 1,
+  "project": "setline",
+  "target": "mobile-first workout execution app",
+  "mode": "overhaul",
+  "register": "product",
+  "context": {
+    "product": "PRODUCT.md",
+    "design": "DESIGN.md"
+  },
+  "direction": {
+    "references": [
+      "competition attempt scoreboards",
+      "interval training timers",
+      "handwritten strength-training journals"
+    ],
+    "probes": [
+      {
+        "id": "scoreboard-split",
+        "path": "artifacts/design/direction-probes.png"
+      },
+      {
+        "id": "timer-tunnel",
+        "path": "artifacts/design/direction-probes.png"
+      },
+      {
+        "id": "training-strip",
+        "path": "artifacts/design/direction-probes.png"
+      }
+    ],
+    "selected": "scoreboard-split",
+    "approval": "delegated",
+    "before": ""
+  },
+  "evidence": {
+    "screenshots": [
+      {
+        "width": 390,
+        "path": "artifacts/design/after-390.png"
+      },
+      {
+        "width": 768,
+        "path": "artifacts/design/after-768.png"
+      },
+      {
+        "width": 1440,
+        "path": "artifacts/design/after-1440.png"
+      }
+    ],
+    "projectCheck": {
+      "command": "npm run lint && npm test",
+      "status": "pass"
+    },
+    "critique": {
+      "score": 35,
+      "maximum": 40
+    },
+    "audit": {
+      "score": 17,
+      "maximum": 20
+    },
+    "unresolved": {
+      "p0": 0,
+      "p1": 0
+    },
+    "detector": {
+      "posture": "advisory",
+      "findings": []
+    }
+  },
+  "ownerFeedback": {
+    "decision": "delegated",
+    "note": "Owner approved the defaults and delegated final design judgment on 2026-07-27."
+  }
+}
