@@ -27,6 +27,8 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
   public legal surfaces, and a guarded Cloudflare Worker release path.
 - 2026-07-28 — Loaded the supplied 12-week programme in authored exercise order
   and refined the visual system to reserve lime for active actions and status.
+- 2026-07-28 — Released flexible session execution with partial/drop segments,
+  extra and deferred sets, actual rest cadence, and detailed history.
 
 ## Products
 
@@ -58,20 +60,25 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 - Basic bench target context plus local recorded-volume signal.
 - Responsive phone, tablet, and desktop layouts.
 - PWA manifest, install metadata, service-worker shell, and offline-friendly local operation.
+- Immutable authored plans with a separate session execution queue.
+- Partial and drop-set segments such as `60 kg × 5` followed by `50 kg × 3`.
+- Session-only extra sets, explicit Do later deferral, and preserved planned and
+  actual execution positions.
+- Authored, adjusted, and actual rest retained separately from wall-clock
+  completion and next-start timestamps.
+- Detailed per-set execution history preserved on device and in authenticated
+  cloud state.
 
 ## Todo / Planned / Deferred / Blocked
 
 ### Planned
 
-1. Release the verified flexible-execution upgrade: multi-segment sets,
-   session-only extra sets, explicit Do later deferral, planned-versus-actual
-   cadence, and durable per-set history.
-2. Add manual programme/workout authoring and duplication.
-3. Add validated JSON import/export with preview.
-4. Add browser/email reminders.
-5. Add deterministic progression recommendations with explicit accept/edit/keep actions.
-6. Expand exercise, workout, and programme analytics from recorded history.
-7. Add self-service cloud-data deletion and account management.
+1. Add manual programme/workout authoring and duplication.
+2. Add validated JSON import/export with preview.
+3. Add browser/email reminders.
+4. Add deterministic progression recommendations with explicit accept/edit/keep actions.
+5. Expand exercise, workout, and programme analytics from recorded history.
+6. Add self-service cloud-data deletion and account management.
 
 ### Deferred
 
