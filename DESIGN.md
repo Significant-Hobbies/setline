@@ -2,7 +2,11 @@
 
 ## Direction
 
-Setline is a daylight strength-training scorecard: the legibility of an interval timer, the notation of a training journal, and the command hierarchy of a competition attempt board. It refuses both glossy fitness dashboards and aggressive black-and-neon gym branding. The interface is an instrument for executing a known plan.
+Setline is a daylight strength-training scorecard: the legibility of an interval
+timer, the notation of a training journal, and the command hierarchy of a
+competition attempt board. Its quieter second pass keeps the instrument-like
+structure while letting neutral paper, spacing, and authored workout content
+carry the page. Lime is an execution signal, not the atmosphere.
 
 The first release uses three structural probes within this world:
 
@@ -18,13 +22,13 @@ A user checks Setline between sets under bright overhead gym lights, sometimes o
 
 ## Palette
 
-- `chalk`: `#f4f5ef` — primary field.
+- `chalk`: `#f7f6f0` — primary field.
 - `paper`: `#ffffff` — raised data surface.
-- `ink`: `#112330` — primary type and structural lines.
-- `steel`: `#d6dcd6` — dividers, inactive tracks, and quiet surfaces.
-- `lime`: `#c9ff3d` — primary action and active state.
+- `ink`: `#18262e` — primary type and structural lines.
+- `steel`: `#dde1dc` — dividers, inactive tracks, and quiet surfaces.
+- `lime`: `#b9e83f` — primary action and compact active signal.
 - `coral`: `#ff614d` — pain, destructive, over-target, and urgent state only.
-- `blue`: `#8fc7ff` — recorded/history evidence and informational state.
+- `blue`: `#b9d8e8` — recorded/history evidence and informational state.
 
 Color never carries status alone. Every state has text, position, or shape support.
 
@@ -40,7 +44,8 @@ Color never carries status alone. Every state has text, position, or shape suppo
 - On phones, the current action owns the viewport: session line, exercise identity, set target, actuals, and primary completion control.
 - Bottom navigation stays reachable but never competes with the current action.
 - On larger screens, the current action occupies the left two-thirds and the remaining-session rail occupies the right third.
-- Dense information is grouped by rules, alignment, and whitespace rather than nesting cards inside cards.
+- Dense information is grouped by fine rules, alignment, and whitespace rather
+  than heavy frames or nested cards.
 - Corners are square or lightly clipped; generic rounded capsules are prohibited except for compact status tags whose shape communicates grouping.
 
 ## Components
@@ -48,9 +53,11 @@ Color never carries status alone. Every state has text, position, or shape suppo
 - **Session bar:** compact workout title, progress fraction, elapsed time, and close/return control.
 - **Attempt board:** exercise, set type, oversized weight × reps target, previous result, and form cues.
 - **Actuals row:** large numeric inputs with explicit units and step controls that remain touch-friendly.
-- **Action slab:** full-width lime completion control with a dark offset edge and direct verb.
+- **Action slab:** the one full-width lime completion control, with a restrained
+  dark offset edge and direct verb.
 - **Rest board:** oversized timestamp-derived countdown, completed-set receipt, next target, and inline adjustment controls.
-- **Set rail:** explicitly locked ordered rows with warm-up/working labels and
+- **Set rail:** explicitly locked ordered rows with preparation, warm-up,
+  working, cardio, mobility, and cooldown labels and
   complete, active, upcoming, or skipped states. The rail communicates that
   sequence is part of the programme, not a sortable suggestion during execution.
 - **Metric strip:** aligned label/value pairs with recorded or calculated provenance.
@@ -72,7 +79,7 @@ Color never carries status alone. Every state has text, position, or shape suppo
 
 ## Content and Measurement
 
-- Sample content is explicitly labeled.
+- Programme targets are identified as authored plan data.
 - User-entered values use “Recorded.”
 - App math uses “Calculated.”
 - Unsupported sensor information is omitted or labeled unavailable; it is never estimated.
@@ -80,6 +87,7 @@ Color never carries status alone. Every state has text, position, or shape suppo
 
 ## Intentional Exceptions
 
-- The sample programme is preloaded so the player can be evaluated immediately; it is not represented as imported user data.
+- The supplied 12-week programme is shipped as owner-authored product data; it
+  is not represented as a general PDF import capability.
 - Device-first persistence remains visible in settings and workout copy. Signed-in
   users receive a private account copy; device-only users receive no cloud claim.

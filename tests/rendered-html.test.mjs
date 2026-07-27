@@ -42,28 +42,38 @@ test("server-renders the Setline restoration shell and public legal pages", asyn
 });
 
 test("ships the installable offline shell and local workout state", async () => {
-  const [manifest, serviceWorker, page, workoutState, authSchema] = await Promise.all([
+  const [manifest, serviceWorker, page, workoutState, programme, authSchema] = await Promise.all([
     readFile(new URL("../app/manifest.ts", import.meta.url), "utf8"),
     readFile(new URL("../public/sw.js", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/workout-state.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/programme.ts", import.meta.url), "utf8"),
     readFile(new URL("../worker/schema.ts", import.meta.url), "utf8"),
   ]);
 
   assert.match(manifest, /display:\s*"standalone"/);
   assert.match(manifest, /icon-192\.png/);
-  assert.match(serviceWorker, /setline-shell-v2/);
+  assert.match(serviceWorker, /setline-shell-v3/);
   assert.match(serviceWorker, /caches\.match/);
   assert.match(serviceWorker, /url\.pathname\.startsWith\("\/api\/"\)/);
   assert.match(workoutState, /setline:v1/);
   assert.match(workoutState, /restEndsAt/);
-  assert.match(workoutState, /WORKOUT_SET_IDS/);
+  assert.match(workoutState, /version:\s*3/);
+  assert.match(workoutState, /legacy-upper-a/);
+  assert.match(workoutState, /actualDurationSeconds/);
+  assert.match(programme, /27 Jul 2026/);
+  assert.match(programme, /PROGRAMME_SCHEDULE/);
+  assert.match(programme, /hard-cardio/);
   assert.match(
     authSchema,
     /expiresAt:\s*integer\("expiresAt",\s*\{\s*mode:\s*"timestamp"\s*\}\)\.notNull\(\)/,
   );
   assert.match(page, /localStorage/);
   assert.match(page, /ORDER LOCKED · SESSION PLAN/);
+  assert.match(page, /CORRECT RECORDED STEP/);
+  assert.match(page, /Save correction/);
+  assert.match(page, /min:sec/);
+  assert.match(page, /className="rail-edit"/);
   assert.match(page, /quality: null/);
   assert.match(page, /activeIndex: nextIndex/);
 

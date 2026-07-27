@@ -1,4 +1,4 @@
-const CACHE_NAME = "setline-shell-v2";
+const CACHE_NAME = "setline-shell-v3";
 const APP_SHELL = [
   "/",
   "/privacy",

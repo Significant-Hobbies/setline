@@ -4,11 +4,11 @@
 
 Setline helps people execute a structured workout programme precisely without referring to another document or deciding what to do between sets. The user controls the programme; Setline presents the current action, records explicit results, controls rest, and separates recorded values from calculations.
 
-The first release is a mobile-first web/PWA workout player. It includes a sample
-four-day programme, device-first session execution, optional Google sign-in with
-a private account copy, basic history, and progress. It excludes coaching,
-automatic programme generation, social features, meal/recovery tracking,
-sensors, Apple Health, and Apple Watch.
+The first release is a mobile-first web/PWA workout player. It includes
+Sarthak’s dated 12-week strength, cardio, and mobility programme, device-first
+session execution, optional Google sign-in with a private account copy, basic
+history, and progress. It excludes coaching, automatic programme generation,
+social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Dependencies
 
@@ -25,20 +25,27 @@ sensors, Apple Health, and Apple Watch.
 - 2026-07-27 — Published version 1 as an owner-only Sites deployment.
 - 2026-07-27 — Added optional Google sign-in, private D1 synchronization,
   public legal surfaces, and a guarded Cloudflare Worker release path.
+- 2026-07-28 — Loaded the supplied 12-week programme in authored exercise order
+  and refined the visual system to reserve lime for active actions and status.
 
 ## Products
 
 - `foundry/apps/setline/` — installable mobile-first Setline web app.
-- `https://setline.significanthobbies.com` — Cloudflare Worker production
-  target pending the green-main cutover.
+- `https://setline.significanthobbies.com` — live Cloudflare Worker production
+  surface.
 - [Private Sites deployment](https://setline-workout.sarthak927.chatgpt.site) —
   owner-only rollback copy.
 
 ## Features (shipped)
 
-- Four-day sample programme overview with today's Upper A session.
-- Guided warm-up and working-set execution.
-- One-tap set completion with editable actual weight, repetitions, and optional RPE.
+- Dated seven-day schedule for the supplied 12-week strength, cardio, and
+  mobility programme.
+- Exact authored exercise and set order across Upper, Lower, easy cardio, hard
+  cardio, mobility, preparation, and cooldown work.
+- Week-aware RDL volume, hard-cardio rounds, and pull-up checkpoints.
+- Guided warm-up, working-set, cardio, mobility, and cooldown execution.
+- One-tap completion with modality-specific weight, repetitions, duration,
+  completion status, and optional RPE inputs.
 - Set skipping and ordered session rail.
 - Timestamp-derived automatic rest timer with pause, add-time, and skip/start controls.
 - Device-local active-session continuity and workout history.
@@ -48,7 +55,7 @@ sensors, Apple Health, and Apple Watch.
 - Explicit state validation that preserves authored exercise and set order.
 - Public privacy notice and terms of use.
 - Honest summary with separate warm-up/working volume and calculated provenance.
-- Basic sample exercise trend plus local recorded-volume signal.
+- Basic bench target context plus local recorded-volume signal.
 - Responsive phone, tablet, and desktop layouts.
 - PWA manifest, install metadata, service-worker shell, and offline-friendly local operation.
 
@@ -66,7 +73,8 @@ sensors, Apple Health, and Apple Watch.
 ### Deferred
 
 - Precise start/finish set mode until the one-tap simple mode is validated.
-- CSV import, exercise library authoring, cardio/distance tracking, supersets, and circuits until the core player is retained.
+- CSV import, exercise library authoring, distance/speed metrics, supersets, and
+  circuits until the core player is retained.
 - Replace the Vinext-compatible Next.js toolchain when upstream releases remove
   the remaining embedded PostCSS and Sharp advisories. This owner-only release
   does not accept arbitrary CSS or use Next image optimization, the affected
@@ -76,4 +84,4 @@ sensors, Apple Health, and Apple Watch.
 
 ### Blocked
 
-- None. Production cutover follows green-main validation.
+- None.

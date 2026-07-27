@@ -27,15 +27,21 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 
 ## Capabilities and Constraints
 
-- This release includes a weekly programme overview, guided workout execution, editable actual weight/repetitions/RPE, warm-up and working sets, timestamp-derived rest timing, local workout history, and basic progress.
+- This release includes Sarthak's dated 12-week strength, cardio, and mobility
+  programme, a seven-day weekly overview, guided workout execution, activity-
+  appropriate recording, timestamp-derived rest timing, local workout history,
+  and basic progress.
 - Active workout actions must not depend on a network request.
 - Exercise and set order is programme data, not a suggestion. The player follows
   the saved sequence exactly; the user may explicitly skip the current set, but
   Setline never silently jumps ahead or reorders the session.
 - Workout actions are device-first and remain usable offline. Optional Google sign-in
   synchronizes one private whole-state copy without merging or reordering sets.
-- Reminders, authoring/import/export, full analytics, accepted progression recommendations, internal AI, Health integrations, sensors, social features, and coaching remain deferred.
-- Kilograms are the sample programme's default unit.
+- Reminders, general-purpose authoring/import/export, full analytics, accepted
+  progression recommendations, internal AI, Health integrations, sensors,
+  social features, and coaching remain deferred.
+- Kilograms are the strength programme's default unit; cardio and mobility use
+  their written duration or repetition dose.
 
 ## Brand Commitments
 
@@ -47,8 +53,11 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 ## Evidence on Hand
 
 - The owner supplied a complete product requirements document covering programme creation, workout execution, rest timing, progression, scheduling, exercise tracking, analytics, import, offline behavior, data model, and success criteria.
+- The owner supplied `Sarthak_12_Week_Strength_Cardio_Mobility_Plan.pdf`,
+  covering 27 July–18 October 2026 with exact exercise order, warm-ups, cardio,
+  mobility, and block rules.
 - No customer testimonials, performance benchmarks, sensor data, or commercial claims are available and none may be fabricated.
-- The initial UI uses clearly identified sample programme and previous-performance data.
+- The initial sample has been replaced by the owner's authored programme.
 
 ## Product Principles
 

@@ -13,15 +13,19 @@ related_targets: []
 
 ## User and job
 
-A lifter in the gym needs to follow a predefined session in order, record a set in one tap, and trust the next target and rest deadline without consulting another document.
+A lifter in the gym needs to follow Sarthak's dated 12-week programme in order,
+record each strength, cardio, or mobility step with minimal interaction, and
+trust the next target and rest deadline without consulting the PDF.
 
 ## Primary task
 
-Start Upper A, complete or skip each planned set, adjust rest when necessary, then save an honest session record.
+Open the calendar-correct session, complete or skip each authored step, adjust
+rest when necessary, then save an honest modality-aware session record.
 
 ## Content and constraints
 
-- Use the approved sample programme and clearly label it as sample data.
+- Use the supplied 27 July–18 October 2026 programme and preserve every authored
+  exercise and step position.
 - Keep the active target, actual inputs, previous result, form cues, and completion control immediately visible.
 - Distinguish recorded results from calculated volume.
 - Preserve device-first operation, explain the device-only boundary, and make
@@ -32,7 +36,11 @@ Start Upper A, complete or skip each planned set, adjust rest when necessary, th
 
 ## Chosen direction
 
-Scoreboard split: the current attempt is oversized and dominant while an ordered session rail preserves context. The memorable moment is the transition from a lime Complete set slab to a large timestamp-derived rest board with the completed-set receipt still visible.
+Scoreboard split, quieter pass: the current attempt remains dominant while a
+fine-lined ordered session rail preserves context. Chalk and paper dominate;
+lime is reserved for the Complete step slab, focus, and compact current-state
+marks. The memorable moment remains the transition to the timestamp-derived
+rest board with the completed-step receipt visible.
 
 ## Account and sync direction
 
@@ -44,5 +52,5 @@ the current set.
 
 ## Unresolved decisions
 
-Programme editing/import, reminder channels, and self-service cloud-data
+General-purpose programme editing/import, reminder channels, and self-service cloud-data
 deletion remain outside this surface.
