@@ -9,7 +9,7 @@ related_targets: []
 
 - Target: `app/page.tsx`
 - Mode: Operate
-- Scope: programme overview, active workout, rest, summary, history, and progress states for the first device-local release
+- Scope: account choice, private sync status, programme overview, active workout, rest, summary, history, and progress states
 
 ## User and job
 
@@ -24,13 +24,25 @@ Start Upper A, complete or skip each planned set, adjust rest when necessary, th
 - Use the approved sample programme and clearly label it as sample data.
 - Keep the active target, actual inputs, previous result, form cues, and completion control immediately visible.
 - Distinguish recorded results from calculated volume.
-- Preserve device-local operation and state the no-cloud-backup boundary.
+- Preserve device-first operation, explain the device-only boundary, and make
+  optional private account synchronization status explicit.
+- Never let account restoration, conflict resolution, or retry reorder an
+  exercise or set.
 - Meet keyboard, touch, contrast, reduced-motion, and responsive requirements.
 
 ## Chosen direction
 
 Scoreboard split: the current attempt is oversized and dominant while an ordered session rail preserves context. The memorable moment is the transition from a lime Complete set slab to a large timestamp-derived rest board with the completed-set receipt still visible.
 
+## Account and sync direction
+
+Google sign-in is optional and uses a restrained account-choice board before the
+workout shell. Device-only remains a first-class path. Signed-in state is a
+private Setline copy in Cloudflare D1, authenticated through Google; the compact
+header status reports account and synchronization truth without competing with
+the current set.
+
 ## Unresolved decisions
 
-Authentication, cloud synchronization, programme editing/import, and reminder channels remain outside this surface.
+Programme editing/import, reminder channels, and self-service cloud-data
+deletion remain outside this surface.

@@ -2,8 +2,8 @@
   "$schema": "fleet.design-review.v1",
   "version": 1,
   "project": "setline",
-  "target": "mobile-first workout execution app",
-  "mode": "overhaul",
+  "target": "optional account choice and private sync for the workout execution app",
+  "mode": "preserve",
   "register": "product",
   "context": {
     "product": "PRODUCT.md",
@@ -31,33 +31,33 @@
     ],
     "selected": "scoreboard-split",
     "approval": "delegated",
-    "before": ""
+    "before": "artifacts/design/after-390.png"
   },
   "evidence": {
     "screenshots": [
       {
         "width": 390,
-        "path": "artifacts/design/after-390.png"
+        "path": "artifacts/design/auth-after-390.png"
       },
       {
         "width": 768,
-        "path": "artifacts/design/after-768.png"
+        "path": "artifacts/design/auth-after-768.png"
       },
       {
         "width": 1440,
-        "path": "artifacts/design/after-1440.png"
+        "path": "artifacts/design/auth-after-1440.png"
       }
     ],
     "projectCheck": {
-      "command": "npm run lint && npm test",
+      "command": "npm run check",
       "status": "pass"
     },
     "critique": {
-      "score": 35,
+      "score": 36,
       "maximum": 40
     },
     "audit": {
-      "score": 17,
+      "score": 19,
       "maximum": 20
     },
     "unresolved": {
