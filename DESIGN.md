@@ -52,20 +52,30 @@ Color never carries status alone. Every state has text, position, or shape suppo
 
 - **Session bar:** compact workout title, progress fraction, elapsed time, and close/return control.
 - **Attempt board:** exercise, set type, oversized weight × reps target, previous result, and form cues.
-- **Actuals row:** large numeric inputs with explicit units and step controls that remain touch-friendly.
+- **Actuals row:** large numeric inputs with explicit units and step controls
+  that remain touch-friendly. Weight-and-repetition sets may expand into
+  ordered segments without creating a separate advanced mode.
 - **Action slab:** the one full-width lime completion control, with a restrained
   dark offset edge and direct verb.
 - **Rest board:** oversized timestamp-derived countdown, completed-set receipt, next target, and inline adjustment controls.
-- **Set rail:** explicitly locked ordered rows with preparation, warm-up,
-  working, cardio, mobility, and cooldown labels and
-  complete, active, upcoming, or skipped states. The rail communicates that
-  sequence is part of the programme, not a sortable suggestion during execution.
+- **Set rail:** programme-positioned rows with preparation, warm-up, working,
+  cardio, mobility, and cooldown labels plus complete, active, upcoming,
+  modified, extra, deferred, and skipped states. It shows the current session
+  queue while retaining authored position, so an explicit deviation never
+  looks like a rewritten plan.
+- **Execution ledger:** a dense planned-versus-actual record showing every
+  segment, planned and performed position, status, and available authored,
+  adjusted, and actual rest.
 - **Metric strip:** aligned label/value pairs with recorded or calculated provenance.
 
 ## Interaction
 
 - Completing a set is the dominant single action.
+- Add another set and Do later are quieter session-only actions; neither changes
+  a future workout.
 - Rest begins automatically and remains anchored to an end timestamp.
+- Starting the next step records actual rest from wall-clock timestamps whether
+  the user starts early or waits after zero.
 - Motion is limited to a progress sweep, numeric countdown change, and short state confirmation. Reduced-motion users receive immediate state changes.
 - Focus rings use a two-layer ink/lime treatment and never rely on browser defaults alone.
 - Touch targets are at least 44 pixels.

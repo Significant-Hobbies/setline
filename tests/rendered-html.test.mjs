@@ -53,12 +53,12 @@ test("ships the installable offline shell and local workout state", async () => 
 
   assert.match(manifest, /display:\s*"standalone"/);
   assert.match(manifest, /icon-192\.png/);
-  assert.match(serviceWorker, /setline-shell-v3/);
+  assert.match(serviceWorker, /setline-shell-v4/);
   assert.match(serviceWorker, /caches\.match/);
   assert.match(serviceWorker, /url\.pathname\.startsWith\("\/api\/"\)/);
   assert.match(workoutState, /setline:v1/);
   assert.match(workoutState, /restEndsAt/);
-  assert.match(workoutState, /version:\s*3/);
+  assert.match(workoutState, /version:\s*4/);
   assert.match(workoutState, /legacy-upper-a/);
   assert.match(workoutState, /actualDurationSeconds/);
   assert.match(programme, /27 Jul 2026/);
@@ -69,13 +69,15 @@ test("ships the installable offline shell and local workout state", async () => 
     /expiresAt:\s*integer\("expiresAt",\s*\{\s*mode:\s*"timestamp"\s*\}\)\.notNull\(\)/,
   );
   assert.match(page, /localStorage/);
-  assert.match(page, /ORDER LOCKED · SESSION PLAN/);
+  assert.match(page, /PLAN \+ ACTUAL SESSION QUEUE/);
   assert.match(page, /CORRECT RECORDED STEP/);
   assert.match(page, /Save correction/);
   assert.match(page, /min:sec/);
   assert.match(page, /className="rail-edit"/);
-  assert.match(page, /quality: null/);
-  assert.match(page, /activeIndex: nextIndex/);
+  assert.match(workoutState, /quality:\s*null/);
+  assert.match(page, /insertExtraExecution/);
+  assert.match(page, /deferActiveExecution/);
+  assert.match(page, /startQueuedExecution/);
 
   await Promise.all([
     access(new URL("../public/icon-192.png", import.meta.url)),

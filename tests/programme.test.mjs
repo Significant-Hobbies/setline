@@ -165,16 +165,20 @@ test("migrates a version 2 session without changing its set order", async () => 
     };
 
     const migrated = parseStoredState(legacy, 99);
-    assert.equal(migrated?.version, 3);
+    assert.equal(migrated?.version, 4);
     assert.equal(migrated?.updatedAt, 42);
     assert.equal(migrated?.session?.workoutId, "legacy-upper-a");
     assert.deepEqual(
-      migrated?.session?.records.map((record) => record.setId),
+      migrated?.session?.records.map((record) => record.step.plannedStepId),
       LEGACY_UPPER_STEPS.map((planned) => planned.id),
+    );
+    assert.deepEqual(
+      migrated?.session?.queue,
+      LEGACY_UPPER_STEPS.map((planned) => `planned:${planned.id}`),
     );
     assert.ok(
       migrated?.session?.records.every(
-        (record) => record.actualDurationSeconds === null,
+        (record) => record.segments[0].durationSeconds === null,
       ),
     );
 
@@ -184,6 +188,207 @@ test("migrates a version 2 session without changing its set order", async () => 
       reordered.session.records[0],
     ];
     assert.equal(parseStoredState(reordered, 99), null);
+  } finally {
+    await vite.close();
+  }
+});
+
+test("records flexible execution without mutating the authored workout", async () => {
+  const vite = await createServer({
+    appType: "custom",
+    configFile: false,
+    server: { middlewareMode: true },
+  });
+  try {
+    const {
+      deferActiveExecution,
+      executionIsModified,
+      executionIsValid,
+      executionVolume,
+      getExecution,
+      getSessionMetrics,
+      insertExtraExecution,
+      makeWorkoutSession,
+      parseStoredState,
+      startQueuedExecution,
+    } = await vite.ssrLoadModule("/app/lib/workout-state.ts");
+    const template = resolveWorkout("upper", 1, 0);
+    const authoredIds = template.steps.map((step) => step.id);
+    const session = makeWorkoutSession(template, 1, 0, 1_000);
+
+    assert.deepEqual(
+      session.records.map((record) => record.step.plannedStepId),
+      authoredIds,
+    );
+    assert.deepEqual(
+      session.queue,
+      authoredIds.map((id) => `planned:${id}`),
+    );
+
+    const working = session.records.find(
+      (record) =>
+        record.step.setType === "Working" &&
+        record.step.tracking === "weight-reps",
+    );
+    assert.ok(working);
+    working.status = "completed";
+    working.segments = [
+      {
+        id: `${working.id}:segment:1`,
+        weight: 60,
+        reps: 5,
+        durationSeconds: null,
+      },
+      {
+        id: `${working.id}:segment:2`,
+        weight: 50,
+        reps: 3,
+        durationSeconds: null,
+      },
+    ];
+    assert.equal(executionIsValid(working), true);
+    assert.equal(executionIsModified(working), true);
+    assert.equal(executionVolume(working), 450);
+
+    const partial = structuredClone(working);
+    partial.segments = [
+      {
+        id: `${partial.id}:segment:partial`,
+        weight: partial.step.targetWeight,
+        reps: Math.max(1, (partial.step.targetReps ?? 2) - 1),
+        durationSeconds: null,
+      },
+    ];
+    assert.equal(executionIsValid(partial), true);
+    assert.equal(executionIsModified(partial), true);
+
+    const source = session.records[0];
+    const withExtra = insertExtraExecution(
+      session,
+      source,
+      "extra:test-execution",
+    );
+    assert.equal(template.steps.length, authoredIds.length);
+    assert.equal(withExtra.queue[1], "extra:test-execution");
+    assert.equal(withExtra.records.at(-1).source, "extra");
+    assert.equal(withExtra.records.at(-1).clonedFromId, source.id);
+    assert.equal(withExtra.records.at(-1).plannedPosition, null);
+
+    const deferred = deferActiveExecution(session, 1_500);
+    assert.equal(deferred.queue.at(-1), session.queue[0]);
+    assert.equal(getExecution(deferred, session.queue[0]).deferred, true);
+    assert.equal(
+      getExecution(deferred, deferred.queue[0]).startedAt,
+      1_500,
+    );
+    assert.deepEqual(
+      session.records.map((record) => record.step.plannedStepId),
+      authoredIds,
+    );
+
+    const priorId = session.queue[0];
+    const nextId = session.queue[1];
+    const resting = {
+      ...session,
+      phase: "rest",
+      activeIndex: 1,
+      restFromExecutionId: priorId,
+      authoredRestSeconds: 60,
+      adjustedRestSeconds: 90,
+      records: session.records.map((record) =>
+        record.id === priorId
+          ? {
+              ...record,
+              status: "completed",
+              completedAt: 10_000,
+              authoredRestSeconds: 60,
+              adjustedRestSeconds: 90,
+            }
+          : record,
+      ),
+    };
+    const resumed = startQueuedExecution(resting, 12_400);
+    assert.equal(getExecution(resumed, priorId).actualRestSeconds, 2);
+    assert.equal(getExecution(resumed, priorId).authoredRestSeconds, 60);
+    assert.equal(getExecution(resumed, priorId).adjustedRestSeconds, 90);
+    assert.equal(getExecution(resumed, nextId).startedAt, 12_400);
+
+    const metrics = getSessionMetrics({
+      ...session,
+      records: session.records.map((record) =>
+        record.id === working.id ? working : record,
+      ),
+    });
+    assert.equal(metrics.workingVolume, 450);
+    assert.equal(metrics.modifiedSets, 1);
+
+    const historyEntry = {
+      id: "history-flexible",
+      workoutId: session.workoutId,
+      workoutName: session.workoutName,
+      weekNumber: session.weekNumber,
+      completedAt: 20_000,
+      durationSeconds: 19,
+      completedSets: 1,
+      modifiedSets: 1,
+      extraSets: 0,
+      deferredSets: 0,
+      skippedSets: 0,
+      workingVolume: 450,
+      warmupVolume: 0,
+      completedDurationSeconds: 0,
+      totalActualRestSeconds: 2,
+      averageRpe: null,
+      quality: null,
+      detailsAvailable: true,
+      executions: [
+        {
+          ...working,
+          plannedPosition: working.plannedPosition,
+          performedPosition: 1,
+          startedAt: 15_000,
+          completedAt: 16_000,
+          actualRestSeconds: 2,
+        },
+      ],
+    };
+    const persisted = parseStoredState({
+      version: 4,
+      updatedAt: 21_000,
+      session: null,
+      history: [historyEntry],
+    });
+    assert.equal(persisted?.history[0].executions[0].segments.length, 2);
+    assert.equal(
+      executionVolume(persisted?.history[0].executions[0]),
+      450,
+    );
+
+    const legacyHistory = parseStoredState({
+      version: 3,
+      updatedAt: 22_000,
+      session: null,
+      history: [
+        {
+          id: "summary-only",
+          workoutId: "upper",
+          workoutName: "Upper",
+          weekNumber: 1,
+          completedAt: 20_000,
+          durationSeconds: 3_600,
+          completedSets: 12,
+          skippedSets: 1,
+          workingVolume: 4_000,
+          warmupVolume: 800,
+          completedDurationSeconds: 300,
+          averageRpe: 7.5,
+          quality: 4,
+        },
+      ],
+    });
+    assert.equal(legacyHistory?.version, 4);
+    assert.equal(legacyHistory?.history[0].detailsAvailable, false);
+    assert.deepEqual(legacyHistory?.history[0].executions, []);
   } finally {
     await vite.close();
   }

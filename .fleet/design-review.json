@@ -2,7 +2,7 @@
   "$schema": "fleet.design-review.v1",
   "version": 1,
   "project": "setline",
-  "target": "12-week programme execution and quieter workout surfaces",
+  "target": "flexible workout input and actual rest cadence",
   "mode": "preserve",
   "register": "product",
   "context": {
@@ -12,23 +12,23 @@
   "direction": {
     "references": [],
     "probes": [],
-    "selected": "quieter-scoreboard-split",
+    "selected": "existing-design",
     "approval": "not-required",
-    "before": "artifacts/design/after-390.png"
+    "before": "artifacts/design/before-flexible-player-390.png"
   },
   "evidence": {
     "screenshots": [
       {
         "width": 390,
-        "path": "artifacts/design/after-plan-390.png"
+        "path": "artifacts/design/after-flexible-player-390.png"
       },
       {
         "width": 768,
-        "path": "artifacts/design/after-plan-768.png"
+        "path": "artifacts/design/after-flexible-player-768.png"
       },
       {
         "width": 1440,
-        "path": "artifacts/design/after-plan-1440.png"
+        "path": "artifacts/design/after-flexible-player-1440.png"
       }
     ],
     "projectCheck": {
@@ -36,11 +36,11 @@
       "status": "pass"
     },
     "critique": {
-      "score": 37,
+      "score": 35,
       "maximum": 40
     },
     "audit": {
-      "score": 19,
+      "score": 18,
       "maximum": 20
     },
     "unresolved": {
@@ -54,6 +54,6 @@
   },
   "ownerFeedback": {
     "decision": "delegated",
-    "note": "Owner asked for a design re-look, was open to lime, and delegated the bounded preserve-lane refinement."
+    "note": "Owner approved the preserve-lane implementation with Go for it; lime remains reserved for the primary completion action."
   }
 }

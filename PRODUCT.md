@@ -32,14 +32,23 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
   appropriate recording, timestamp-derived rest timing, local workout history,
   and basic progress.
 - Active workout actions must not depend on a network request.
-- Exercise and set order is programme data, not a suggestion. The player follows
-  the saved sequence exactly; the user may explicitly skip the current set, but
-  Setline never silently jumps ahead or reorders the session.
+- Exercise and set order is immutable programme data, not a suggestion. A
+  session starts in that exact authored order. The user may explicitly skip,
+  add a session-only set, or move the current step to Do later; Setline records
+  the deviation and never rewrites the programme or a future workout.
+- Weight-and-repetition work may contain ordered partial or drop segments, such
+  as `60 kg × 5` followed by `50 kg × 3`, within one completed planned set.
+- Rest cadence retains the authored target, any timer adjustment, and the
+  actual completion-to-next-start gap as separate values.
 - Workout actions are device-first and remain usable offline. Optional Google sign-in
   synchronizes one private whole-state copy without merging or reordering sets.
-- Reminders, general-purpose authoring/import/export, full analytics, accepted
-  progression recommendations, internal AI, Health integrations, sensors,
-  social features, and coaching remain deferred.
+- The supplied programme is bundled product data and is also available in
+  device-only mode. Signed-in session progress and history are the private data
+  associated with the user's Google identity.
+- Reminders, general-purpose authoring/import/export, weekly gap analysis,
+  cardio improvement graphs, full analytics, accepted progression
+  recommendations, internal AI, Health integrations, sensors, social features,
+  and coaching remain deferred.
 - Kilograms are the strength programme's default unit; cardio and mobility use
   their written duration or repetition dose.
 
@@ -65,6 +74,8 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 - Fast during workouts: completing a set is the dominant one-tap action.
 - Structured: exercises, sets, timers, and rules are explicit data.
 - Ordered: every exercise and set retains its authored position during execution and history.
+- Adaptable: explicit in-session changes are allowed and remain distinct from
+  the written programme.
 - Honest measurement: recorded, calculated, and unavailable values stay distinct.
 - Offline-friendly: an active workout remains functional without connectivity.
 

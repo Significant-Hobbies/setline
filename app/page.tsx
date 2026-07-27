@@ -37,16 +37,25 @@ import {
   resolveWorkout,
   type PlannedStep,
   type WorkoutId,
-  type WorkoutTemplate,
 } from "./lib/programme";
 import {
   emptyStoredState,
+  deferActiveExecution,
+  executionIsModified,
+  executionIsValid,
+  getActiveExecution,
+  getExecution,
+  getSessionMetrics,
+  insertExtraExecution,
+  makeWorkoutSession,
   parseStoredStateJson,
   PENDING_SYNC_KEY,
+  startQueuedExecution,
   STORAGE_KEY,
   updateStoredState,
+  type ExecutionRecord,
   type HistoryEntry,
-  type SetRecord,
+  type SetSegment,
   type StoredState,
   type WorkoutSession,
 } from "./lib/workout-state";
@@ -67,40 +76,8 @@ const sampleTrend = [
   { label: "Progress", weight: 65, reps: 8 },
 ];
 
-function makeSession(template: WorkoutTemplate, weekNumber: number, dayIndex: number): WorkoutSession {
-  return {
-    id: `session-${Date.now()}`,
-    workoutId: template.id,
-    workoutName: template.name,
-    weekNumber,
-    dayIndex,
-    startedAt: Date.now(),
-    completedAt: null,
-    phase: "active",
-    activeIndex: 0,
-    restEndsAt: null,
-    pausedRestSeconds: null,
-    plannedRestSeconds: 0,
-    records: template.steps.map((planned) => ({
-      setId: planned.id,
-      status: "pending",
-      actualWeight:
-        planned.tracking === "weight-reps" || planned.tracking === "weight-duration"
-          ? planned.targetWeight ?? 0
-          : null,
-      actualReps:
-        planned.tracking === "weight-reps" || planned.tracking === "reps"
-          ? planned.targetReps
-          : null,
-      actualDurationSeconds:
-        planned.tracking === "duration" || planned.tracking === "weight-duration"
-          ? planned.targetDurationSeconds
-          : null,
-      actualRpe: null,
-      completedAt: null,
-    })),
-    quality: null,
-  };
+function wallClockNow() {
+  return Date.now();
 }
 
 function formatClock(totalSeconds: number) {
@@ -123,62 +100,28 @@ function formatTimedWork(totalSeconds: number) {
   return seconds === 0 ? `${minutes} min` : `${minutes}m ${seconds}s`;
 }
 
-function getSessionMetrics(session: WorkoutSession, steps: PlannedStep[]) {
-  let workingVolume = 0;
-  let warmupVolume = 0;
-  let completedDurationSeconds = 0;
-  const rpes: number[] = [];
-
-  session.records.forEach((record, index) => {
-    if (record.status !== "completed") return;
-    const planned = steps[index];
-    const volume = (record.actualWeight ?? 0) * (record.actualReps ?? 0);
-    if (planned.setType === "Warm-up") warmupVolume += volume;
-    if (planned.setType === "Working") workingVolume += volume;
-    completedDurationSeconds += record.actualDurationSeconds ?? 0;
-    if (record.actualRpe !== null) rpes.push(record.actualRpe);
-  });
-
-  return {
-    completedSets: session.records.filter((record) => record.status === "completed").length,
-    skippedSets: session.records.filter((record) => record.status === "skipped").length,
-    workingVolume,
-    warmupVolume,
-    completedDurationSeconds,
-    averageRpe: rpes.length
-      ? rpes.reduce((total, rpe) => total + rpe, 0) / rpes.length
-      : null,
-  };
-}
-
-function recordSummary(planned: PlannedStep, record: SetRecord): string {
+function recordSummary(planned: PlannedStep, record: ExecutionRecord): string {
   if (planned.tracking === "weight-reps") {
-    return `${record.actualWeight ?? 0} kg × ${record.actualReps ?? 0}${
+    return `${record.segments
+      .map((segment) => `${segment.weight ?? 0} kg × ${segment.reps ?? 0}`)
+      .join(" → ")}${
       record.actualRpe ? ` @ RPE ${record.actualRpe}` : ""
     }`;
   }
   if (planned.tracking === "weight-duration") {
-    return `${record.actualWeight ?? 0} kg · ${formatTimedWork(record.actualDurationSeconds ?? 0)}`;
+    const segment = record.segments[0];
+    return `${segment.weight ?? 0} kg · ${formatTimedWork(segment.durationSeconds ?? 0)}`;
   }
   if (planned.tracking === "duration") {
-    return formatTimedWork(record.actualDurationSeconds ?? 0);
+    return formatTimedWork(record.segments[0]?.durationSeconds ?? 0);
   }
-  if (planned.tracking === "reps") return `${record.actualReps ?? 0} reps`;
+  if (planned.tracking === "reps") {
+    return `${record.segments[0]?.reps ?? 0} reps`;
+  }
   return "Completed";
 }
 
-function recordIsValid(planned: PlannedStep | null, record: SetRecord | null) {
-  if (!planned || !record) return false;
-  if (planned.tracking === "completion") return true;
-  if (planned.tracking === "reps") return (record.actualReps ?? 0) > 0;
-  if (planned.tracking === "duration") return (record.actualDurationSeconds ?? 0) > 0;
-  if (planned.tracking === "weight-duration") {
-    return (record.actualWeight ?? 0) > 0 && (record.actualDurationSeconds ?? 0) > 0;
-  }
-  return (record.actualWeight ?? 0) > 0 && (record.actualReps ?? 0) > 0;
-}
-
-function statusLabel(record: SetRecord, index: number, activeIndex: number) {
+function statusLabel(record: ExecutionRecord, index: number, activeIndex: number) {
   if (record.status === "completed") return "Done";
   if (record.status === "skipped") return "Skipped";
   if (index === activeIndex) return "Current";
@@ -199,8 +142,8 @@ export default function SetlineApp() {
   const [authError, setAuthError] = useState("");
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
   const [correction, setCorrection] = useState<{
-    index: number;
-    draft: SetRecord;
+    id: string;
+    draft: ExecutionRecord;
   } | null>(null);
   const workoutStateRef = useRef(workoutState);
   const lastSyncedAtRef = useRef(0);
@@ -345,7 +288,7 @@ export default function SetlineApp() {
       setOnline(false);
       setSyncStatus((current) => (current === "local" ? current : "offline"));
     };
-    const onVisibility = () => setNow(Date.now());
+    const onVisibility = () => setNow(wallClockNow());
     const onInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as InstallPromptEvent);
@@ -357,7 +300,7 @@ export default function SetlineApp() {
     window.addEventListener("beforeinstallprompt", onInstallPrompt);
 
     queueMicrotask(() => {
-      setNow(Date.now());
+      setNow(wallClockNow());
       setOnline(navigator.onLine);
       workoutStateRef.current = restoredState;
       setWorkoutState(restoredState);
@@ -449,7 +392,7 @@ export default function SetlineApp() {
 
   useEffect(() => {
     if (!session) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const timer = window.setInterval(() => setNow(wallClockNow()), 1000);
     return () => window.clearInterval(timer);
   }, [session]);
 
@@ -464,12 +407,20 @@ export default function SetlineApp() {
         : null,
     [session],
   );
-  const workoutSets = useMemo(() => sessionWorkout?.steps ?? [], [sessionWorkout]);
-  const currentSet = session ? workoutSets[session.activeIndex] : null;
-  const currentRecord = session ? session.records[session.activeIndex] : null;
+  const orderedExecutions = useMemo(
+    () =>
+      session
+        ? session.queue
+            .map((id) => getExecution(session, id))
+            .filter((record): record is ExecutionRecord => record !== null)
+        : [],
+    [session],
+  );
+  const currentRecord = session ? getActiveExecution(session) : null;
+  const currentSet = currentRecord?.step ?? null;
   const metrics = useMemo(
-    () => (session ? getSessionMetrics(session, workoutSets) : null),
-    [session, workoutSets],
+    () => (session ? getSessionMetrics(session) : null),
+    [session],
   );
   const elapsedSeconds = session && now ? Math.max(0, (now - session.startedAt) / 1000) : 0;
   const restSeconds =
@@ -477,9 +428,16 @@ export default function SetlineApp() {
       ? session.pausedRestSeconds ??
         Math.max(0, Math.ceil(((session.restEndsAt ?? now) - now) / 1000))
       : 0;
-  const currentValuesValid = recordIsValid(currentSet, currentRecord);
+  const currentValuesValid = executionIsValid(currentRecord);
   const correctionSet =
-    correction === null ? null : workoutSets[correction.index] ?? null;
+    correction === null ? null : correction.draft.step;
+  const restFromRecord = session
+    ? getExecution(session, session.restFromExecutionId)
+    : null;
+  const previousQueueRecord =
+    session && session.activeIndex > 0
+      ? orderedExecutions[session.activeIndex - 1] ?? null
+      : null;
 
   const beginGoogleSignIn = async () => {
     if (
@@ -555,39 +513,77 @@ export default function SetlineApp() {
     setSession(
       (existing) =>
         existing ??
-        makeSession(template, programmePosition.weekNumber, dayIndex),
+        makeWorkoutSession(template, programmePosition.weekNumber, dayIndex),
     );
     setNotice(
       accountState?.status === "authenticated"
         ? `${template.name} started. Progress saves on this device first, then syncs.`
         : `${template.name} started. Progress is saved on this device.`,
     );
-    setNow(Date.now());
+    setNow(wallClockNow());
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
   };
 
-  const updateCurrentRecord = (patch: Partial<SetRecord>) => {
+  const updateCurrentRecord = (patch: Partial<ExecutionRecord>) => {
     setSession((existing) => {
-      if (!existing) return existing;
+      const active = existing ? getActiveExecution(existing) : null;
+      if (!existing || !active) return existing;
       return {
         ...existing,
-        records: existing.records.map((record, index) =>
-          index === existing.activeIndex ? { ...record, ...patch } : record,
+        records: existing.records.map((record) =>
+          record.id === active.id ? { ...record, ...patch } : record,
         ),
       };
     });
   };
 
+  const updateCurrentSegment = (
+    segmentId: string,
+    patch: Partial<SetSegment>,
+  ) => {
+    if (!currentRecord) return;
+    updateCurrentRecord({
+      segments: currentRecord.segments.map((segment) =>
+        segment.id === segmentId ? { ...segment, ...patch } : segment,
+      ),
+    });
+  };
+
+  const addCurrentSegment = () => {
+    if (!currentRecord || currentRecord.step.tracking !== "weight-reps") return;
+    const last = currentRecord.segments[currentRecord.segments.length - 1];
+    const nextNumber = currentRecord.segments.length + 1;
+    updateCurrentRecord({
+      segments: [
+        ...currentRecord.segments,
+        {
+          id: `${currentRecord.id}:segment:${wallClockNow()}`,
+          weight: last?.weight ?? 0,
+          reps: 0,
+          durationSeconds: null,
+        },
+      ],
+    });
+    setNotice(`Segment ${nextNumber} added to ${currentRecord.step.exercise}.`);
+  };
+
+  const removeCurrentSegment = (segmentId: string) => {
+    if (!currentRecord || currentRecord.segments.length === 1) return;
+    updateCurrentRecord({
+      segments: currentRecord.segments.filter((segment) => segment.id !== segmentId),
+    });
+  };
+
   const saveCorrection = (status: "completed" | "skipped") => {
     if (!session || !correction || !correctionSet) return;
-    if (status === "completed" && !recordIsValid(correctionSet, correction.draft)) {
+    if (status === "completed" && !executionIsValid(correction.draft)) {
       return;
     }
-    const completedAt = correction.draft.completedAt ?? Date.now();
+    const completedAt = correction.draft.completedAt ?? wallClockNow();
     setSession({
       ...session,
-      records: session.records.map((record, index) =>
-        index === correction.index
+      records: session.records.map((record) =>
+        record.id === correction.id
           ? {
               ...correction.draft,
               status,
@@ -602,12 +598,36 @@ export default function SetlineApp() {
     );
   };
 
+  const addExtraSet = (source = currentRecord) => {
+    if (!session || !source) return;
+    const id = `extra:${source.step.id}:${wallClockNow()}`;
+    setSession((existing) => {
+      if (!existing) return existing;
+      const currentSource = getExecution(existing, source.id) ?? source;
+      return insertExtraExecution(existing, currentSource, id);
+    });
+    setNotice(`Extra ${source.step.exercise} set added to this session only.`);
+  };
+
+  const deferCurrentSet = () => {
+    if (!session || !currentRecord || session.phase !== "active") return;
+    if (session.activeIndex >= session.queue.length - 1) {
+      setNotice("This is already the final pending step.");
+      return;
+    }
+    setSession(deferActiveExecution(session, wallClockNow()));
+    setNotice(`${currentRecord.step.exercise} moved to the end of this session only.`);
+  };
+
   const completeSet = () => {
     if (!session || !currentSet || !currentRecord) return;
-    const completedAt = Date.now();
-    const isFinal = session.activeIndex === workoutSets.length - 1;
-    const nextIndex = Math.min(session.activeIndex + 1, workoutSets.length - 1);
+    const completedAt = wallClockNow();
+    const isFinal = session.activeIndex === session.queue.length - 1;
+    const nextIndex = Math.min(session.activeIndex + 1, session.queue.length - 1);
     const needsRest = !isFinal && currentSet.restSeconds > 0;
+    const nextId = isFinal ? null : session.queue[nextIndex];
+    const performedPosition =
+      session.records.filter((record) => record.status !== "pending").length + 1;
 
     setSession({
       ...session,
@@ -616,11 +636,23 @@ export default function SetlineApp() {
       activeIndex: nextIndex,
       restEndsAt: needsRest ? completedAt + currentSet.restSeconds * 1000 : null,
       pausedRestSeconds: null,
-      plannedRestSeconds: currentSet.restSeconds,
-      records: session.records.map((record, index) =>
-        index === session.activeIndex
-          ? { ...record, status: "completed", completedAt }
-          : record,
+      authoredRestSeconds: currentSet.restSeconds,
+      adjustedRestSeconds: currentSet.restSeconds,
+      restFromExecutionId: needsRest ? currentRecord.id : null,
+      records: session.records.map((record) =>
+        record.id === currentRecord.id
+          ? {
+              ...record,
+              status: "completed",
+              startedAt: record.startedAt ?? completedAt,
+              completedAt,
+              performedPosition,
+              adjustedRestSeconds: currentSet.restSeconds,
+              actualRestSeconds: !needsRest && !isFinal ? 0 : record.actualRestSeconds,
+            }
+          : record.id === nextId && !needsRest
+            ? { ...record, startedAt: completedAt }
+            : record,
       ),
     });
     setNow(completedAt);
@@ -635,20 +667,35 @@ export default function SetlineApp() {
   };
 
   const skipSet = () => {
-    if (!session || !currentSet) return;
-    const completedAt = Date.now();
-    const isFinal = session.activeIndex === workoutSets.length - 1;
+    if (!session || !currentSet || !currentRecord) return;
+    const completedAt = wallClockNow();
+    const isFinal = session.activeIndex === session.queue.length - 1;
+    const nextIndex = Math.min(session.activeIndex + 1, session.queue.length - 1);
+    const nextId = isFinal ? null : session.queue[nextIndex];
+    const performedPosition =
+      session.records.filter((record) => record.status !== "pending").length + 1;
     setSession({
       ...session,
       completedAt: isFinal ? completedAt : null,
       phase: isFinal ? "summary" : "active",
-      activeIndex: Math.min(session.activeIndex + 1, workoutSets.length - 1),
+      activeIndex: nextIndex,
       restEndsAt: null,
       pausedRestSeconds: null,
-      records: session.records.map((record, index) =>
-        index === session.activeIndex
-          ? { ...record, status: "skipped", completedAt }
-          : record,
+      authoredRestSeconds: 0,
+      adjustedRestSeconds: 0,
+      restFromExecutionId: null,
+      records: session.records.map((record) =>
+        record.id === currentRecord.id
+          ? {
+              ...record,
+              status: "skipped",
+              startedAt: record.startedAt ?? completedAt,
+              completedAt,
+              performedPosition,
+            }
+          : record.id === nextId
+            ? { ...record, startedAt: completedAt }
+            : record,
       ),
     });
     setNotice(`${currentSet.exercise} ${currentSet.setLabel.toLowerCase()} skipped.`);
@@ -661,11 +708,31 @@ export default function SetlineApp() {
         return {
           ...existing,
           pausedRestSeconds: existing.pausedRestSeconds + seconds,
+          adjustedRestSeconds: existing.adjustedRestSeconds + seconds,
+          records: existing.records.map((record) =>
+            record.id === existing.restFromExecutionId
+              ? {
+                  ...record,
+                  adjustedRestSeconds: record.adjustedRestSeconds + seconds,
+                }
+              : record,
+          ),
         };
       }
       return {
         ...existing,
-        restEndsAt: Math.max(existing.restEndsAt ?? Date.now(), Date.now()) + seconds * 1000,
+        restEndsAt:
+          Math.max(existing.restEndsAt ?? wallClockNow(), wallClockNow()) +
+          seconds * 1000,
+        adjustedRestSeconds: existing.adjustedRestSeconds + seconds,
+        records: existing.records.map((record) =>
+          record.id === existing.restFromExecutionId
+            ? {
+                ...record,
+                adjustedRestSeconds: record.adjustedRestSeconds + seconds,
+              }
+            : record,
+        ),
       };
     });
   };
@@ -676,7 +743,7 @@ export default function SetlineApp() {
       if (existing.pausedRestSeconds !== null) {
         return {
           ...existing,
-          restEndsAt: Date.now() + existing.pausedRestSeconds * 1000,
+          restEndsAt: wallClockNow() + existing.pausedRestSeconds * 1000,
           pausedRestSeconds: null,
         };
       }
@@ -685,23 +752,20 @@ export default function SetlineApp() {
         restEndsAt: null,
         pausedRestSeconds: Math.max(
           0,
-          Math.ceil(((existing.restEndsAt ?? Date.now()) - Date.now()) / 1000),
+          Math.ceil(
+            ((existing.restEndsAt ?? wallClockNow()) - wallClockNow()) / 1000,
+          ),
         ),
       };
     });
   };
 
   const beginNextSet = () => {
-    setSession((existing) =>
-      existing
-        ? {
-            ...existing,
-            phase: "active",
-            restEndsAt: null,
-            pausedRestSeconds: null,
-          }
-        : existing,
-    );
+    const startedAt = wallClockNow();
+    setSession((existing) => {
+      if (!existing) return existing;
+      return startQueuedExecution(existing, startedAt);
+    });
     setNotice("Next step ready.");
   };
 
@@ -711,7 +775,10 @@ export default function SetlineApp() {
       session.phase === "summary"
         ? session.activeIndex
         : Math.max(0, session.activeIndex - 1);
-    const planned = workoutSets[index];
+    const recordId = session.queue[index];
+    const recordToReopen = getExecution(session, recordId);
+    if (!recordToReopen) return;
+    const followingId = session.queue[index + 1] ?? null;
     setSession({
       ...session,
       completedAt: null,
@@ -719,20 +786,30 @@ export default function SetlineApp() {
       activeIndex: index,
       restEndsAt: null,
       pausedRestSeconds: null,
-      plannedRestSeconds: 0,
-      records: session.records.map((record, recordIndex) =>
-        recordIndex === index
-          ? { ...record, status: "pending", completedAt: null }
-          : record,
+      authoredRestSeconds: 0,
+      adjustedRestSeconds: 0,
+      restFromExecutionId: null,
+      records: session.records.map((record) =>
+        record.id === recordId
+          ? {
+              ...record,
+              status: "pending",
+              performedPosition: null,
+              completedAt: null,
+              actualRestSeconds: null,
+            }
+          : record.id === followingId
+            ? { ...record, startedAt: null }
+            : record,
       ),
     });
-    setNotice(`${planned.exercise} reopened for correction.`);
+    setNotice(`${recordToReopen.step.exercise} reopened for correction.`);
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
   };
 
   const saveWorkout = () => {
     if (!session || !metrics) return;
-    const completedAt = session.completedAt ?? Date.now();
+    const completedAt = session.completedAt ?? wallClockNow();
     const entry: HistoryEntry = {
       id: session.id,
       workoutId: session.workoutId,
@@ -741,12 +818,21 @@ export default function SetlineApp() {
       completedAt,
       durationSeconds: Math.max(60, (completedAt - session.startedAt) / 1000),
       completedSets: metrics.completedSets,
+      modifiedSets: metrics.modifiedSets,
+      extraSets: metrics.extraSets,
+      deferredSets: metrics.deferredSets,
       skippedSets: metrics.skippedSets,
       workingVolume: metrics.workingVolume,
       warmupVolume: metrics.warmupVolume,
       completedDurationSeconds: metrics.completedDurationSeconds,
+      totalActualRestSeconds: metrics.totalActualRestSeconds,
       averageRpe: metrics.averageRpe,
       quality: session.quality,
+      detailsAvailable: true,
+      executions: orderedExecutions.map((record) => ({
+        ...record,
+        segments: record.segments.map((segment) => ({ ...segment })),
+      })),
     };
     setHistory((entries) => [entry, ...entries]);
     setCorrection(null);
@@ -812,10 +898,69 @@ export default function SetlineApp() {
           <CorrectionPanel
             planned={correctionSet}
             record={correction.draft}
-            onChange={(patch) =>
+            onChangeRecord={(patch) =>
               setCorrection((current) =>
                 current
                   ? { ...current, draft: { ...current.draft, ...patch } }
+                  : current,
+              )
+            }
+            onChangeSegment={(segmentId, patch) =>
+              setCorrection((current) =>
+                current
+                  ? {
+                      ...current,
+                      draft: {
+                        ...current.draft,
+                        segments: current.draft.segments.map((segment) =>
+                          segment.id === segmentId
+                            ? { ...segment, ...patch }
+                            : segment,
+                        ),
+                      },
+                    }
+                  : current,
+              )
+            }
+            onAddSegment={() =>
+              setCorrection((current) => {
+                if (
+                  !current ||
+                  current.draft.step.tracking !== "weight-reps"
+                ) {
+                  return current;
+                }
+                const last =
+                  current.draft.segments[current.draft.segments.length - 1];
+                return {
+                  ...current,
+                  draft: {
+                    ...current.draft,
+                    segments: [
+                      ...current.draft.segments,
+                      {
+                        id: `${current.draft.id}:segment:${wallClockNow()}`,
+                        weight: last?.weight ?? 0,
+                        reps: 0,
+                        durationSeconds: null,
+                      },
+                    ],
+                  },
+                };
+              })
+            }
+            onRemoveSegment={(segmentId) =>
+              setCorrection((current) =>
+                current && current.draft.segments.length > 1
+                  ? {
+                      ...current,
+                      draft: {
+                        ...current.draft,
+                        segments: current.draft.segments.filter(
+                          (segment) => segment.id !== segmentId,
+                        ),
+                      },
+                    }
                   : current,
               )
             }
@@ -842,11 +987,11 @@ export default function SetlineApp() {
 
         <div
           className="workout-progress"
-          aria-label={`${(metrics?.completedSets ?? 0) + (metrics?.skippedSets ?? 0)} of ${workoutSets.length} steps resolved`}
+          aria-label={`${(metrics?.completedSets ?? 0) + (metrics?.skippedSets ?? 0)} of ${orderedExecutions.length} steps resolved`}
         >
           <span
             style={{
-              transform: `scaleX(${((metrics?.completedSets ?? 0) + (metrics?.skippedSets ?? 0)) / workoutSets.length})`,
+              transform: `scaleX(${orderedExecutions.length ? ((metrics?.completedSets ?? 0) + (metrics?.skippedSets ?? 0)) / orderedExecutions.length : 0})`,
             }}
           />
         </div>
@@ -873,7 +1018,9 @@ export default function SetlineApp() {
             </div>
 
             <div className="metric-grid">
-              <Metric label="Completed" value={`${metrics.completedSets}/${workoutSets.length}`} provenance="Recorded" />
+              <Metric label="Completed" value={`${metrics.completedSets}/${orderedExecutions.length}`} provenance="Recorded" />
+              <Metric label="Modified" value={String(metrics.modifiedSets)} provenance="Recorded vs programme" />
+              <Metric label="Extra" value={String(metrics.extraSets)} provenance="Session only" />
               <Metric label="Skipped" value={String(metrics.skippedSets)} provenance="Recorded" />
               <Metric label="Working volume" value={`${metrics.workingVolume.toLocaleString()} kg`} provenance="Calculated" />
               <Metric label="Warm-up volume" value={`${metrics.warmupVolume.toLocaleString()} kg`} provenance="Calculated" />
@@ -887,7 +1034,14 @@ export default function SetlineApp() {
                 value={formatDuration(metrics.completedDurationSeconds)}
                 provenance="Recorded from completed timed steps"
               />
+              <Metric
+                label="Actual rest"
+                value={formatTimedWork(metrics.totalActualRestSeconds)}
+                provenance="Calculated from completion and next-start timestamps"
+              />
             </div>
+
+            <ExecutionLedger executions={orderedExecutions} />
 
             <fieldset className="quality-fieldset">
               <legend>How would you rate the session quality?</legend>
@@ -927,31 +1081,32 @@ export default function SetlineApp() {
         ) : (
           <div className="player-layout">
             <section className="attempt-board">
-              {session.phase === "rest" && currentSet ? (
+              {session.phase === "rest" && currentSet && restFromRecord ? (
                 <RestBoard
                   session={session}
                   currentSet={currentSet}
-                  previousSet={workoutSets[Math.max(0, session.activeIndex - 1)]}
-                  previousRecord={session.records[Math.max(0, session.activeIndex - 1)]}
+                  previousSet={restFromRecord.step}
+                  previousRecord={restFromRecord}
                   restSeconds={restSeconds}
                   onAddRest={addRest}
+                  onAddExtra={() => addExtraSet(restFromRecord)}
                   onTogglePause={toggleRestPause}
                   onBegin={beginNextSet}
                   onUndo={undoLastSet}
                 />
               ) : currentSet && currentRecord ? (
                 <>
-                  {session.activeIndex > 0 &&
-                  session.records[session.activeIndex - 1]?.status !== "pending" ? (
+                  {previousQueueRecord &&
+                  previousQueueRecord.status !== "pending" ? (
                     <div className="undo-strip">
                       <span>
                         Previous step{" "}
-                        {session.records[session.activeIndex - 1]?.status === "skipped"
+                        {previousQueueRecord.status === "skipped"
                           ? "skipped"
                           : "recorded"}
                       </span>
                       <button onClick={undoLastSet}>
-                        {session.records[session.activeIndex - 1]?.status === "skipped"
+                        {previousQueueRecord.status === "skipped"
                           ? "Undo skip"
                           : "Undo recording"}
                       </button>
@@ -998,12 +1153,15 @@ export default function SetlineApp() {
                     <ActualInputs
                       planned={currentSet}
                       record={currentRecord}
-                      onChange={updateCurrentRecord}
+                      onChangeRecord={updateCurrentRecord}
+                      onChangeSegment={updateCurrentSegment}
+                      onAddSegment={addCurrentSegment}
+                      onRemoveSegment={removeCurrentSegment}
                     />
                   </fieldset>
                   {!currentValuesValid ? (
-                    <p className="input-error" role="alert">
-                      Enter the recorded values required for this step.
+                    <p className="input-prompt">
+                      Finish every segment to enable completion.
                     </p>
                   ) : null}
 
@@ -1023,6 +1181,16 @@ export default function SetlineApp() {
                     <button className="secondary-action" onClick={skipSet}>
                       Skip this {currentSet.optional ? "optional step" : "step"}
                     </button>
+                    <div className="deviation-actions">
+                      <button type="button" onClick={() => addExtraSet()}>
+                        <strong>Add another set</strong>
+                        <span>This session only</span>
+                      </button>
+                      <button type="button" onClick={deferCurrentSet}>
+                        <strong>Do later</strong>
+                        <span>Moves to session end</span>
+                      </button>
+                    </div>
                   </div>
                 </>
               ) : null}
@@ -1030,11 +1198,14 @@ export default function SetlineApp() {
 
             <SetRail
               session={session}
-              steps={workoutSets}
-              onEdit={(index) =>
+              executions={orderedExecutions}
+              onEdit={(record) =>
                 setCorrection({
-                  index,
-                  draft: { ...session.records[index] },
+                  id: record.id,
+                  draft: {
+                    ...record,
+                    segments: record.segments.map((segment) => ({ ...segment })),
+                  },
                 })
               }
             />
@@ -1482,36 +1653,53 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
       {history.length ? (
         <div className="history-list">
           {history.map((entry) => (
-            <article key={entry.id} className="history-row">
-              <div className="history-date">
-                <strong>
-                  {new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" })
-                    .format(new Date(entry.completedAt))
-                    .toUpperCase()}
-                </strong>
-                <span>RECORDED</span>
-              </div>
-              <div>
-                <h2>{entry.workoutName}</h2>
-                <p>
-                  Week {entry.weekNumber} · {entry.completedSets} completed · {entry.skippedSets} skipped · quality{" "}
-                  {entry.quality === null ? "not recorded" : `${entry.quality}/5`}
+            <section key={entry.id} className="history-entry">
+              <article className="history-row">
+                <div className="history-date">
+                  <strong>
+                    {new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" })
+                      .format(new Date(entry.completedAt))
+                      .toUpperCase()}
+                  </strong>
+                  <span>RECORDED</span>
+                </div>
+                <div>
+                  <h2>{entry.workoutName}</h2>
+                  <p>
+                    Week {entry.weekNumber} · {entry.completedSets} completed ·{" "}
+                    {entry.modifiedSets} modified · {entry.skippedSets} skipped · quality{" "}
+                    {entry.quality === null ? "not recorded" : `${entry.quality}/5`}
+                  </p>
+                </div>
+                <div className="history-volume">
+                  <strong>
+                    {entry.workingVolume
+                      ? `${entry.workingVolume.toLocaleString()} kg`
+                      : formatDuration(entry.completedDurationSeconds)}
+                  </strong>
+                  <span>
+                    {entry.workingVolume
+                      ? "Calculated working volume"
+                      : "Recorded timed work"}
+                  </span>
+                </div>
+                <strong className="history-duration">{formatDuration(entry.durationSeconds)}</strong>
+              </article>
+              {entry.detailsAvailable ? (
+                <details className="history-details">
+                  <summary>
+                    View every set, segment and gap
+                    <span>{formatTimedWork(entry.totalActualRestSeconds)} actual rest</span>
+                  </summary>
+                  <ExecutionLedger executions={entry.executions} />
+                </details>
+              ) : (
+                <p className="history-unavailable">
+                  Per-set detail and cadence were unavailable in this older
+                  summary-only record.
                 </p>
-              </div>
-              <div className="history-volume">
-                <strong>
-                  {entry.workingVolume
-                    ? `${entry.workingVolume.toLocaleString()} kg`
-                    : formatDuration(entry.completedDurationSeconds)}
-                </strong>
-                <span>
-                  {entry.workingVolume
-                    ? "Calculated working volume"
-                    : "Recorded timed work"}
-                </span>
-              </div>
-              <strong className="history-duration">{formatDuration(entry.durationSeconds)}</strong>
-            </article>
+              )}
+            </section>
           ))}
         </div>
       ) : (
@@ -1598,17 +1786,27 @@ function ProgressView({ history }: { history: HistoryEntry[] }) {
 function ActualInputs({
   planned,
   record,
-  onChange,
+  onChangeRecord,
+  onChangeSegment,
+  onAddSegment,
+  onRemoveSegment,
 }: {
   planned: PlannedStep;
-  record: SetRecord;
-  onChange: (patch: Partial<SetRecord>) => void;
+  record: ExecutionRecord;
+  onChangeRecord: (patch: Partial<ExecutionRecord>) => void;
+  onChangeSegment: (segmentId: string, patch: Partial<SetSegment>) => void;
+  onAddSegment: () => void;
+  onRemoveSegment: (segmentId: string) => void;
 }) {
   const usesWeight =
     planned.tracking === "weight-reps" || planned.tracking === "weight-duration";
   const usesReps = planned.tracking === "weight-reps" || planned.tracking === "reps";
   const usesDuration =
     planned.tracking === "duration" || planned.tracking === "weight-duration";
+  const editableSegments =
+    planned.tracking === "weight-reps"
+      ? record.segments
+      : record.segments.slice(0, 1);
 
   if (planned.tracking === "completion") {
     return <p className="field-help">No numeric result is required for this step.</p>;
@@ -1616,111 +1814,163 @@ function ActualInputs({
 
   return (
     <>
-      {usesWeight ? (
-        <label>
-          <span>Weight</span>
-          <div className="numeric-input">
-            <button
-              type="button"
-              aria-label="Decrease weight by 2.5 kilograms"
-              onClick={() =>
-                onChange({ actualWeight: Math.max(0, (record.actualWeight ?? 0) - 2.5) })
-              }
-            >
-              −
-            </button>
-            <input
-              aria-label="Actual weight in kilograms"
-              inputMode="decimal"
-              min="0"
-              step="0.5"
-              type="number"
-              value={record.actualWeight ?? 0}
-              onChange={(event) => onChange({ actualWeight: Number(event.target.value) })}
-            />
-            <b>kg</b>
-            <button
-              type="button"
-              aria-label="Increase weight by 2.5 kilograms"
-              onClick={() => onChange({ actualWeight: (record.actualWeight ?? 0) + 2.5 })}
-            >
-              +
-            </button>
-          </div>
-        </label>
-      ) : null}
+      <div className="segment-stack">
+        {editableSegments.map((segment, index) => (
+          <section className="segment-editor" key={segment.id}>
+            {planned.tracking === "weight-reps" ? (
+              <div className="segment-heading">
+                <strong>Segment {index + 1}</strong>
+                {record.segments.length > 1 ? (
+                  <button
+                    aria-label={`Remove segment ${index + 1}`}
+                    onClick={() => onRemoveSegment(segment.id)}
+                    type="button"
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <span>Standard set</span>
+                )}
+              </div>
+            ) : null}
 
-      {usesReps ? (
-        <label>
-          <span>Reps completed</span>
-          <div className="numeric-input">
-            <button
-              type="button"
-              aria-label="Decrease repetitions by one"
-              onClick={() =>
-                onChange({ actualReps: Math.max(0, (record.actualReps ?? 0) - 1) })
-              }
-            >
-              −
-            </button>
-            <input
-              aria-label="Completed repetitions"
-              inputMode="numeric"
-              min="0"
-              step="1"
-              type="number"
-              value={record.actualReps ?? 0}
-              onChange={(event) => onChange({ actualReps: Number(event.target.value) })}
-            />
-            <b>reps</b>
-            <button
-              type="button"
-              aria-label="Increase repetitions by one"
-              onClick={() => onChange({ actualReps: (record.actualReps ?? 0) + 1 })}
-            >
-              +
-            </button>
-          </div>
-        </label>
-      ) : null}
+            <div className="segment-fields">
+              {usesWeight ? (
+                <label>
+                  <span>Weight</span>
+                  <div className="numeric-input">
+                    <button
+                      type="button"
+                      aria-label={`Decrease segment ${index + 1} weight by 2.5 kilograms`}
+                      onClick={() =>
+                        onChangeSegment(segment.id, {
+                          weight: Math.max(0, (segment.weight ?? 0) - 2.5),
+                        })
+                      }
+                    >
+                      −
+                    </button>
+                    <input
+                      aria-label={`Segment ${index + 1} weight in kilograms`}
+                      inputMode="decimal"
+                      min="0"
+                      step="0.5"
+                      type="number"
+                      value={segment.weight ?? 0}
+                      onChange={(event) =>
+                        onChangeSegment(segment.id, {
+                          weight: Number(event.target.value),
+                        })
+                      }
+                    />
+                    <b>kg</b>
+                    <button
+                      type="button"
+                      aria-label={`Increase segment ${index + 1} weight by 2.5 kilograms`}
+                      onClick={() =>
+                        onChangeSegment(segment.id, {
+                          weight: (segment.weight ?? 0) + 2.5,
+                        })
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                </label>
+              ) : null}
 
-      {usesDuration ? (
-        <label>
-          <span>Duration</span>
-          <div className="numeric-input">
-            <button
-              type="button"
-              aria-label="Decrease duration by 30 seconds"
-              onClick={() =>
-                onChange({
-                  actualDurationSeconds: Math.max(
-                    0,
-                    (record.actualDurationSeconds ?? 0) - 30,
-                  ),
-                })
-              }
-            >
-              −
-            </button>
-            <output
-              aria-label={`Completed duration ${formatClock(record.actualDurationSeconds ?? 0)}`}
-            >
-              {formatClock(record.actualDurationSeconds ?? 0)}
-            </output>
-            <b>min:sec</b>
-            <button
-              type="button"
-              aria-label="Increase duration by 30 seconds"
-              onClick={() =>
-                onChange({
-                  actualDurationSeconds: (record.actualDurationSeconds ?? 0) + 30,
-                })
-              }
-            >
-              +
-            </button>
-          </div>
-        </label>
+              {usesReps ? (
+                <label>
+                  <span>Reps completed</span>
+                  <div className="numeric-input">
+                    <button
+                      type="button"
+                      aria-label={`Decrease segment ${index + 1} repetitions by one`}
+                      onClick={() =>
+                        onChangeSegment(segment.id, {
+                          reps: Math.max(0, (segment.reps ?? 0) - 1),
+                        })
+                      }
+                    >
+                      −
+                    </button>
+                    <input
+                      aria-label={`Segment ${index + 1} completed repetitions`}
+                      inputMode="numeric"
+                      min="0"
+                      step="1"
+                      type="number"
+                      value={segment.reps ?? 0}
+                      onChange={(event) =>
+                        onChangeSegment(segment.id, {
+                          reps: Number(event.target.value),
+                        })
+                      }
+                    />
+                    <b>reps</b>
+                    <button
+                      type="button"
+                      aria-label={`Increase segment ${index + 1} repetitions by one`}
+                      onClick={() =>
+                        onChangeSegment(segment.id, {
+                          reps: (segment.reps ?? 0) + 1,
+                        })
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                </label>
+              ) : null}
+
+              {usesDuration ? (
+                <label>
+                  <span>Duration</span>
+                  <div className="numeric-input">
+                    <button
+                      type="button"
+                      aria-label="Decrease duration by 30 seconds"
+                      onClick={() =>
+                        onChangeSegment(segment.id, {
+                          durationSeconds: Math.max(
+                            0,
+                            (segment.durationSeconds ?? 0) - 30,
+                          ),
+                        })
+                      }
+                    >
+                      −
+                    </button>
+                    <output
+                      aria-label={`Completed duration ${formatClock(segment.durationSeconds ?? 0)}`}
+                    >
+                      {formatClock(segment.durationSeconds ?? 0)}
+                    </output>
+                    <b>min:sec</b>
+                    <button
+                      type="button"
+                      aria-label="Increase duration by 30 seconds"
+                      onClick={() =>
+                        onChangeSegment(segment.id, {
+                          durationSeconds: (segment.durationSeconds ?? 0) + 30,
+                        })
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                </label>
+              ) : null}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      {planned.tracking === "weight-reps" ? (
+        <button className="add-segment" onClick={onAddSegment} type="button">
+          Add drop or partial segment
+          <span>Record another weight × reps portion in this set</span>
+        </button>
       ) : null}
 
       {planned.setType === "Working" ? (
@@ -1730,7 +1980,9 @@ function ActualInputs({
             aria-label="Actual RPE"
             value={record.actualRpe ?? ""}
             onChange={(event) =>
-              onChange({ actualRpe: event.target.value ? Number(event.target.value) : null })
+              onChangeRecord({
+                actualRpe: event.target.value ? Number(event.target.value) : null,
+              })
             }
           >
             <option value="">—</option>
@@ -1749,19 +2001,25 @@ function ActualInputs({
 function CorrectionPanel({
   planned,
   record,
-  onChange,
+  onChangeRecord,
+  onChangeSegment,
+  onAddSegment,
+  onRemoveSegment,
   onClose,
   onComplete,
   onSkip,
 }: {
   planned: PlannedStep;
-  record: SetRecord;
-  onChange: (patch: Partial<SetRecord>) => void;
+  record: ExecutionRecord;
+  onChangeRecord: (patch: Partial<ExecutionRecord>) => void;
+  onChangeSegment: (segmentId: string, patch: Partial<SetSegment>) => void;
+  onAddSegment: () => void;
+  onRemoveSegment: (segmentId: string) => void;
   onClose: () => void;
   onComplete: () => void;
   onSkip: () => void;
 }) {
-  const valid = recordIsValid(planned, record);
+  const valid = executionIsValid(record);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -1821,7 +2079,14 @@ function CorrectionPanel({
       </div>
       <fieldset className="actuals-fieldset">
         <legend>Recorded result</legend>
-        <ActualInputs planned={planned} record={record} onChange={onChange} />
+        <ActualInputs
+          planned={planned}
+          record={record}
+          onChangeRecord={onChangeRecord}
+          onChangeSegment={onChangeSegment}
+          onAddSegment={onAddSegment}
+          onRemoveSegment={onRemoveSegment}
+        />
       </fieldset>
       {!valid && record.status === "completed" ? (
         <p className="input-error" role="alert">
@@ -1857,6 +2122,7 @@ function RestBoard({
   previousRecord,
   restSeconds,
   onAddRest,
+  onAddExtra,
   onTogglePause,
   onBegin,
   onUndo,
@@ -1864,9 +2130,10 @@ function RestBoard({
   session: WorkoutSession;
   currentSet: PlannedStep;
   previousSet: PlannedStep;
-  previousRecord: SetRecord;
+  previousRecord: ExecutionRecord;
   restSeconds: number;
   onAddRest: (seconds: number) => void;
+  onAddExtra: () => void;
   onTogglePause: () => void;
   onBegin: () => void;
   onUndo: () => void;
@@ -1881,7 +2148,12 @@ function RestBoard({
       >
         <span>{paused ? "REST PAUSED" : restSeconds === 0 ? "REST COMPLETE" : "RESTING"}</span>
         <strong>{formatClock(restSeconds)}</strong>
-        <small>Planned {formatClock(session.plannedRestSeconds)}</small>
+        <small>
+          Authored {formatClock(session.authoredRestSeconds)}
+          {session.adjustedRestSeconds !== session.authoredRestSeconds
+            ? ` · adjusted ${formatClock(session.adjustedRestSeconds)}`
+            : ""}
+        </small>
       </div>
 
       <div className={restSeconds <= 10 ? "rest-progress warning" : "rest-progress"} aria-hidden="true">
@@ -1889,8 +2161,8 @@ function RestBoard({
           style={{
             transform: `scaleX(${Math.min(
               1,
-              session.plannedRestSeconds
-                ? restSeconds / session.plannedRestSeconds
+              session.adjustedRestSeconds
+                ? restSeconds / session.adjustedRestSeconds
                 : 0,
             )})`,
           }}
@@ -1925,6 +2197,12 @@ function RestBoard({
         <button onClick={onTogglePause}>{paused ? "Resume" : "Pause"}</button>
       </div>
 
+      {previousSet.tracking === "weight-reps" ? (
+        <button className="secondary-action" onClick={onAddExtra} type="button">
+          Add another {previousSet.exercise} set
+        </button>
+      ) : null}
+
       <button className="action-slab" onClick={onBegin}>
         {restSeconds === 0 ? "Start next step" : "Skip rest"}
         <span>{formatStepTarget(currentSet)}</span>
@@ -1935,39 +2213,52 @@ function RestBoard({
 
 function SetRail({
   session,
-  steps,
+  executions,
   onEdit,
 }: {
   session: WorkoutSession;
-  steps: PlannedStep[];
-  onEdit: (index: number) => void;
+  executions: ExecutionRecord[];
+  onEdit: (record: ExecutionRecord) => void;
 }) {
   return (
     <aside className="set-rail">
       <div className="rail-heading">
-        <span>ORDER LOCKED · SESSION PLAN</span>
-        <strong>{session.activeIndex + 1}/{steps.length}</strong>
+        <span>PLAN + ACTUAL SESSION QUEUE</span>
+        <strong>{session.activeIndex + 1}/{executions.length}</strong>
       </div>
       <ol>
-        {steps.map((set, index) => {
-          const record = session.records[index];
+        {executions.map((record, index) => {
+          const set = record.step;
           const state = statusLabel(record, index, session.activeIndex);
+          const deviation =
+            record.source === "extra"
+              ? "Extra"
+              : record.deferred
+                ? "Deferred"
+                : executionIsModified(record) && record.status === "completed"
+                  ? "Modified"
+                  : null;
           return (
             <li
-              key={set.id}
+              key={record.id}
               className={`${record.status} ${index === session.activeIndex ? "current" : ""}`}
             >
-              <span className="rail-index">{String(index + 1).padStart(2, "0")}</span>
+              <span className="rail-index">
+                {record.plannedPosition === null
+                  ? "+"
+                  : String(record.plannedPosition).padStart(2, "0")}
+              </span>
               <div>
                 <strong>{set.exercise}</strong>
                 <small>{set.setType} · {formatStepTarget(set)}</small>
+                {deviation ? <em>{deviation}</em> : null}
               </div>
               {record.status === "pending" ? (
                 <b>{state}</b>
               ) : (
                 <button
                   className="rail-edit"
-                  onClick={() => onEdit(index)}
+                  onClick={() => onEdit(record)}
                   type="button"
                 >
                   Edit {state}
@@ -1978,6 +2269,83 @@ function SetRail({
         })}
       </ol>
     </aside>
+  );
+}
+
+function ExecutionLedger({
+  executions,
+}: {
+  executions: ExecutionRecord[];
+}) {
+  return (
+    <section className="execution-ledger" aria-label="Planned and actual execution ledger">
+      <div className="ledger-heading">
+        <div>
+          <span className="section-code">PLAN / ACTUAL LEDGER</span>
+          <h2>What the session asked for—and what happened.</h2>
+        </div>
+        <span>{executions.length} entries</span>
+      </div>
+      <ol>
+        {executions.map((record, index) => {
+          const status =
+            record.status === "skipped"
+              ? "Skipped"
+              : record.source === "extra"
+                ? "Extra"
+                : record.deferred
+                  ? "Deferred"
+                  : executionIsModified(record)
+                    ? "Modified"
+                    : "As planned";
+          return (
+            <li key={record.id}>
+              <div className="ledger-position">
+                <span>PLAN</span>
+                <strong>
+                  {record.plannedPosition === null
+                    ? "—"
+                    : String(record.plannedPosition).padStart(2, "0")}
+                </strong>
+                <small>Actual {record.performedPosition ?? index + 1}</small>
+              </div>
+              <div className="ledger-result">
+                <div>
+                  <strong>{record.step.exercise}</strong>
+                  <span className={`ledger-status ${status.toLowerCase().replace(" ", "-")}`}>
+                    {status}
+                  </span>
+                </div>
+                <p>
+                  <span>Planned</span>
+                  {formatStepTarget(record.step)}
+                </p>
+                <p>
+                  <span>Actual</span>
+                  {record.status === "skipped"
+                    ? "Skipped"
+                    : recordSummary(record.step, record)}
+                </p>
+              </div>
+              <div className="ledger-rest">
+                <span>REST AFTER</span>
+                <strong>
+                  {record.actualRestSeconds === null
+                    ? "—"
+                    : formatClock(record.actualRestSeconds)}
+                </strong>
+                <small>
+                  Plan {formatClock(record.authoredRestSeconds)}
+                  {record.adjustedRestSeconds !== record.authoredRestSeconds
+                    ? ` · target ${formatClock(record.adjustedRestSeconds)}`
+                    : ""}
+                </small>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 
