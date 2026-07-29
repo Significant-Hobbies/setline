@@ -69,31 +69,8 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 - Detailed per-set execution history preserved on device and in authenticated
   cloud state.
 
-## Todo / Planned / Deferred / Blocked
+## Work queue
 
-### Planned
-
-1. Add manual programme/workout authoring and duplication.
-2. Add validated JSON import/export with preview.
-3. Add browser/email reminders.
-4. Add deterministic progression recommendations with explicit accept/edit/keep actions.
-5. Expand exercise, workout, and programme analytics from recorded history.
-6. Add self-service cloud-data deletion and account management.
-
-### Deferred
-
-- Precise start/finish set mode until the one-tap simple mode is validated.
-- Weekly gap analysis, cardio improvement graphs, and cross-session adherence
-  views until the detailed execution ledger has accumulated real sessions.
-- CSV import, exercise library authoring, distance/speed metrics, supersets,
-  and circuits until the core player is retained.
-- Replace the Vinext-compatible Next.js toolchain when upstream releases remove
-  the remaining embedded PostCSS and Sharp advisories. This owner-only release
-  does not accept arbitrary CSS or use Next image optimization, the affected
-  runtime paths identified by the production audit.
-- Native Apple Health, Apple Watch, heart rate, and sensor capture until the web product proves useful.
-- Internal AI, automatic programme generation, extraction, form analysis, social, trainer, meal, and recovery features per the PRD.
-
-### Blocked
-
-- None.
+Open work is tracked only in [GitHub Issues](https://github.com/sass-maker/fleet-workspace/issues?q=is%3Aissue+is%3Aopen+label%3A%22product%3Asetline%22).
+An open issue is a to-do, a linked pull request is in progress, and merge plus
+issue closure makes the work done.
