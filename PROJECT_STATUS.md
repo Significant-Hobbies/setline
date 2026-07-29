@@ -29,10 +29,16 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
   and refined the visual system to reserve lime for active actions and status.
 - 2026-07-28 — Released flexible session execution with partial/drop segments,
   extra and deferred sets, actual rest cadence, and detailed history.
+- 2026-07-29 — Moved Setline out of Fleet Workspace into the private
+  `Significant-Hobbies/setline` repository with its product history, status,
+  specifications, and GitHub issue queue. Fleet retains catalog and monitoring
+  links only. No deployment or DNS change was performed.
 
 ## Products
 
-- `foundry/apps/setline/` — installable mobile-first Setline web app.
+- Repository root — installable mobile-first Setline web app.
+- [Private GitHub repository](https://github.com/Significant-Hobbies/setline) —
+  canonical source, product planning, and issue owner.
 - `https://setline.significanthobbies.com` — live Cloudflare Worker production
   surface.
 - [Private Sites deployment](https://setline-workout.sarthak927.chatgpt.site) —
@@ -71,6 +77,7 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Work queue
 
-Open work is tracked only in [GitHub Issues](https://github.com/sass-maker/fleet-workspace/issues?q=is%3Aissue+is%3Aopen+label%3A%22product%3Asetline%22).
+Open work is tracked only in
+[GitHub Issues](https://github.com/Significant-Hobbies/setline/issues).
 An open issue is a to-do, a linked pull request is in progress, and merge plus
 issue closure makes the work done.

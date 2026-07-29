@@ -1,5 +1,5 @@
 {
-  "name": "@fleet/setline",
+  "name": "@significant-hobbies/setline",
   "version": "0.1.0",
   "private": true,
   "description": "Mobile-first workout execution tracker",
@@ -15,7 +15,7 @@
     "types:worker": "wrangler types --config wrangler.jsonc --env-interface CloudflareBindings",
     "db:migrate:local": "wrangler d1 migrations apply setline --local",
     "db:migrate:remote": "wrangler d1 migrations apply setline --remote",
-    "deploy": "npm run check && bash ../../../foundry/ops/scripts/fleet-deploy-guard.sh setline && wrangler deploy --config dist/server/wrangler.json --tag \"$(git rev-parse HEAD)\"",
+    "deploy": "npm run check && bash ../foundry/ops/scripts/fleet-deploy-guard.sh setline && wrangler deploy --config dist/server/wrangler.json --tag \"$(git rev-parse HEAD)\"",
     "test": "npm run build && node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
