@@ -21,6 +21,8 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-29 — Added an owned `/changelog` with verified release outcomes and
+  direct GitHub Roadmap and Source links.
 - 2026-07-27 — Scoped and built the first Setline workout-player release from the supplied PRD.
 - 2026-07-27 — Published version 1 as an owner-only Sites deployment.
 - 2026-07-27 — Added optional Google sign-in, private D1 synchronization,
@@ -46,6 +48,7 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Features (shipped)
 
+- Public editorial product changelog at `/changelog`.
 - Dated seven-day schedule for the supplied 12-week strength, cardio, and
   mobility programme.
 - Exact authored exercise and set order across Upper, Lower, easy cardio, hard

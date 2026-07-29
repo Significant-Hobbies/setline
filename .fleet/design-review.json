@@ -2,7 +2,7 @@
   "$schema": "fleet.design-review.v1",
   "version": 1,
   "project": "setline",
-  "target": "flexible workout input and actual rest cadence",
+  "target": "Owned product changelog",
   "mode": "preserve",
   "register": "product",
   "context": {
@@ -14,29 +14,29 @@
     "probes": [],
     "selected": "existing-design",
     "approval": "not-required",
-    "before": "artifacts/design/before-flexible-player-390.png"
+    "before": "artifacts/design/before.png"
   },
   "evidence": {
     "screenshots": [
       {
         "width": 390,
-        "path": "artifacts/design/after-flexible-player-390.png"
+        "path": "artifacts/design/after-390.png"
       },
       {
         "width": 768,
-        "path": "artifacts/design/after-flexible-player-768.png"
+        "path": "artifacts/design/after-768.png"
       },
       {
         "width": 1440,
-        "path": "artifacts/design/after-flexible-player-1440.png"
+        "path": "artifacts/design/after-1440.png"
       }
     ],
     "projectCheck": {
-      "command": "npm run check",
+      "command": "npm run check && git diff --check",
       "status": "pass"
     },
     "critique": {
-      "score": 35,
+      "score": 36,
       "maximum": 40
     },
     "audit": {
@@ -49,11 +49,13 @@
     },
     "detector": {
       "posture": "advisory",
-      "findings": []
+      "findings": [
+        "The detector reported one pre-existing inset badge stripe in the workout UI, outside the changelog surface."
+      ]
     }
   },
   "ownerFeedback": {
     "decision": "delegated",
-    "note": "Owner approved the preserve-lane implementation with Go for it; lime remains reserved for the primary completion action."
+    "note": "The owner explicitly delegated changelog implementation across all projects on 2026-07-29."
   }
 }

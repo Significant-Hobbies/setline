@@ -1376,7 +1376,10 @@ function AccountChoice({
 
         <p className="account-legal">
           By continuing with Google, you agree to the <Link href="/terms">terms</Link>{" "}
-          and acknowledge the <Link href="/privacy">privacy notice</Link>.
+          and acknowledge the <Link href="/privacy">privacy notice</Link>. Read the{" "}
+          <Link href="/changelog">changelog</Link>, view the{" "}
+          <a href="https://github.com/Significant-Hobbies/setline/issues">roadmap</a>, or inspect the{" "}
+          <a href="https://github.com/Significant-Hobbies/setline">source</a>.
         </p>
       </section>
     </main>
@@ -1433,6 +1436,9 @@ function AccountControl({
         <strong>{accountState.account.name}</strong>
         <span>{accountState.account.email}</span>
         <small>{syncLabel}</small>
+        <Link href="/changelog">Changelog</Link>
+        <a href="https://github.com/Significant-Hobbies/setline/issues">Roadmap</a>
+        <a href="https://github.com/Significant-Hobbies/setline">Source</a>
         {syncStatus === "error" ? (
           <button disabled={busy} onClick={onRetry} type="button">
             Retry sync
