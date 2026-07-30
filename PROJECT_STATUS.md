@@ -21,6 +21,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-30 — Made the canonical GitHub repository publicly readable. This
+  changes source visibility only; authenticated workout data remains private
+  and no deployment, DNS, or licensing change was made.
 - 2026-07-29 — Added an owned `/changelog` with verified release outcomes and
   direct GitHub Roadmap and Source links.
 - 2026-07-27 — Scoped and built the first Setline workout-player release from the supplied PRD.
@@ -39,7 +42,7 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 ## Products
 
 - Repository root — installable mobile-first Setline web app.
-- [Private GitHub repository](https://github.com/Significant-Hobbies/setline) —
+- [Public GitHub repository](https://github.com/Significant-Hobbies/setline) —
   canonical source, product planning, and issue owner.
 - `https://setline.significanthobbies.com` — live Cloudflare Worker production
   surface.
