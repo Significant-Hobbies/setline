@@ -21,6 +21,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-30 — made the repository independently operable by removing its
+  sibling Fleet release dependency while preserving the full local check and
+  SHA-tagged manual Worker deploy contract.
 - 2026-07-30 — Made the canonical GitHub repository publicly readable. This
   changes source visibility only; authenticated workout data remains private
   and no deployment, DNS, or licensing change was made.
