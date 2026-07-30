@@ -1,5 +1,6 @@
 /** Cloudflare Worker entry point for Setline. */
 import handler from "vinext/server/app-router-entry";
+import { handleAgentEdge } from "./agent-edge.mjs";
 import { createAuth, isGoogleConfigured, type SetlineBindings } from "./auth";
 import { handlePrivateState } from "./state";
 
@@ -34,6 +35,8 @@ const worker = {
     ctx: ExecutionContext,
   ): Promise<Response> {
     const url = new URL(request.url);
+    const agentResponse = handleAgentEdge(request);
+    if (agentResponse) return agentResponse;
 
     if (url.pathname === "/api/health" && request.method === "GET") {
       return json({

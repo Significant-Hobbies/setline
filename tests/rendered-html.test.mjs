@@ -41,6 +41,21 @@ test("server-renders the Setline restoration shell and public legal pages", asyn
   assert.match(await terms.text(), /Terms of use/);
 });
 
+test("serves public agent discovery before the private application routes", async () => {
+  const [llms, catalog, markdown] = await Promise.all([
+    render("/llms.txt"),
+    render("/api/ai"),
+    render("/index.md"),
+  ]);
+  assert.equal(llms.status, 200);
+  assert.match(llms.headers.get("content-type") ?? "", /text\/plain/i);
+  assert.match(await llms.text(), /^# Setline/);
+  assert.equal(catalog.status, 200);
+  assert.deepEqual((await catalog.json()).name, "Setline");
+  assert.equal(markdown.status, 200);
+  assert.match(markdown.headers.get("content-type") ?? "", /text\/markdown/i);
+});
+
 test("ships the installable offline shell and local workout state", async () => {
   const [manifest, serviceWorker, page, workoutState, programme, authSchema] = await Promise.all([
     readFile(new URL("../app/manifest.ts", import.meta.url), "utf8"),

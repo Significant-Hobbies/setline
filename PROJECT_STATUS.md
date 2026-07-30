@@ -21,6 +21,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-31 — prepared and locally verified public agent discovery for the
+  product, changelog, privacy, and terms surfaces without exposing private
+  workout state; production deployment remains separate.
 - 2026-07-30 — made the repository independently operable by removing its
   sibling Fleet release dependency while preserving the full local check and
   SHA-tagged manual Worker deploy contract.

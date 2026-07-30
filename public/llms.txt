@@ -1,0 +1,16 @@
+# Setline
+
+> Mobile-first execution layer for following a structured workout programme precisely.
+
+## Product
+
+- [Home](https://setline.significanthobbies.com/): Workout execution app
+- [Privacy](https://setline.significanthobbies.com/privacy): Device and private cloud data handling
+- [Terms](https://setline.significanthobbies.com/terms): Product terms
+- [Changelog](https://setline.significanthobbies.com/changelog): Verified product releases
+
+## Machine surfaces
+
+- [Agent catalog](https://setline.significanthobbies.com/api/ai): JSON inventory of public surfaces
+- [Homepage markdown](https://setline.significanthobbies.com/index.md): Product brief without JS
+- [This index](https://setline.significanthobbies.com/llms.txt)
