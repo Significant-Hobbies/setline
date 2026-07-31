@@ -1304,9 +1304,15 @@ function AccountLoading() {
   return (
     <main className="account-shell" aria-busy="true">
       <section className="account-board loading">
-        <span className="section-code">SETLINE · LOADING</span>
-        <h1>Your plan is coming back.</h1>
-        <p>Restoring this device’s saved state.</p>
+        <div className="account-wordmark">SETLINE</div>
+        <div className="account-heading">
+          <span className="section-code">ACCOUNT OR DEVICE · YOUR CALL</span>
+          <h1>Keep the plan close.</h1>
+          <p>
+            Google sign-in keeps one private Setline workout copy available across devices.
+            Device-only mode keeps everything in this browser.
+          </p>
+        </div>
       </section>
     </main>
   );
