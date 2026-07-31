@@ -13,6 +13,11 @@ import {
   MAX_CUSTOM_WORKOUTS,
   type CustomWorkoutTemplate,
 } from "./custom-workouts";
+import {
+  isCustomProgramme,
+  MAX_CUSTOM_PROGRAMME_WEEKS,
+  type CustomProgramme,
+} from "./custom-programme";
 
 export type SessionPhase = "active" | "rest" | "summary";
 export type ExecutionStatus = "pending" | "completed" | "skipped";
@@ -103,11 +108,12 @@ export type HistoryEntry = {
 };
 
 export type StoredState = {
-  version: 5;
+  version: 6;
   updatedAt: number;
   session: WorkoutSession | null;
   history: HistoryEntry[];
   customWorkouts: CustomWorkoutTemplate[];
+  customProgramme: CustomProgramme | null;
 };
 
 export type SessionMetrics = {
@@ -273,7 +279,10 @@ function isWorkoutSession(value: unknown): value is WorkoutSession {
     !session.workoutName ||
     !Number.isInteger(session.weekNumber) ||
     (session.weekNumber ?? 0) < 1 ||
-    (session.weekNumber ?? 13) > 12 ||
+    (session.weekNumber ?? MAX_CUSTOM_PROGRAMME_WEEKS + 1) >
+      (String(session.workoutId).startsWith("custom:")
+        ? MAX_CUSTOM_PROGRAMME_WEEKS
+        : 12) ||
     !Number.isInteger(session.dayIndex) ||
     (session.dayIndex ?? -1) < 0 ||
     (session.dayIndex ?? 7) > 6 ||
@@ -347,7 +356,10 @@ function isHistoryEntry(value: unknown): value is HistoryEntry {
     entry.workoutName.length > 0 &&
     Number.isInteger(entry.weekNumber) &&
     (entry.weekNumber ?? 0) >= 1 &&
-    (entry.weekNumber ?? 13) <= 12 &&
+    (entry.weekNumber ?? MAX_CUSTOM_PROGRAMME_WEEKS + 1) <=
+      (String(entry.workoutId).startsWith("custom:")
+        ? MAX_CUSTOM_PROGRAMME_WEEKS
+        : 12) &&
     isNonNegativeNumber(entry.completedAt) &&
     isNonNegativeNumber(entry.durationSeconds) &&
     isNonNegativeNumber(entry.completedSets) &&
@@ -892,11 +904,12 @@ function migrateV1OrV2Session(value: unknown): WorkoutSession | null | undefined
 
 export function emptyStoredState(): StoredState {
   return {
-    version: 5,
+    version: 6,
     updatedAt: 0,
     session: null,
     history: [],
     customWorkouts: [],
+    customProgramme: null,
   };
 }
 
@@ -911,9 +924,10 @@ export function parseStoredState(
     session?: unknown;
     history?: unknown;
     customWorkouts?: unknown;
+    customProgramme?: unknown;
   };
 
-  if (candidate.version === 5) {
+  if (candidate.version === 6) {
     const session =
       candidate.session === null || isWorkoutSession(candidate.session)
         ? candidate.session
@@ -932,21 +946,41 @@ export function parseStoredState(
         candidate.customWorkouts.length
         ? candidate.customWorkouts
         : undefined;
+    const customProgramme =
+      candidate.customProgramme === null ||
+      isCustomProgramme(
+        candidate.customProgramme,
+        new Set(
+          customWorkouts?.map((workout) => workout.id) ?? [],
+        ),
+      )
+        ? candidate.customProgramme
+        : undefined;
     if (
       session === undefined ||
       history === undefined ||
       customWorkouts === undefined ||
+      customProgramme === undefined ||
       !isNonNegativeNumber(candidate.updatedAt)
     ) {
       return null;
     }
     return {
-      version: 5,
+      version: 6,
       updatedAt: candidate.updatedAt,
       session,
       history,
       customWorkouts,
+      customProgramme,
     };
+  }
+
+  if (candidate.version === 5) {
+    return parseStoredState({
+      ...candidate,
+      version: 6,
+      customProgramme: null,
+    });
   }
 
   if (candidate.version === 4) {
@@ -973,11 +1007,12 @@ export function parseStoredState(
       return null;
     }
     return {
-      version: 5,
+      version: 6,
       updatedAt: candidate.updatedAt,
       session,
       history,
       customWorkouts: [],
+      customProgramme: null,
     };
   }
 
@@ -990,7 +1025,7 @@ export function parseStoredState(
     });
     if (session === undefined || history === undefined) return null;
     return {
-      version: 5,
+      version: 6,
       updatedAt:
         candidate.version === 2 &&
         isNonNegativeNumber(candidate.updatedAt)
@@ -999,6 +1034,7 @@ export function parseStoredState(
       session,
       history,
       customWorkouts: [],
+      customProgramme: null,
     };
   }
   return null;
@@ -1015,12 +1051,17 @@ export function parseStoredStateJson(raw: string | null) {
 
 export function updateStoredState(
   current: StoredState,
-  patch: Partial<Pick<StoredState, "session" | "history" | "customWorkouts">>,
+  patch: Partial<
+    Pick<
+      StoredState,
+      "session" | "history" | "customWorkouts" | "customProgramme"
+    >
+  >,
 ): StoredState {
   return {
     ...current,
     ...patch,
-    version: 5,
+    version: 6,
     updatedAt: Math.max(Date.now(), current.updatedAt + 1),
   };
 }

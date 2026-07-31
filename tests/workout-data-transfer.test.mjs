@@ -115,10 +115,11 @@ test("previews a valid active session without mutating the export", () => {
   });
   assert.equal(result.preview.historyCount, 0);
   assert.equal(result.preview.customWorkoutCount, 0);
+  assert.equal(result.preview.customProgramme, null);
   assert.equal(result.preview.latestWorkout, null);
 });
 
-test("round-trips custom templates in the whole-state backup", () => {
+test("round-trips custom templates and previews their programme", () => {
   const custom = customWorkouts.duplicateWorkoutTemplate(
     resolveWorkout("lower", 1, 2),
     "custom:backup",
@@ -128,6 +129,17 @@ test("round-trips custom templates in the whole-state backup", () => {
     ...workoutState.emptyStoredState(),
     updatedAt: 2_000,
     customWorkouts: [custom],
+    customProgramme: {
+      name: "Strength block",
+      startsOn: "2026-07-27",
+      weekCount: 4,
+      enabled: true,
+      assignments: [
+        { weekNumber: 1, dayIndex: 2, workoutId: custom.id },
+      ],
+      createdAt: 1_000,
+      updatedAt: 2_000,
+    },
   };
   const raw = transfer.serializeWorkoutData(
     state,
@@ -137,9 +149,43 @@ test("round-trips custom templates in the whole-state backup", () => {
 
   assert.equal(result.status, "ok");
   assert.equal(result.preview.customWorkoutCount, 1);
+  assert.deepEqual(result.preview.customProgramme, {
+    name: "Strength block",
+    enabled: true,
+    startsOn: "2026-07-27",
+    weekCount: 4,
+    assignmentCount: 1,
+  });
   assert.deepEqual(result.preview.state.customWorkouts, [
     JSON.parse(JSON.stringify(custom)),
   ]);
+});
+
+test("rejects a programme with a dangling custom-workout assignment", () => {
+  const state = {
+    ...workoutState.emptyStoredState(),
+    customProgramme: {
+      name: "Broken block",
+      startsOn: "2026-07-27",
+      weekCount: 1,
+      enabled: true,
+      assignments: [
+        { weekNumber: 1, dayIndex: 0, workoutId: "custom:missing" },
+      ],
+      createdAt: 1_000,
+      updatedAt: 1_000,
+    },
+  };
+  const raw = JSON.stringify(
+    transfer.createWorkoutDataEnvelope(
+      state,
+      new Date("2026-07-31T03:00:00.000Z"),
+    ),
+  );
+  assert.equal(
+    transfer.parseWorkoutDataImport(raw).message,
+    "This Setline export contains invalid workout data or exercise order.",
+  );
 });
 
 test("rejects malformed, unknown, and invalid workout exports", () => {
@@ -197,8 +243,9 @@ test("migrates a supported legacy state inside the transfer envelope", () => {
   );
 
   assert.equal(result.status, "ok");
-  assert.equal(result.preview.state.version, 5);
+  assert.equal(result.preview.state.version, 6);
   assert.deepEqual(result.preview.state.customWorkouts, []);
+  assert.equal(result.preview.state.customProgramme, null);
   assert.equal(result.preview.state.updatedAt, 7_000);
 });
 

@@ -75,7 +75,7 @@ test("rejects empty, reordered-id, unbounded, and modality-invalid templates", (
   );
 });
 
-test("migrates version 4 state and round-trips valid version 5 templates", () => {
+test("migrates version 4 state and round-trips valid version 6 templates", () => {
   const versionFour = {
     version: 4,
     updatedAt: 42,
@@ -84,11 +84,12 @@ test("migrates version 4 state and round-trips valid version 5 templates", () =>
   };
   const migrated = workoutState.parseStoredState(versionFour, 99);
   assert.deepEqual(migrated, {
-    version: 5,
+    version: 6,
     updatedAt: 42,
     session: null,
     history: [],
     customWorkouts: [],
+    customProgramme: null,
   });
 
   const custom = customWorkouts.duplicateWorkoutTemplate(

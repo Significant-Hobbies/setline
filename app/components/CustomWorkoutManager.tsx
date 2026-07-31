@@ -20,6 +20,7 @@ import {
 } from "../lib/programme";
 
 type Props = {
+  authoringLocked?: boolean;
   builtInWorkouts: WorkoutTemplate[];
   customWorkouts: CustomWorkoutTemplate[];
   onDelete: (id: CustomWorkoutTemplate["id"]) => void;
@@ -84,6 +85,7 @@ function stepForTracking(step: PlannedStep, tracking: TrackingKind): PlannedStep
 }
 
 export function CustomWorkoutManager({
+  authoringLocked = false,
   builtInWorkouts,
   customWorkouts,
   onDelete,
@@ -315,6 +317,7 @@ export function CustomWorkoutManager({
         <button
           ref={newWorkoutButtonRef}
           type="button"
+          disabled={authoringLocked}
           onClick={(event) => beginNew(event.currentTarget)}
         >
           New workout
@@ -329,6 +332,11 @@ export function CustomWorkoutManager({
       {error ? (
         <p className="custom-workout-error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {authoringLocked ? (
+        <p className="custom-workout-lock" role="status">
+          Finish or discard the programme draft before changing workout templates.
         </p>
       ) : null}
 
@@ -616,6 +624,7 @@ export function CustomWorkoutManager({
                     </button>
                     <button
                       type="button"
+                      disabled={authoringLocked}
                       onClick={(event) =>
                         beginEdit(template, event.currentTarget)
                       }
@@ -624,6 +633,7 @@ export function CustomWorkoutManager({
                     </button>
                     <button
                       type="button"
+                      disabled={authoringLocked}
                       onClick={(event) =>
                         beginDuplicate(template, event.currentTarget)
                       }
@@ -632,6 +642,7 @@ export function CustomWorkoutManager({
                     </button>
                     <button
                       type="button"
+                      disabled={authoringLocked}
                       onClick={() => deleteTemplate(template)}
                     >
                       Delete
@@ -655,6 +666,7 @@ export function CustomWorkoutManager({
               <button
                 type="button"
                 key={template.id}
+                disabled={authoringLocked}
                 onClick={(event) =>
                   beginDuplicate(template, event.currentTarget)
                 }

@@ -2,7 +2,7 @@
   "$schema": "fleet.design-review.v1",
   "version": 1,
   "project": "setline",
-  "target": "Custom workout templates",
+  "target": "Custom workout programme schedule",
   "mode": "preserve",
   "register": "product",
   "context": {
@@ -14,33 +14,33 @@
     "probes": [],
     "selected": "existing-design",
     "approval": "not-required",
-    "before": "artifacts/design/workout-data-after-390.png"
+    "before": "artifacts/design/custom-workout-editor-390.png"
   },
   "evidence": {
     "screenshots": [
       {
         "width": 390,
-        "path": "artifacts/design/custom-workout-editor-390.png"
+        "path": "artifacts/design/custom-programme-390.png"
       },
       {
         "width": 768,
-        "path": "artifacts/design/custom-workout-editor-768.png"
+        "path": "artifacts/design/custom-programme-768.png"
       },
       {
         "width": 1440,
-        "path": "artifacts/design/custom-workout-editor-1440.png"
+        "path": "artifacts/design/custom-programme-1440.png"
       }
     ],
     "projectCheck": {
-      "command": "npm run check && openspec validate --all --strict && git diff --check",
+      "command": "npm run check && openspec validate add-custom-workout-programme-scheduling --strict && git diff --check",
       "status": "pass"
     },
     "critique": {
-      "score": 35,
+      "score": 36,
       "maximum": 40
     },
     "audit": {
-      "score": 20,
+      "score": 18,
       "maximum": 20
     },
     "unresolved": {
@@ -49,13 +49,11 @@
     },
     "detector": {
       "posture": "advisory",
-      "findings": [
-        "One pre-existing side-tab warning on .day-chip and .sample-badge, outside the custom-workout surface."
-      ]
+      "findings": []
     }
   },
   "ownerFeedback": {
     "decision": "delegated",
-    "note": "The owner approved all work in this thread and delegated final judgment for this preserve-mode issue."
+    "note": "Owner delegated final release judgment in PRODUCT.md and approved the requested work."
   }
 }

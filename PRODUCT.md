@@ -29,8 +29,9 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 
 - This release includes Sarthak's dated 12-week strength, cardio, and mobility
   programme, a seven-day weekly overview, custom workout authoring and
-  duplication, guided workout execution, activity-appropriate recording,
-  timestamp-derived rest timing, local workout history, and basic progress.
+  duplication, one bounded 1–16 week custom programme, guided workout
+  execution, activity-appropriate recording, timestamp-derived rest timing,
+  local workout history, and basic progress.
 - Active workout actions must not depend on a network request.
 - Exercise and set order is immutable programme data, not a suggestion. A
   session starts in that exact authored order. The user may explicitly skip,
@@ -48,10 +49,15 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 - A user can create an ordered workout template, edit it, or duplicate a
   bundled or custom workout into an independent copy. Starting a workout takes
   an immutable snapshot, so later edits or deletion never rewrite an active
-  session or saved history. Multi-week calendar scheduling remains deferred.
+  session or saved history.
+- A user can place custom workouts into one named Monday-based 1–16 week
+  programme, explicitly leave days unplanned, copy a week forward, and enable
+  or pause the block. Today resolves the local calendar date without silently
+  falling back to the bundled plan for an in-range unplanned day. Multiple
+  saved or overlapping programmes remain deferred.
 - Versioned JSON transfer lets a user download and preview-replace the complete
-  workout state, including custom templates, on the current device. Importing
-  arbitrary workout formats remains deferred.
+  workout state, including custom templates and the custom programme, on the
+  current device. Importing arbitrary workout formats remains deferred.
 - Reminders, weekly gap analysis, cardio improvement graphs, full analytics, accepted progression
   recommendations, internal AI, Health integrations, sensors, social features,
   and coaching remain deferred.

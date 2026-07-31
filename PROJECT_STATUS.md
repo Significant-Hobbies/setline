@@ -21,6 +21,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-31 — added one bounded 1–16 week custom programme with explicit
+  Monday-based workout assignments, copy-forward authoring, enabled/paused
+  state, calendar-correct Today resolution, and version 6 whole-state transfer.
 - 2026-07-31 — added device-first custom workout authoring and independent
   duplication with ordered, modality-aware exercise targets; session and
   history snapshots remain unchanged after template edits or deletion.
@@ -103,6 +106,12 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
   and the existing offline-first workout player.
 - Custom templates included in private whole-state sync and versioned JSON
   backup/restore, while active sessions and history retain immutable snapshots.
+- One named 1–16 week custom programme with explicit seven-day assignments,
+  confirmed copy/shrink/delete actions, and enabled or paused state.
+- Calendar-correct Today resolution for scheduled custom workouts and explicit
+  unplanned days, with scheduled sessions retaining programme week/day context.
+- Programme assignments reference custom templates, clear atomically when a
+  template is deleted, and travel in private sync and JSON backup/restore.
 
 ## Work queue
 
