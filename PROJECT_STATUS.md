@@ -21,6 +21,10 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-31 — stabilized the server-rendered account shell so hydration no
+  longer introduces a late LCP heading; production-equivalent mobile
+  Lighthouse reached 99 with 1.81s LCP and zero CLS, while production
+  deployment remains manual.
 - 2026-07-31 — prepared and locally verified public agent discovery for the
   product, changelog, privacy, and terms surfaces without exposing private
   workout state; production deployment remains separate.
