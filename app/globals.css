@@ -8,6 +8,8 @@
   --lime: #b9e83f;
   --lime-dark: #83ad1d;
   --coral: #ff614d;
+  --coral-soft: #fff2ef;
+  --coral-ink: #78180f;
   --blue: #b9d8e8;
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-data: "Arial Narrow", "Aptos Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
@@ -1050,7 +1052,112 @@ button:disabled {
   text-align: right;
 }
 
+.workout-data-tools {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--ink);
+}
+
+.workout-data-tools h2 {
+  margin: 7px 0;
+  font-family: var(--font-data);
+  font-size: 1.7rem;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.workout-data-tools > p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.workout-data-actions,
+.workout-data-preview-actions {
+  display: grid;
+  margin-top: 16px;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workout-data-actions button,
+.workout-data-preview-actions button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--ink);
+  background: var(--chalk);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.workout-data-error {
+  margin-top: 14px !important;
+  padding: 10px;
+  border: 1px solid var(--coral);
+  background: var(--coral-soft);
+  color: var(--coral-ink) !important;
+}
+
+.workout-data-receipt {
+  margin-top: 14px !important;
+  padding: 10px;
+  border: 1px solid var(--ink);
+  background: var(--blue);
+  color: var(--ink) !important;
+  font-weight: 750;
+}
+
+.workout-data-preview {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--ink);
+  background: var(--blue);
+}
+
+.workout-data-preview > strong {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  font-family: var(--font-data);
+  font-size: 1rem;
+}
+
+.workout-data-preview dl {
+  margin: 12px 0;
+}
+
+.workout-data-preview dl > div {
+  align-items: flex-start;
+  padding: 9px 0;
+  border-color: rgb(24 38 46 / 28%);
+  gap: 12px;
+}
+
+.workout-data-preview dd {
+  max-width: 62%;
+  overflow-wrap: anywhere;
+}
+
+.workout-data-preview > p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.workout-data-preview-actions {
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+}
+
+.workout-data-preview-actions .workout-data-confirm {
+  background: var(--coral);
+}
+
 .danger-link {
+  margin-top: 28px;
   min-height: 44px;
   padding: 0;
   border: 0;

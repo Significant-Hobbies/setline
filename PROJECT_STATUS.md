@@ -21,6 +21,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-31 — added a versioned local JSON workout-data export and bounded
+  import preview with explicit whole-state replacement; no account credentials
+  or server-side data are included.
 - 2026-07-31 — stabilized the server-rendered account shell so hydration no
   longer introduces a late LCP heading; production-equivalent mobile
   Lighthouse reached 99 with 1.81s LCP and zero CLS, while production
@@ -73,6 +76,8 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 - Set skipping and ordered session rail.
 - Timestamp-derived automatic rest timer with pause, add-time, and skip/start controls.
 - Device-local active-session continuity and workout history.
+- Versioned JSON download plus validated, bounded import preview and explicit
+  whole-state replacement for local workout data.
 - Optional Google sign-in with one private, user-scoped D1 state copy.
 - Device-first changes with offline retry and deterministic whole-state
   reconciliation.
