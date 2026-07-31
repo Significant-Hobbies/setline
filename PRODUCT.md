@@ -31,7 +31,8 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
   programme, a seven-day weekly overview, custom workout authoring and
   duplication, one bounded 1–16 week custom programme, guided workout
   execution, activity-appropriate recording, timestamp-derived rest timing,
-  local workout history, and basic progress.
+  local workout history, basic progress, and deterministic session-only
+  progression recommendations.
 - Active workout actions must not depend on a network request.
 - Exercise and set order is immutable programme data, not a suggestion. A
   session starts in that exact authored order. The user may explicitly skip,
@@ -58,9 +59,13 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 - Versioned JSON transfer lets a user download and preview-replace the complete
   workout state, including custom templates and the custom programme, on the
   current device. Importing arbitrary workout formats remains deferred.
-- Reminders, weekly gap analysis, cardio improvement graphs, full analytics, accepted progression
-  recommendations, internal AI, Health integrations, sensors, social features,
-  and coaching remain deferred.
+- Eligible weight-and-repetition working sets can receive a deterministic
+  session-only load recommendation from the latest comparable recorded
+  workout. Setline requires explicit Accept, Edit, or Keep current input and
+  never mutates the authored programme or template.
+- Reminders, weekly gap analysis, cardio improvement graphs, full analytics,
+  internal AI, Health integrations, sensors, social features, and coaching
+  remain deferred.
 - Kilograms are the strength programme's default unit; cardio and mobility use
   their written duration or repetition dose.
 

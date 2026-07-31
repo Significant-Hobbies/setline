@@ -5,6 +5,14 @@ const repository = "https://github.com/Significant-Hobbies/setline";
 const releases = [
   {
     date: "2026-07-31",
+    title: "Progress the recorded work without rewriting the plan",
+    outcomes: [
+      "Eligible weighted working sets can use the latest comparable completed session to calculate a conservative 2.5 kg progression proposal.",
+      "Accept, Edit, or Keep current changes only this set’s actual inputs; the authored target, template, and future sessions remain unchanged.",
+    ],
+  },
+  {
+    date: "2026-07-31",
     title: "Put custom workouts on the calendar",
     outcomes: [
       "Write one explicit 1–16 week programme, assign custom workouts to Monday-based days, copy a week forward, and pause or resume the block.",

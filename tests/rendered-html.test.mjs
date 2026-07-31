@@ -66,6 +66,7 @@ test("ships the installable offline shell and local workout state", async () => 
     customProgramme,
     workoutState,
     programme,
+    progression,
     authSchema,
   ] = await Promise.all([
     readFile(new URL("../app/manifest.ts", import.meta.url), "utf8"),
@@ -82,6 +83,7 @@ test("ships the installable offline shell and local workout state", async () => 
     readFile(new URL("../app/lib/custom-programme.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/workout-state.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/programme.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/progression.ts", import.meta.url), "utf8"),
     readFile(new URL("../worker/schema.ts", import.meta.url), "utf8"),
   ]);
 
@@ -117,6 +119,10 @@ test("ships the installable offline shell and local workout state", async () => 
   assert.match(page, /Download Setline backup/);
   assert.match(page, /Restore from backup/);
   assert.match(page, /Replace with this backup/);
+  assert.match(page, /PROGRESSION AVAILABLE/);
+  assert.match(page, /Keep current/);
+  assert.match(progression, /suggestedWeight:\s*step\.targetWeight \+ 2\.5/);
+  assert.match(progression, /latestComparable\.executions\.length < 2/);
   assert.match(page, /CustomWorkoutManager/);
   assert.match(page, /CustomProgrammePlanner/);
   assert.match(page, /customWorkouts=\{workoutState\.customWorkouts\}/);

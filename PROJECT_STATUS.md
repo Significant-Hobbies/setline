@@ -21,6 +21,10 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-31 — added deterministic progression recommendations for eligible
+  weight-and-repetition working sets, with visible latest-session evidence and
+  explicit Accept, Edit, or Keep current actions that never rewrite authored
+  targets.
 - 2026-07-31 — added one bounded 1–16 week custom programme with explicit
   Monday-based workout assignments, copy-forward authoring, enabled/paused
   state, calendar-correct Today resolution, and version 6 whole-state transfer.
@@ -91,6 +95,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 - Public privacy notice and terms of use.
 - Honest summary with separate warm-up/working volume and calculated provenance.
 - Basic bench target context plus local recorded-volume signal.
+- Deterministic progression recommendations from the latest comparable
+  completed session, with calculated provenance and explicit session-only
+  Accept, Edit, or Keep current decisions.
 - Responsive phone, tablet, and desktop layouts.
 - PWA manifest, install metadata, service-worker shell, and offline-friendly local operation.
 - Immutable authored plans with a separate session execution queue.

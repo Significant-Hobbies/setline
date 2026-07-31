@@ -136,7 +136,8 @@ button {
 
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+summary:focus-visible {
   outline: 2px solid var(--lime);
   outline-offset: 3px;
   box-shadow: 0 0 0 3px var(--ink);
@@ -2163,6 +2164,198 @@ button:disabled {
   gap: 8px 20px;
 }
 
+.progression-decision {
+  margin-top: 14px;
+  border: 1px solid var(--ink);
+  background: var(--chalk);
+  box-shadow: 3px 3px 0 var(--blue);
+}
+
+.progression-decision-heading {
+  display: flex;
+  min-height: 64px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 11px 14px;
+  cursor: pointer;
+  gap: 16px;
+  list-style: none;
+}
+
+.progression-decision-heading::-webkit-details-marker {
+  display: none;
+}
+
+.progression-decision-heading h2 {
+  margin: 5px 0 0;
+  font-family: var(--font-data);
+  font-size: clamp(1.25rem, 5vw, 1.8rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.progression-review-label {
+  display: grid;
+  min-width: 62px;
+  min-height: 42px;
+  place-items: center;
+  align-self: center;
+  padding: 6px 9px;
+  border: 1px solid var(--ink);
+  background: var(--lime);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.progression-review-label span:last-child,
+.progression-decision[open] .progression-review-label span:first-child {
+  display: none;
+}
+
+.progression-decision[open] .progression-review-label span:last-child {
+  display: inline;
+}
+
+.progression-decision-body {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--ink);
+}
+
+.progression-decision-body > p {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.progression-decision .progression-boundary {
+  margin-top: 6px;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+}
+
+.progression-actions,
+.progression-edit-actions {
+  display: grid;
+  margin-top: 14px;
+  gap: 8px;
+}
+
+.progression-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.progression-actions button {
+  display: flex;
+  min-height: 54px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  padding: 8px 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+
+.progression-actions .progression-accept {
+  background: var(--lime);
+}
+
+.progression-actions button strong {
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.progression-actions button span {
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 0.64rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.progression-edit {
+  display: grid;
+  margin-top: 14px;
+  border-top: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.progression-edit label {
+  min-width: 0;
+  padding: 10px;
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.progression-edit label > span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.progression-edit label > div {
+  display: grid;
+  align-items: baseline;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.progression-edit input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-data);
+  font-size: 1.5rem;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.progression-edit b {
+  padding: 0 4px;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.progression-edit .input-error,
+.progression-edit-actions {
+  grid-column: 1 / -1;
+}
+
+.progression-edit .input-error {
+  margin: 10px;
+}
+
+.progression-edit-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.progression-edit-actions button {
+  min-height: 48px;
+  border: 0;
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.progression-edit-actions button[type="submit"] {
+  background: var(--lime);
+}
+
 .previous-strip {
   margin-top: 14px;
   padding: 12px;
@@ -2417,10 +2610,13 @@ button:disabled {
 }
 
 .attempt-actions {
+  margin-top: 18px;
+}
+
+.completion-action {
   position: sticky;
   z-index: 10;
   bottom: 12px;
-  margin-top: 18px;
   padding-top: 4px;
   background: linear-gradient(to bottom, transparent, var(--paper) 10px);
 }
@@ -3209,7 +3405,7 @@ button:disabled {
     grid-row: 1 / span 2;
   }
 
-  .attempt-actions {
+  .completion-action {
     position: static;
   }
 
@@ -3310,6 +3506,10 @@ button:disabled {
 
   .actuals-fieldset {
     grid-template-columns: 1fr;
+  }
+
+  .progression-decision-heading {
+    align-items: center;
   }
 
   .actuals-fieldset > label:last-child {
