@@ -2,6 +2,21 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 
+const SITE_ORIGIN = "https://setline.significanthobbies.com";
+const description =
+  "Build the plan once. Follow it precisely every day with guided sets, rest timing, and device-local workout history.";
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Setline",
+  applicationCategory: "HealthApplication",
+  operatingSystem: "Web",
+  url: `${SITE_ORIGIN}/`,
+  image: `${SITE_ORIGIN}/og.png`,
+  description,
+  sameAs: ["https://github.com/Significant-Hobbies/setline"],
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host =
@@ -12,14 +27,15 @@ export async function generateMetadata(): Promise<Metadata> {
     requestHeaders.get("x-forwarded-proto") ??
     (host.startsWith("localhost") ? "http" : "https");
   const origin = `${protocol}://${host}`;
-  const description =
-    "Build the plan once. Follow it precisely every day with guided sets, rest timing, and device-local workout history.";
 
   return {
     metadataBase: new URL(origin),
     title: "Setline — Workout execution tracker",
     description,
     applicationName: "Setline",
+    alternates: {
+      canonical: `${SITE_ORIGIN}/`,
+    },
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
@@ -65,6 +81,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
