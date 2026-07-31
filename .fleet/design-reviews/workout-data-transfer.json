@@ -1,0 +1,61 @@
+{
+  "$schema": "fleet.design-review.v1",
+  "version": 1,
+  "project": "setline",
+  "target": "Programme workout-data import and export",
+  "mode": "preserve",
+  "register": "product",
+  "context": {
+    "product": "PRODUCT.md",
+    "design": "DESIGN.md"
+  },
+  "direction": {
+    "references": [],
+    "probes": [],
+    "selected": "existing-design",
+    "approval": "not-required",
+    "before": "artifacts/design/workout-data-before-390.png"
+  },
+  "evidence": {
+    "screenshots": [
+      {
+        "width": 390,
+        "path": "artifacts/design/workout-data-after-390.png"
+      },
+      {
+        "width": 768,
+        "path": "artifacts/design/workout-data-after-768.png"
+      },
+      {
+        "width": 1440,
+        "path": "artifacts/design/workout-data-after-1440.png"
+      }
+    ],
+    "projectCheck": {
+      "command": "npm run check && git diff --check",
+      "status": "pass"
+    },
+    "critique": {
+      "score": 35,
+      "maximum": 40
+    },
+    "audit": {
+      "score": 20,
+      "maximum": 20
+    },
+    "unresolved": {
+      "p0": 0,
+      "p1": 0
+    },
+    "detector": {
+      "posture": "advisory",
+      "findings": [
+        "The pre-polish detector reported the transfer alert rule and a pre-existing day stripe; the alert now uses a tokenized one-pixel border, while the day stripe remains outside this surface."
+      ]
+    }
+  },
+  "ownerFeedback": {
+    "decision": "delegated",
+    "note": "PRODUCT.md records delegated visual direction for this release; the feature preserves the existing Setline system."
+  }
+}

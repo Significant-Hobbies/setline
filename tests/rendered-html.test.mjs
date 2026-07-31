@@ -93,6 +93,13 @@ test("ships the installable offline shell and local workout state", async () => 
   assert.match(page, /insertExtraExecution/);
   assert.match(page, /deferActiveExecution/);
   assert.match(page, /startQueuedExecution/);
+  assert.match(page, /Download Setline backup/);
+  assert.match(page, /Restore from backup/);
+  assert.match(page, /Replace with this backup/);
+  assert.match(page, /Current device/);
+  assert.match(page, /role="status"/);
+  assert.match(page, /role="alert"/);
+  assert.match(page, /hidden\s+type="file"/);
 
   await Promise.all([
     access(new URL("../public/icon-192.png", import.meta.url)),

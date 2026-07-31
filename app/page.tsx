@@ -14,6 +14,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type SetStateAction,
 } from "react";
 import Link from "next/link";
@@ -59,6 +60,13 @@ import {
   type StoredState,
   type WorkoutSession,
 } from "./lib/workout-state";
+import {
+  activateImportedWorkoutData,
+  parseWorkoutDataImport,
+  serializeWorkoutData,
+  validateWorkoutDataFileMetadata,
+  type WorkoutDataImportPreview,
+} from "./lib/workout-data-transfer";
 
 type View = "today" | "programme" | "history" | "progress";
 
@@ -145,6 +153,12 @@ export default function SetlineApp() {
     id: string;
     draft: ExecutionRecord;
   } | null>(null);
+  const [workoutDataPreview, setWorkoutDataPreview] = useState<{
+    fileName: string;
+    preview: WorkoutDataImportPreview;
+  } | null>(null);
+  const [workoutDataError, setWorkoutDataError] = useState("");
+  const [workoutDataReceipt, setWorkoutDataReceipt] = useState("");
   const workoutStateRef = useRef(workoutState);
   const lastSyncedAtRef = useRef(0);
   const cloudReadyRef = useRef(false);
@@ -866,6 +880,100 @@ export default function SetlineApp() {
     setNotice("Local Setline data cleared.");
   };
 
+  const downloadWorkoutData = () => {
+    const { fileName, json } = serializeWorkoutData(workoutStateRef.current);
+    const objectUrl = URL.createObjectURL(
+      new Blob([json], { type: "application/json" }),
+    );
+    const download = document.createElement("a");
+    download.href = objectUrl;
+    download.download = fileName;
+    document.body.appendChild(download);
+    download.click();
+    download.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    setWorkoutDataReceipt(
+      "Setline backup downloaded. Keep the JSON file private like a training log.",
+    );
+    setNotice(
+      "Workout data downloaded. Keep the JSON file private like a training log.",
+    );
+  };
+
+  const chooseWorkoutDataFile = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    setWorkoutDataPreview(null);
+    setWorkoutDataError("");
+    if (!file) return;
+    setWorkoutDataReceipt("");
+
+    const metadataError = validateWorkoutDataFileMetadata(file);
+    if (metadataError) {
+      setWorkoutDataError(metadataError);
+      return;
+    }
+
+    let raw: string;
+    try {
+      raw = await file.text();
+    } catch {
+      setWorkoutDataError("Setline could not read the selected file.");
+      return;
+    }
+    const result = parseWorkoutDataImport(raw);
+    if (result.status === "error") {
+      setWorkoutDataError(result.message);
+      return;
+    }
+    setWorkoutDataPreview({
+      fileName: file.name,
+      preview: result.preview,
+    });
+  };
+
+  const cancelWorkoutDataImport = () => {
+    setWorkoutDataPreview(null);
+    setWorkoutDataError("");
+    setWorkoutDataReceipt("Restore cancelled. Current workout data was not changed.");
+    setNotice("Import cancelled. Current workout data was not changed.");
+  };
+
+  const confirmWorkoutDataImport = () => {
+    if (!workoutDataPreview) return;
+    const incomingPreview = workoutDataPreview.preview;
+    const authenticated = accountState?.status === "authenticated";
+    const importedState = activateImportedWorkoutData(
+      incomingPreview.state,
+      workoutStateRef.current,
+      wallClockNow(),
+    );
+    workoutStateRef.current = importedState;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(importedState));
+    if (authenticated) {
+      localStorage.setItem(PENDING_SYNC_KEY, "true");
+    }
+    setWorkoutState(importedState);
+    setWorkoutDataPreview(null);
+    setWorkoutDataError("");
+    setWorkoutDataReceipt(
+      `Restored ${incomingPreview.historyCount} saved workout${
+        incomingPreview.historyCount === 1 ? "" : "s"
+      }. ${
+        incomingPreview.activeSession
+          ? `${incomingPreview.activeSession.workoutName} is now the active session.`
+          : "No active workout was included."
+      }${authenticated ? " Account sync is queued." : ""}`,
+    );
+    setNotice(
+      authenticated
+        ? "Imported workout data replaced this device copy. Account sync is queued."
+        : "Imported workout data replaced this device copy.",
+    );
+  };
+
   const discardSession = () => {
     if (!window.confirm("End this workout and discard its recorded set progress?")) {
       return;
@@ -1270,7 +1378,16 @@ export default function SetlineApp() {
       {view === "programme" ? (
         <ProgrammeView
           accountState={accountState}
+          currentHistoryCount={history.length}
+          currentSession={session}
+          importError={workoutDataError}
+          importPreview={workoutDataPreview}
+          importReceipt={workoutDataReceipt}
+          onCancelImport={cancelWorkoutDataImport}
+          onChooseImport={(event) => void chooseWorkoutDataFile(event)}
           onClear={clearLocalData}
+          onConfirmImport={confirmWorkoutDataImport}
+          onDownload={downloadWorkoutData}
           onStart={startWorkout}
           position={programmePosition}
         />
@@ -1571,18 +1688,50 @@ function TodayView({
 
 function ProgrammeView({
   accountState,
+  currentHistoryCount,
+  currentSession,
+  importError,
+  importPreview,
+  importReceipt,
+  onCancelImport,
+  onChooseImport,
   onClear,
+  onConfirmImport,
+  onDownload,
   onStart,
   position,
 }: {
   accountState: Exclude<AccountState, { status: "anonymous" }>;
+  currentHistoryCount: number;
+  currentSession: WorkoutSession | null;
+  importError: string;
+  importPreview: {
+    fileName: string;
+    preview: WorkoutDataImportPreview;
+  } | null;
+  importReceipt: string;
+  onCancelImport: () => void;
+  onChooseImport: (event: ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
+  onConfirmImport: () => void;
+  onDownload: () => void;
   onStart: (
     workoutId?: Exclude<WorkoutId, "legacy-upper-a">,
     dayIndex?: number,
   ) => void;
   position: ReturnType<typeof getProgrammePosition>;
 }) {
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const importTriggerRef = useRef<HTMLButtonElement>(null);
+  const cancelImport = () => {
+    onCancelImport();
+    requestAnimationFrame(() => importTriggerRef.current?.focus());
+  };
+  const confirmImport = () => {
+    onConfirmImport();
+    requestAnimationFrame(() => importTriggerRef.current?.focus());
+  };
+
   return (
     <div className="page-view programme-view">
       <section className="page-heading">
@@ -1638,6 +1787,57 @@ function ProgrammeView({
               </dd>
             </div>
           </dl>
+          <section
+            className="workout-data-tools"
+            aria-labelledby="workout-data-heading"
+          >
+            <span className="section-code">WORKOUT DATA</span>
+            <h2 id="workout-data-heading">Keep your own copy.</h2>
+            <p>
+              Download a versioned Setline backup of this device’s active
+              session and history. Treat the JSON file like a private training
+              log.
+            </p>
+            <div className="workout-data-actions">
+              <button type="button" onClick={onDownload}>
+                Download Setline backup
+              </button>
+              <button
+                ref={importTriggerRef}
+                type="button"
+                onClick={() => importInputRef.current?.click()}
+              >
+                Restore from backup
+              </button>
+              <input
+                ref={importInputRef}
+                hidden
+                type="file"
+                accept=".json,application/json,text/json"
+                onChange={onChooseImport}
+              />
+            </div>
+            {importReceipt ? (
+              <p className="workout-data-receipt" role="status">
+                {importReceipt}
+              </p>
+            ) : null}
+            {importError ? (
+              <p className="workout-data-error" role="alert">
+                {importError}
+              </p>
+            ) : null}
+            {importPreview ? (
+              <WorkoutDataImportPreviewCard
+                currentHistoryCount={currentHistoryCount}
+                currentSession={currentSession}
+                fileName={importPreview.fileName}
+                preview={importPreview.preview}
+                onCancel={cancelImport}
+                onConfirm={confirmImport}
+              />
+            ) : null}
+          </section>
           {accountState.status === "local" ? (
             <button className="danger-link" onClick={onClear}>
               Clear local workout data
@@ -1650,6 +1850,95 @@ function ProgrammeView({
         </aside>
       </div>
     </div>
+  );
+}
+
+function WorkoutDataImportPreviewCard({
+  currentHistoryCount,
+  currentSession,
+  fileName,
+  onCancel,
+  onConfirm,
+  preview,
+}: {
+  currentHistoryCount: number;
+  currentSession: WorkoutSession | null;
+  fileName: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+  preview: WorkoutDataImportPreview;
+}) {
+  const exportedAt = new Date(preview.exportedAt).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const latestWorkout = preview.latestWorkout
+    ? `${preview.latestWorkout.workoutName} · ${new Date(
+        preview.latestWorkout.completedAt,
+      ).toLocaleDateString()}`
+    : "No saved workouts";
+  const activeSession = preview.activeSession
+    ? `${preview.activeSession.workoutName} · Week ${
+        preview.activeSession.weekNumber
+      } · ${preview.activeSession.completedExecutions}/${
+        preview.activeSession.totalExecutions
+      } resolved`
+    : "No active workout";
+  const currentActiveSession = currentSession
+    ? `${currentSession.workoutName} · Week ${currentSession.weekNumber} · ${
+        currentSession.records.filter((record) => record.status !== "pending")
+          .length
+      }/${currentSession.records.length} resolved`
+    : "No active workout";
+
+  return (
+    <section className="workout-data-preview" aria-live="polite">
+      <span className="section-code">IMPORT PREVIEW</span>
+      <strong>{fileName}</strong>
+      <dl>
+        <div>
+          <dt>Exported</dt>
+          <dd>{exportedAt}</dd>
+        </div>
+        <div>
+          <dt>Current device</dt>
+          <dd>
+            {currentActiveSession} · {currentHistoryCount} saved
+          </dd>
+        </div>
+        <div>
+          <dt>Incoming active</dt>
+          <dd>{activeSession}</dd>
+        </div>
+        <div>
+          <dt>Saved workouts</dt>
+          <dd>
+            {preview.historyCount} incoming · {currentHistoryCount} current
+          </dd>
+        </div>
+        <div>
+          <dt>Latest</dt>
+          <dd>{latestWorkout}</dd>
+        </div>
+      </dl>
+      <p>
+        Replace this device’s active session and history together. Setline does
+        not merge files. Download the current backup first if you may need to
+        restore it.
+      </p>
+      <div className="workout-data-preview-actions">
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="workout-data-confirm"
+          onClick={onConfirm}
+        >
+          Replace with this backup
+        </button>
+      </div>
+    </section>
   );
 }
 

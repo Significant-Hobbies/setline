@@ -45,8 +45,10 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 - The supplied programme is bundled product data and is also available in
   device-only mode. Signed-in session progress and history are the private data
   associated with the user's Google identity.
-- Reminders, general-purpose authoring/import/export, weekly gap analysis,
-  cardio improvement graphs, full analytics, accepted progression
+- Versioned JSON transfer lets a user download and preview-replace the complete
+  workout state on the current device. General-purpose programme authoring and
+  importing arbitrary workout formats remain deferred.
+- Reminders, weekly gap analysis, cardio improvement graphs, full analytics, accepted progression
   recommendations, internal AI, Health integrations, sensors, social features,
   and coaching remain deferred.
 - Kilograms are the strength programme's default unit; cardio and mobility use
