@@ -28,9 +28,9 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 ## Capabilities and Constraints
 
 - This release includes Sarthak's dated 12-week strength, cardio, and mobility
-  programme, a seven-day weekly overview, guided workout execution, activity-
-  appropriate recording, timestamp-derived rest timing, local workout history,
-  and basic progress.
+  programme, a seven-day weekly overview, custom workout authoring and
+  duplication, guided workout execution, activity-appropriate recording,
+  timestamp-derived rest timing, local workout history, and basic progress.
 - Active workout actions must not depend on a network request.
 - Exercise and set order is immutable programme data, not a suggestion. A
   session starts in that exact authored order. The user may explicitly skip,
@@ -45,9 +45,13 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
 - The supplied programme is bundled product data and is also available in
   device-only mode. Signed-in session progress and history are the private data
   associated with the user's Google identity.
+- A user can create an ordered workout template, edit it, or duplicate a
+  bundled or custom workout into an independent copy. Starting a workout takes
+  an immutable snapshot, so later edits or deletion never rewrite an active
+  session or saved history. Multi-week calendar scheduling remains deferred.
 - Versioned JSON transfer lets a user download and preview-replace the complete
-  workout state on the current device. General-purpose programme authoring and
-  importing arbitrary workout formats remain deferred.
+  workout state, including custom templates, on the current device. Importing
+  arbitrary workout formats remains deferred.
 - Reminders, weekly gap analysis, cardio improvement graphs, full analytics, accepted progression
   recommendations, internal AI, Health integrations, sensors, social features,
   and coaching remain deferred.

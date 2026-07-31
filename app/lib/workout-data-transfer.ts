@@ -25,6 +25,7 @@ export type WorkoutDataImportPreview = {
   exportedAt: string;
   state: StoredState;
   activeSession: {
+    workoutId: WorkoutSession["workoutId"];
     workoutName: string;
     weekNumber: number;
     phase: WorkoutSession["phase"];
@@ -32,6 +33,7 @@ export type WorkoutDataImportPreview = {
     totalExecutions: number;
   } | null;
   historyCount: number;
+  customWorkoutCount: number;
   latestWorkout: {
     workoutName: string;
     completedAt: number;
@@ -114,6 +116,7 @@ function buildImportPreview(
     state,
     activeSession: activeSession
       ? {
+          workoutId: activeSession.workoutId,
           workoutName: activeSession.workoutName,
           weekNumber: activeSession.weekNumber,
           phase: activeSession.phase,
@@ -124,6 +127,7 @@ function buildImportPreview(
         }
       : null,
     historyCount: state.history.length,
+    customWorkoutCount: state.customWorkouts.length,
     latestWorkout: latestHistoryEntry
       ? {
           workoutName: latestHistoryEntry.workoutName,

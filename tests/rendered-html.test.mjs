@@ -57,10 +57,22 @@ test("serves public agent discovery before the private application routes", asyn
 });
 
 test("ships the installable offline shell and local workout state", async () => {
-  const [manifest, serviceWorker, page, workoutState, programme, authSchema] = await Promise.all([
+  const [
+    manifest,
+    serviceWorker,
+    page,
+    customWorkoutManager,
+    workoutState,
+    programme,
+    authSchema,
+  ] = await Promise.all([
     readFile(new URL("../app/manifest.ts", import.meta.url), "utf8"),
     readFile(new URL("../public/sw.js", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/components/CustomWorkoutManager.tsx", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../app/lib/workout-state.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/programme.ts", import.meta.url), "utf8"),
     readFile(new URL("../worker/schema.ts", import.meta.url), "utf8"),
@@ -73,7 +85,8 @@ test("ships the installable offline shell and local workout state", async () => 
   assert.match(serviceWorker, /url\.pathname\.startsWith\("\/api\/"\)/);
   assert.match(workoutState, /setline:v1/);
   assert.match(workoutState, /restEndsAt/);
-  assert.match(workoutState, /version:\s*4/);
+  assert.match(workoutState, /version:\s*5/);
+  assert.match(workoutState, /customWorkouts/);
   assert.match(workoutState, /legacy-upper-a/);
   assert.match(workoutState, /actualDurationSeconds/);
   assert.match(programme, /27 Jul 2026/);
@@ -96,6 +109,16 @@ test("ships the installable offline shell and local workout state", async () => 
   assert.match(page, /Download Setline backup/);
   assert.match(page, /Restore from backup/);
   assert.match(page, /Replace with this backup/);
+  assert.match(page, /CustomWorkoutManager/);
+  assert.match(page, /customWorkouts=\{workoutState\.customWorkouts\}/);
+  assert.match(page, /Discard the unsaved custom workout draft and leave/);
+  assert.match(page, /Discard the unsaved custom workout draft and start/);
+  assert.match(customWorkoutManager, /Discard this unsaved custom workout draft/);
+  assert.match(customWorkoutManager, /Discard the current unsaved draft and open another/);
+  assert.match(customWorkoutManager, /Remove .* from the unsaved draft/);
+  assert.match(customWorkoutManager, /returnFocusRef/);
+  assert.match(customWorkoutManager, /role="group"/);
+  assert.match(customWorkoutManager, /Moved .* to step/);
   assert.match(page, /Current device/);
   assert.match(page, /role="status"/);
   assert.match(page, /role="alert"/);
