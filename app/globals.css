@@ -321,11 +321,20 @@ button:disabled {
 }
 
 .account-availability,
-.account-legal {
+.account-legal,
+.account-receipt {
   margin: 14px 0 0;
   color: var(--ink-soft);
   font-size: 0.75rem;
   line-height: 1.5;
+}
+
+.account-receipt {
+  padding: 10px 12px;
+  border-left: 4px solid var(--lime);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
 }
 
 .account-legal {
@@ -405,6 +414,52 @@ button:disabled {
   background: var(--paper);
   font-size: 0.72rem;
   font-weight: 850;
+}
+
+.account-menu > div > .account-delete-trigger {
+  margin-top: 7px;
+  border-color: var(--coral);
+  color: var(--coral-ink);
+}
+
+.account-delete-confirmation {
+  display: grid;
+  margin-top: 3px;
+  padding-top: 12px;
+  border-top: 1px solid var(--coral);
+  gap: 9px;
+}
+
+.account-delete-confirmation > strong {
+  color: var(--coral-ink);
+  font-size: 0.78rem;
+}
+
+.account-delete-confirmation > p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.account-delete-confirmation > div {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 7px;
+}
+
+.account-delete-confirmation button {
+  min-height: 44px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.account-delete-confirmation .account-delete-confirm {
+  border-color: var(--ink);
+  background: var(--coral);
+  color: var(--ink);
 }
 
 .storage-help {
@@ -1165,7 +1220,7 @@ button:disabled {
   border: 0;
   border-bottom: 1px solid var(--coral);
   background: transparent;
-  color: #9c1d10;
+  color: var(--coral-ink);
   font-size: 0.73rem;
   font-weight: 850;
 }
@@ -2468,7 +2523,7 @@ button:disabled {
   border: 0;
   border-bottom: 1px solid var(--coral);
   background: transparent;
-  color: #9c1d10;
+  color: var(--coral-ink);
 }
 
 .segment-fields {
@@ -2573,7 +2628,7 @@ button:disabled {
 
 .input-error {
   margin: 10px 0 0;
-  color: #9c1d10;
+  color: var(--coral-ink);
   font-size: 0.72rem;
   font-weight: 800;
 }

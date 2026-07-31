@@ -21,6 +21,10 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-31 — added fresh-session-protected self-service Setline account and
+  private cloud-data deletion with explicit confirmation, outcome-safe browser
+  cleanup, and accurate Google revocation guidance; no migration or deployment
+  was performed.
 - 2026-07-31 — added deterministic progression recommendations for eligible
   weight-and-repetition working sets, with visible latest-session evidence and
   explicit Accept, Edit, or Keep current actions that never rewrite authored
@@ -89,6 +93,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 - Versioned JSON download plus validated, bounded import preview and explicit
   whole-state replacement for local workout data.
 - Optional Google sign-in with one private, user-scoped D1 state copy.
+- Fresh-session-protected self-service account deletion that removes linked
+  auth records and the private workout copy through existing D1 cascades, then
+  reports browser cleanup separately.
 - Device-first changes with offline retry and deterministic whole-state
   reconciliation.
 - Explicit state validation that preserves authored exercise and set order.

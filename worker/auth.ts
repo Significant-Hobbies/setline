@@ -54,6 +54,11 @@ export function createAuth(env: SetlineBindings, requestUrl: string) {
         prompt: "select_account",
       },
     },
+    user: {
+      deleteUser: {
+        enabled: true,
+      },
+    },
     trustedOrigins: [...new Set([baseURL, ...LOCAL_ORIGINS])],
     rateLimit: {
       enabled: false,

@@ -18,6 +18,12 @@ type SessionResponse = {
   user?: Account;
 } | null;
 
+type DeleteAccountResponse = {
+  success?: boolean;
+  message?: string;
+  code?: string;
+} | null;
+
 function readCachedAccount(): Account | null {
   try {
     const raw = localStorage.getItem(CACHED_ACCOUNT_KEY);
@@ -130,4 +136,46 @@ export async function signOutAccount() {
   }
   localStorage.removeItem(CACHED_ACCOUNT_KEY);
   localStorage.removeItem(LOCAL_MODE_KEY);
+}
+
+export async function deleteSetlineAccount() {
+  let response: Response;
+  try {
+    response = await fetch("/api/auth/delete-user", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+  } catch {
+    throw new Error(
+      "Account deletion could not be confirmed. This browser copy was kept.",
+    );
+  }
+
+  const body = (await response.json().catch(() => null)) as DeleteAccountResponse;
+  if (!response.ok || body?.success !== true) {
+    throw new Error(
+      body?.code === "SESSION_EXPIRED"
+        ? "Sign out, sign in again, then retry deletion. Nothing was deleted."
+        : `${body?.message ?? "Account deletion could not be confirmed."} This browser copy was kept.`,
+    );
+  }
+}
+
+export function clearDeletedAccountBrowserStorage(additionalKeys: string[] = []) {
+  let cleared = true;
+  for (const key of [
+    CACHED_ACCOUNT_KEY,
+    LOCAL_MODE_KEY,
+    STATE_ACCOUNT_KEY,
+    ...additionalKeys,
+  ]) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      cleared = false;
+    }
+  }
+  return cleared;
 }
