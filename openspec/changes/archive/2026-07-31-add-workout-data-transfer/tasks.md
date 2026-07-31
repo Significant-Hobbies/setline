@@ -26,7 +26,7 @@
 
 ## 4. Completion
 
-- [ ] 4.1 Update durable product status and the owning GitHub issue checklist
+- [x] 4.1 Update durable product status and the owning GitHub issue checklist
   without closing the remaining catch-all work.
-- [ ] 4.2 Archive the completed OpenSpec change and ensure canonical specs are
+- [x] 4.2 Archive the completed OpenSpec change and ensure canonical specs are
   synchronized.
