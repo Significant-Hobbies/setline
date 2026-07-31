@@ -34,6 +34,13 @@ export type WorkoutDataImportPreview = {
   } | null;
   historyCount: number;
   customWorkoutCount: number;
+  customProgramme: {
+    name: string;
+    enabled: boolean;
+    startsOn: string;
+    weekCount: number;
+    assignmentCount: number;
+  } | null;
   latestWorkout: {
     workoutName: string;
     completedAt: number;
@@ -128,6 +135,15 @@ function buildImportPreview(
       : null,
     historyCount: state.history.length,
     customWorkoutCount: state.customWorkouts.length,
+    customProgramme: state.customProgramme
+      ? {
+          name: state.customProgramme.name,
+          enabled: state.customProgramme.enabled,
+          startsOn: state.customProgramme.startsOn,
+          weekCount: state.customProgramme.weekCount,
+          assignmentCount: state.customProgramme.assignments.length,
+        }
+      : null,
     latestWorkout: latestHistoryEntry
       ? {
           workoutName: latestHistoryEntry.workoutName,

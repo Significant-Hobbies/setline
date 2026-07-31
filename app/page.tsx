@@ -18,6 +18,7 @@ import {
   type SetStateAction,
 } from "react";
 import Link from "next/link";
+import { CustomProgrammePlanner } from "./components/CustomProgrammePlanner";
 import { CustomWorkoutManager } from "./components/CustomWorkoutManager";
 import {
   bindStateToAccount,
@@ -31,6 +32,13 @@ import {
   type AccountState,
 } from "./lib/auth-client";
 import { readCloudState, writeCloudState } from "./lib/cloud-sync";
+import {
+  isCustomProgramme,
+  removeProgrammeWorkoutAssignments,
+  resolveCustomProgrammeDay,
+  type CustomProgramme,
+  type CustomProgrammeDayResolution,
+} from "./lib/custom-programme";
 import {
   isCustomWorkoutTemplate,
   MAX_CUSTOM_WORKOUTS,
@@ -90,6 +98,8 @@ const sampleTrend = [
   { label: "Progress", weight: 65, reps: 8 },
 ];
 
+const WEEK_DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
 function wallClockNow() {
   return Date.now();
 }
@@ -145,6 +155,7 @@ function statusLabel(record: ExecutionRecord, index: number, activeIndex: number
 export default function SetlineApp() {
   const [view, setView] = useState<View>("today");
   const [customWorkoutEditing, setCustomWorkoutEditing] = useState(false);
+  const [customProgrammeEditing, setCustomProgrammeEditing] = useState(false);
   const [workoutState, setWorkoutState] = useState<StoredState>(emptyStoredState);
   const [hydrated, setHydrated] = useState(false);
   const [now, setNow] = useState(0);
@@ -421,6 +432,22 @@ export default function SetlineApp() {
     () => getProgrammePosition(new Date(now)),
     [now],
   );
+  const customProgrammeDay = useMemo(
+    () =>
+      workoutState.customProgramme
+        ? resolveCustomProgrammeDay(workoutState.customProgramme, new Date(now))
+        : null,
+    [now, workoutState.customProgramme],
+  );
+  const scheduledCustomWorkout = useMemo(
+    () =>
+      customProgrammeDay?.status === "scheduled"
+        ? workoutState.customWorkouts.find(
+            (workout) => workout.id === customProgrammeDay.workoutId,
+          ) ?? null
+        : null,
+    [customProgrammeDay, workoutState.customWorkouts],
+  );
   const sessionWorkout = useMemo(
     () =>
       session
@@ -530,13 +557,16 @@ export default function SetlineApp() {
 
   const navigate = (nextView: View) => {
     if (
-      customWorkoutEditing &&
+      (customWorkoutEditing || customProgrammeEditing) &&
       nextView !== "programme" &&
-      !window.confirm("Discard the unsaved custom workout draft and leave?")
+      !window.confirm("Discard unsaved authoring changes and leave Programme?")
     ) {
       return;
     }
-    if (nextView !== "programme") setCustomWorkoutEditing(false);
+    if (nextView !== "programme") {
+      setCustomWorkoutEditing(false);
+      setCustomProgrammeEditing(false);
+    }
     setView(nextView);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -546,12 +576,13 @@ export default function SetlineApp() {
     dayIndex = programmePosition.dayIndex,
   ) => {
     if (
-      customWorkoutEditing &&
-      !window.confirm("Discard the unsaved custom workout draft and start this workout?")
+      (customWorkoutEditing || customProgrammeEditing) &&
+      !window.confirm("Discard unsaved authoring changes and start this workout?")
     ) {
       return;
     }
     setCustomWorkoutEditing(false);
+    setCustomProgrammeEditing(false);
     const template = resolveWorkout(workoutId, programmePosition.weekNumber, dayIndex);
     setCorrection(null);
     setSession(
@@ -568,22 +599,26 @@ export default function SetlineApp() {
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
   };
 
-  const startCustomWorkout = (template: CustomWorkoutTemplate) => {
+  const startCustomWorkout = (
+    template: CustomWorkoutTemplate,
+    context?: { weekNumber: number; dayIndex: number },
+  ) => {
     if (
-      customWorkoutEditing &&
-      !window.confirm("Discard the unsaved custom workout draft and start this workout?")
+      (customWorkoutEditing || customProgrammeEditing) &&
+      !window.confirm("Discard unsaved authoring changes and start this workout?")
     ) {
       return;
     }
     setCustomWorkoutEditing(false);
+    setCustomProgrammeEditing(false);
     setCorrection(null);
     setSession(
       (existing) =>
         existing ??
         makeWorkoutSession(
           structuredClone(template),
-          programmePosition.weekNumber,
-          programmePosition.dayIndex,
+          context?.weekNumber ?? programmePosition.weekNumber,
+          context?.dayIndex ?? programmePosition.dayIndex,
         ),
     );
     setNotice(
@@ -625,9 +660,40 @@ export default function SetlineApp() {
         customWorkouts: current.customWorkouts.filter(
           (workout) => workout.id !== id,
         ),
+        customProgramme: removeProgrammeWorkoutAssignments(
+          current.customProgramme,
+          id,
+        ),
       }),
     );
-    setNotice("Custom workout deleted. Existing sessions and history were kept.");
+    setNotice(
+      "Custom workout deleted. Future programme assignments were cleared; existing sessions and history were kept.",
+    );
+  };
+
+  const saveCustomProgramme = (programme: CustomProgramme) => {
+    if (
+      !isCustomProgramme(
+        programme,
+        new Set(workoutState.customWorkouts.map((workout) => workout.id)),
+      )
+    ) {
+      setNotice("That custom programme could not be saved.");
+      return;
+    }
+    setWorkoutState((current) =>
+      updateStoredState(current, {
+        customProgramme: structuredClone(programme),
+      }),
+    );
+    setNotice(`${programme.name} saved.`);
+  };
+
+  const deleteCustomProgramme = () => {
+    setWorkoutState((current) =>
+      updateStoredState(current, { customProgramme: null }),
+    );
+    setNotice("Custom programme deleted. Workouts and recorded sessions were kept.");
   };
 
   const updateCurrentRecord = (patch: Partial<ExecutionRecord>) => {
@@ -1475,15 +1541,23 @@ export default function SetlineApp() {
       {view === "today" ? (
         <TodayView
           accountState={accountState}
+          customProgramme={workoutState.customProgramme}
+          customProgrammeDay={customProgrammeDay}
+          customWorkout={scheduledCustomWorkout}
+          customWorkouts={workoutState.customWorkouts}
           position={programmePosition}
           onStart={startWorkout}
+          onStartCustomWorkout={startCustomWorkout}
           onViewProgramme={() => navigate("programme")}
         />
       ) : null}
       {view === "programme" ? (
         <ProgrammeView
           accountState={accountState}
+          customProgramme={workoutState.customProgramme}
+          customProgrammeEditing={customProgrammeEditing}
           customWorkouts={workoutState.customWorkouts}
+          customWorkoutEditing={customWorkoutEditing}
           currentHistoryCount={history.length}
           currentSession={session}
           importError={workoutDataError}
@@ -1493,10 +1567,13 @@ export default function SetlineApp() {
           onChooseImport={(event) => void chooseWorkoutDataFile(event)}
           onClear={clearLocalData}
           onConfirmImport={confirmWorkoutDataImport}
+          onCustomProgrammeEditingChange={setCustomProgrammeEditing}
           onCustomWorkoutEditingChange={setCustomWorkoutEditing}
+          onDeleteCustomProgramme={deleteCustomProgramme}
           onDeleteCustomWorkout={deleteCustomWorkout}
           onDownload={downloadWorkoutData}
           onSaveCustomWorkout={saveCustomWorkout}
+          onSaveCustomProgramme={saveCustomProgramme}
           onStart={startWorkout}
           onStartCustomWorkout={startCustomWorkout}
           position={programmePosition}
@@ -1687,75 +1764,171 @@ function AccountControl({
 
 function TodayView({
   accountState,
+  customProgramme,
+  customProgrammeDay,
+  customWorkout,
+  customWorkouts,
   position,
   onStart,
+  onStartCustomWorkout,
   onViewProgramme,
 }: {
   accountState: Exclude<AccountState, { status: "anonymous" }>;
+  customProgramme: CustomProgramme | null;
+  customProgrammeDay: CustomProgrammeDayResolution | null;
+  customWorkout: CustomWorkoutTemplate | null;
+  customWorkouts: CustomWorkoutTemplate[];
   position: ReturnType<typeof getProgrammePosition>;
   onStart: (
     workoutId?: Exclude<BuiltInWorkoutId, "legacy-upper-a">,
     dayIndex?: number,
   ) => void;
+  onStartCustomWorkout: (
+    template: CustomWorkoutTemplate,
+    context?: { weekNumber: number; dayIndex: number },
+  ) => void;
   onViewProgramme: () => void;
 }) {
-  const preview = position.workout.steps.filter(
+  const customApplies =
+    customProgramme !== null &&
+    customProgrammeDay !== null &&
+    customProgrammeDay.status !== "outside";
+  const workout = customWorkout ?? position.workout;
+  const weekNumber =
+    customProgrammeDay?.status === "scheduled" ||
+    customProgrammeDay?.status === "unplanned"
+      ? customProgrammeDay.weekNumber
+      : position.weekNumber;
+  const dayIndex =
+    customProgrammeDay?.status === "scheduled" ||
+    customProgrammeDay?.status === "unplanned"
+      ? customProgrammeDay.dayIndex
+      : position.dayIndex;
+  const preview = workout.steps.filter(
     (planned, index, steps) =>
       steps.findIndex((candidate) => candidate.exercise === planned.exercise) === index,
   ).slice(0, 5);
+  const customWeekAssignments = customApplies
+    ? WEEK_DAY_LABELS.map((day, index) => {
+        const assignment = customProgramme.assignments.find(
+          (candidate) =>
+            candidate.weekNumber === weekNumber && candidate.dayIndex === index,
+        );
+        return {
+          day,
+          name:
+            customWorkouts.find((candidate) => candidate.id === assignment?.workoutId)
+              ?.name ?? "Unplanned",
+          planned: Boolean(assignment),
+        };
+      })
+    : [];
+
   return (
     <div className="page-view today-view">
       <section className="today-intro">
         <div>
           <span className="section-code">
-            WEEK {String(position.weekNumber).padStart(2, "0")} · {PROGRAMME.startLabel}—{PROGRAMME.endLabel}
+            {customApplies
+              ? `WEEK ${String(weekNumber).padStart(2, "0")} OF ${
+                  customProgramme.weekCount
+                } · CUSTOM PROGRAMME`
+              : `WEEK ${String(position.weekNumber).padStart(2, "0")} · ${
+                  PROGRAMME.startLabel
+                }—${PROGRAMME.endLabel}`}
           </span>
-          <h1>{position.workout.name} is set.</h1>
-          <p>Follow the written sequence. Record the work. Review the block after Week 12.</p>
+          <h1>
+            {customProgrammeDay?.status === "unplanned"
+              ? "Today is unplanned."
+              : `${workout.name} is set.`}
+          </h1>
+          <p>
+            {customApplies
+              ? `${customProgramme.name}. Follow the days you assigned; empty days remain explicit.`
+              : "Follow the written sequence. Record the work. Review the block after Week 12."}
+          </p>
         </div>
         <div className="adherence-stamp">
-          <strong>{position.workout.steps.length}</strong>
-          <span>steps ready</span>
+          <strong>
+            {customProgrammeDay?.status === "unplanned" ? "—" : workout.steps.length}
+          </strong>
+          <span>
+            {customProgrammeDay?.status === "unplanned"
+              ? "no workout"
+              : "steps ready"}
+          </span>
         </div>
       </section>
 
       <section className="today-workout">
         <div className="workout-title">
           <div>
-            <span className="day-chip">TODAY · {position.schedule.time}</span>
-            <h2>{position.workout.name}</h2>
+            <span className="day-chip">
+              TODAY · {customApplies ? WEEK_DAY_LABELS[dayIndex] : position.schedule.time}
+            </span>
+            <h2>
+              {customProgrammeDay?.status === "unplanned"
+                ? "No workout assigned"
+                : workout.name}
+            </h2>
           </div>
-          <span className="sample-badge">WEEK {position.weekNumber}</span>
+          <span className="sample-badge">WEEK {weekNumber}</span>
         </div>
 
-        <button className="action-slab start-action" onClick={() => onStart()}>
-          Start workout
-          <span>Opens with {position.workout.steps[0].exercise.toLowerCase()}</span>
-        </button>
+        {customProgrammeDay?.status === "unplanned" ? (
+          <div className="unplanned-slab">
+            <strong>Unplanned by design</strong>
+            <span>
+              Assign a custom workout from Programme, or keep this day open.
+            </span>
+            <button type="button" onClick={onViewProgramme}>
+              Edit programme
+            </button>
+          </div>
+        ) : (
+          <button
+            className="action-slab start-action"
+            onClick={() =>
+              customProgrammeDay?.status === "scheduled" && customWorkout
+                ? onStartCustomWorkout(customWorkout, {
+                    weekNumber: customProgrammeDay.weekNumber,
+                    dayIndex: customProgrammeDay.dayIndex,
+                  })
+                : onStart()
+            }
+          >
+            Start workout
+            <span>Opens with {workout.steps[0].exercise.toLowerCase()}</span>
+          </button>
+        )}
 
-        <div className="workout-facts">
-          <Metric label="Planned" value={`${position.workout.expectedMinutes} min`} provenance="Programme" />
-          <Metric label="Activities" value={String(preview.length)} provenance="First distinct movements" />
-          <Metric label="Steps" value={String(position.workout.steps.length)} provenance="Exact authored order" />
-          <Metric
-            label="First target"
-            value={formatStepTarget(position.workout.steps[0])}
-            provenance={position.workout.steps[0].exercise}
-          />
-        </div>
+        {customProgrammeDay?.status !== "unplanned" ? (
+          <>
+            <div className="workout-facts">
+              <Metric label="Planned" value={`${workout.expectedMinutes} min`} provenance="Programme" />
+              <Metric label="Activities" value={String(preview.length)} provenance="First distinct movements" />
+              <Metric label="Steps" value={String(workout.steps.length)} provenance="Exact authored order" />
+              <Metric
+                label="First target"
+                value={formatStepTarget(workout.steps[0])}
+                provenance={workout.steps[0].exercise}
+              />
+            </div>
 
-        <ol className="exercise-preview">
-          {preview.map((planned, index) => (
-            <li key={planned.id}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <div>
-                <strong>{planned.exercise}</strong>
-                <small>{planned.setType}</small>
-              </div>
-              <b>{formatStepTarget(planned)}</b>
-            </li>
-          ))}
-        </ol>
+            <ol className="exercise-preview">
+              {preview.map((planned, index) => (
+                <li key={planned.id}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <div>
+                    <strong>{planned.exercise}</strong>
+                    <small>{planned.setType}</small>
+                  </div>
+                  <b>{formatStepTarget(planned)}</b>
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : null}
 
       </section>
 
@@ -1770,14 +1943,26 @@ function TodayView({
           </button>
         </div>
         <div className="schedule-grid">
-          {PROGRAMME_SCHEDULE.map((item) => (
-            <div className={item.dayIndex === position.dayIndex ? "schedule-day active" : "schedule-day"} key={item.day}>
-              <span>{item.day}</span>
-              <strong>{item.name}</strong>
-              <small>{item.time}</small>
-              <b>{item.dayIndex === position.dayIndex ? "Today" : "Planned"}</b>
-            </div>
-          ))}
+          {customApplies
+            ? customWeekAssignments.map((item, index) => (
+                <div
+                  className={index === dayIndex ? "schedule-day active" : "schedule-day"}
+                  key={item.day}
+                >
+                  <span>{item.day}</span>
+                  <strong>{item.name}</strong>
+                  <small>{item.planned ? "Custom" : "Open"}</small>
+                  <b>{index === dayIndex ? "Today" : item.planned ? "Planned" : "Unplanned"}</b>
+                </div>
+              ))
+            : PROGRAMME_SCHEDULE.map((item) => (
+                <div className={item.dayIndex === position.dayIndex ? "schedule-day active" : "schedule-day"} key={item.day}>
+                  <span>{item.day}</span>
+                  <strong>{item.name}</strong>
+                  <small>{item.time}</small>
+                  <b>{item.dayIndex === position.dayIndex ? "Today" : "Planned"}</b>
+                </div>
+              ))}
         </div>
       </section>
 
@@ -1798,7 +1983,10 @@ function TodayView({
 
 function ProgrammeView({
   accountState,
+  customProgramme,
+  customProgrammeEditing,
   customWorkouts,
+  customWorkoutEditing,
   currentHistoryCount,
   currentSession,
   importError,
@@ -1808,16 +1996,22 @@ function ProgrammeView({
   onChooseImport,
   onClear,
   onConfirmImport,
+  onCustomProgrammeEditingChange,
   onCustomWorkoutEditingChange,
+  onDeleteCustomProgramme,
   onDeleteCustomWorkout,
   onDownload,
   onSaveCustomWorkout,
+  onSaveCustomProgramme,
   onStart,
   onStartCustomWorkout,
   position,
 }: {
   accountState: Exclude<AccountState, { status: "anonymous" }>;
+  customProgramme: CustomProgramme | null;
+  customProgrammeEditing: boolean;
   customWorkouts: CustomWorkoutTemplate[];
+  customWorkoutEditing: boolean;
   currentHistoryCount: number;
   currentSession: WorkoutSession | null;
   importError: string;
@@ -1830,10 +2024,13 @@ function ProgrammeView({
   onChooseImport: (event: ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
   onConfirmImport: () => void;
+  onCustomProgrammeEditingChange: (editing: boolean) => void;
   onCustomWorkoutEditingChange: (editing: boolean) => void;
+  onDeleteCustomProgramme: () => void;
   onDeleteCustomWorkout: (id: CustomWorkoutTemplate["id"]) => void;
   onDownload: () => void;
   onSaveCustomWorkout: (template: CustomWorkoutTemplate) => void;
+  onSaveCustomProgramme: (programme: CustomProgramme) => void;
   onStart: (
     workoutId?: Exclude<BuiltInWorkoutId, "legacy-upper-a">,
     dayIndex?: number,
@@ -1983,12 +2180,21 @@ function ProgrammeView({
         </aside>
       </div>
       <CustomWorkoutManager
+        authoringLocked={customProgrammeEditing}
         builtInWorkouts={builtInWorkouts}
         customWorkouts={customWorkouts}
         onDelete={onDeleteCustomWorkout}
         onEditingChange={onCustomWorkoutEditingChange}
         onSave={onSaveCustomWorkout}
         onStart={onStartCustomWorkout}
+      />
+      <CustomProgrammePlanner
+        authoringLocked={customWorkoutEditing}
+        customWorkouts={customWorkouts}
+        programme={customProgramme}
+        onDelete={onDeleteCustomProgramme}
+        onEditingChange={onCustomProgrammeEditingChange}
+        onSave={onSaveCustomProgramme}
       />
     </div>
   );
@@ -2072,14 +2278,26 @@ function WorkoutDataImportPreviewCard({
           </dd>
         </div>
         <div>
+          <dt>Custom programme</dt>
+          <dd>
+            {preview.customProgramme
+              ? `${preview.customProgramme.name} · ${
+                  preview.customProgramme.enabled ? "enabled" : "paused"
+                } · ${preview.customProgramme.weekCount} weeks · ${
+                  preview.customProgramme.assignmentCount
+                } assignments`
+              : "No incoming custom programme"}
+          </dd>
+        </div>
+        <div>
           <dt>Latest</dt>
           <dd>{latestWorkout}</dd>
         </div>
       </dl>
       <p>
-        Replace this device’s active session, history, and custom templates
-        together. Setline does not merge files. Download the current backup
-        first if you may need to restore it.
+        Replace this device’s active session, history, custom templates, and
+        custom programme together. Setline does not merge files. Download the
+        current backup first if you may need to restore it.
       </p>
       <div className="workout-data-preview-actions">
         <button type="button" onClick={onCancel}>

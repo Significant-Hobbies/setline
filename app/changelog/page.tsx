@@ -5,6 +5,14 @@ const repository = "https://github.com/Significant-Hobbies/setline";
 const releases = [
   {
     date: "2026-07-31",
+    title: "Put custom workouts on the calendar",
+    outcomes: [
+      "Write one explicit 1–16 week programme, assign custom workouts to Monday-based days, copy a week forward, and pause or resume the block.",
+      "Today now opens the scheduled custom workout or identifies an in-range day as unplanned; programme state stays device-first and travels in whole-state backup and private sync.",
+    ],
+  },
+  {
+    date: "2026-07-31",
     title: "Your own workouts, in your own order",
     outcomes: [
       "Create an ordered workout from scratch or duplicate a bundled or custom template into an independent copy.",
