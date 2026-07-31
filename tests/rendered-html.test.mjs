@@ -30,8 +30,8 @@ test("server-renders the Setline restoration shell and public legal pages", asyn
 
   const html = await response.text();
   assert.match(html, /<title>Setline — Workout execution tracker<\/title>/i);
-  assert.match(html, /SETLINE · LOADING/);
-  assert.match(html, /Restoring this device’s saved state\./);
+  assert.match(html, /ACCOUNT OR DEVICE · YOUR CALL/);
+  assert.match(html, /Keep the plan close\./);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview|react-loading-skeleton/i);
 
   const [privacy, terms] = await Promise.all([render("/privacy"), render("/terms")]);
