@@ -21,6 +21,10 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-31 — replaced static progress examples with recorded-history
+  analytics for exercises, workouts, and represented programme weeks, including
+  bounded trends, honest legacy/empty boundaries, and explicit measurement
+  provenance.
 - 2026-07-31 — added fresh-session-protected self-service Setline account and
   private cloud-data deletion with explicit confirmation, outcome-safe browser
   cleanup, and accurate Google revocation guidance; no migration or deployment
@@ -115,6 +119,10 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
   completion and next-start timestamps.
 - Detailed per-set execution history preserved on device and in authenticated
   cloud state.
+- Recorded-history analytics with normalized exercise identity, metric-aware
+  newest-eight trends, lifetime bests and volume, workout aggregates, and
+  represented bundled programme-week summaries; custom workouts stay separate
+  and missing history is never treated as missed training.
 - Bounded custom workout templates with ordered exercise authoring, edit,
   independent duplication from bundled or custom workouts, confirmed deletion,
   and the existing offline-first workout player.
