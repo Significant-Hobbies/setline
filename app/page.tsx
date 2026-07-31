@@ -35,6 +35,11 @@ import {
 } from "./lib/auth-client";
 import { readCloudState, writeCloudState } from "./lib/cloud-sync";
 import {
+  deriveHistoryAnalytics,
+  type ExerciseAnalytics,
+  type ExerciseTrendPoint,
+} from "./lib/history-analytics";
+import {
   isCustomProgramme,
   removeProgrammeWorkoutAssignments,
   resolveCustomProgrammeDay,
@@ -97,13 +102,6 @@ type InstallPromptEvent = Event & {
 };
 
 type SyncStatus = "local" | "syncing" | "synced" | "offline" | "error";
-
-const sampleTrend = [
-  { label: "Start", weight: 65, reps: 5 },
-  { label: "Target", weight: 65, reps: 6 },
-  { label: "Range", weight: 65, reps: 7 },
-  { label: "Progress", weight: 65, reps: 8 },
-];
 
 const WEEK_DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -2626,53 +2624,430 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
   );
 }
 
+function formatAnalyticsDate(timestamp: number) {
+  return new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "short",
+    year: "2-digit",
+  })
+    .format(new Date(timestamp))
+    .toUpperCase();
+}
+
+function formatAnalyticsShortDate(timestamp: number) {
+  return new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "short",
+  })
+    .format(new Date(timestamp))
+    .toUpperCase();
+}
+
+function exerciseTrendValue(
+  exercise: ExerciseAnalytics,
+  point: ExerciseTrendPoint,
+) {
+  if (exercise.trendMetric === "weight") return point.bestWeight ?? 0;
+  if (exercise.trendMetric === "duration") {
+    return point.longestDurationSeconds ?? 0;
+  }
+  if (exercise.trendMetric === "repetitions") {
+    return point.bestRepetitions ?? 0;
+  }
+  return point.completedExecutions;
+}
+
+function formatExercisePoint(
+  exercise: ExerciseAnalytics,
+  point: ExerciseTrendPoint,
+) {
+  if (exercise.trendMetric === "weight") {
+    return `${point.bestWeight ?? 0} kg${
+      point.repetitionsAtBestWeight
+        ? ` × ${point.repetitionsAtBestWeight}`
+        : ""
+    }`;
+  }
+  if (exercise.trendMetric === "duration") {
+    return formatTimedWork(point.longestDurationSeconds ?? 0);
+  }
+  if (exercise.trendMetric === "repetitions") {
+    return `${point.bestRepetitions ?? 0} reps`;
+  }
+  return `${point.completedExecutions} completed`;
+}
+
+function formatExerciseBest(exercise: ExerciseAnalytics) {
+  if (exercise.trendMetric === "weight") {
+    return `${exercise.bestWeight ?? 0} kg${
+      exercise.repetitionsAtBestWeight
+        ? ` × ${exercise.repetitionsAtBestWeight}`
+        : ""
+    }`;
+  }
+  if (exercise.trendMetric === "duration") {
+    return formatTimedWork(exercise.longestDurationSeconds ?? 0);
+  }
+  if (exercise.trendMetric === "repetitions") {
+    return `${exercise.bestRepetitions ?? 0} reps`;
+  }
+  return `${exercise.completedExecutions} completed`;
+}
+
+function formatExerciseChartValue(
+  exercise: ExerciseAnalytics,
+  point: ExerciseTrendPoint,
+) {
+  if (exercise.trendMetric === "weight") return `${point.bestWeight ?? 0}`;
+  if (exercise.trendMetric === "duration") {
+    return `${Math.round(point.longestDurationSeconds ?? 0)}s`;
+  }
+  if (exercise.trendMetric === "repetitions") {
+    return `${point.bestRepetitions ?? 0}`;
+  }
+  return `${point.completedExecutions}`;
+}
+
+function exerciseTrendLabel(exercise: ExerciseAnalytics) {
+  if (exercise.trendMetric === "weight") return "Max recorded load · kilograms";
+  if (exercise.trendMetric === "duration") {
+    return "Longest recorded duration · seconds";
+  }
+  if (exercise.trendMetric === "repetitions") {
+    return "Max recorded repetitions";
+  }
+  return "Completed exercise entries";
+}
+
 function ProgressView({ history }: { history: HistoryEntry[] }) {
-  const recordedVolume = history[0]?.workingVolume;
+  const analytics = useMemo(() => deriveHistoryAnalytics(history), [history]);
+  const [selectedExerciseId, setSelectedExerciseId] = useState("");
+  const selectedExercise =
+    analytics.exercises.find(
+      (exercise) => exercise.id === selectedExerciseId,
+    ) ??
+    analytics.exercises[0] ??
+    null;
+  const trendMaximum = selectedExercise
+    ? Math.max(
+        1,
+        ...selectedExercise.trend.map((point) =>
+          exerciseTrendValue(selectedExercise, point),
+        ),
+      )
+    : 1;
+
   return (
     <div className="page-view progress-view">
       <section className="page-heading">
-        <span className="section-code">BENCH PRESS · PROGRAMME RANGE</span>
-        <h1>Progress keeps its ingredients visible.</h1>
-        <p>Weight, repetitions, RPE, and volume remain separate. Setline does not collapse them into a mystery score.</p>
+        <span className="section-code">
+          RECORDED HISTORY · {analytics.overview.recordedSessions} SESSION
+          {analytics.overview.recordedSessions === 1 ? "" : "S"}
+        </span>
+        <h1>The record, measured plainly.</h1>
+        <p>
+          Exercise results, workout totals, and represented programme weeks
+          come only from saved history. Missing records are never treated as
+          missed training.
+        </p>
       </section>
 
-      <section className="progress-board">
-        <div className="progress-heading">
+      {history.length === 0 ? (
+        <section className="empty-history analytics-empty">
+          <div className="empty-mark">0</div>
           <div>
-            <span>WORKING WEIGHT</span>
-            <strong>65 <small>kg</small></strong>
+            <h2>No recorded progress yet.</h2>
+            <p>
+              Complete and save any workout. Setline will calculate this page
+              from that device-local history without creating a score.
+            </p>
           </div>
-          <div className="delta-stamp">
-            <strong>5–8</strong>
-            <span>Reps · add load after 3 × 8</span>
-          </div>
-        </div>
+        </section>
+      ) : (
+        <>
+          <section
+            aria-label="Recorded history overview"
+            className="progress-metrics analytics-overview"
+          >
+            <Metric
+              label="Saved workouts"
+              value={String(analytics.overview.recordedSessions)}
+              provenance="Recorded history entries"
+            />
+            <Metric
+              label="Training time"
+              value={formatDuration(analytics.overview.totalDurationSeconds)}
+              provenance="Calculated from recorded duration"
+            />
+            <Metric
+              label="Working volume"
+              value={`${analytics.overview.totalWorkingVolume.toLocaleString()} kg`}
+              provenance="Calculated from recorded load × reps"
+            />
+            <Metric
+              label="Detailed records"
+              value={`${analytics.overview.detailedSessions}/${analytics.overview.recordedSessions}`}
+              provenance="Recorded execution ledgers available"
+            />
+          </section>
 
-        <div className="bar-chart" role="img" aria-label="Programme bench press progression keeps 65 kilograms while repetitions move from five toward eight">
-          {sampleTrend.map((point) => (
-            <div className="bar-column" key={point.label}>
-              <span>{point.weight} kg</span>
-              <div style={{ height: `${(point.weight / 75) * 100}%` }} />
-              <small>{point.label}</small>
+          <section className="progress-board analytics-exercise">
+            <div className="analytics-section-heading">
+              <div>
+                <span className="section-code">EXERCISE DETAIL</span>
+                <h2>
+                  {selectedExercise
+                    ? selectedExercise.name
+                    : "Detailed exercise evidence unavailable"}
+                </h2>
+              </div>
+              {analytics.exercises.length ? (
+                <label className="analytics-exercise-select">
+                  <span>Exercise</span>
+                  <select
+                    aria-label="Exercise to review"
+                    value={selectedExercise?.id ?? ""}
+                    onChange={(event) =>
+                      setSelectedExerciseId(event.target.value)
+                    }
+                  >
+                    {analytics.exercises.map((exercise) => (
+                      <option key={exercise.id} value={exercise.id}>
+                        {exercise.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
             </div>
-          ))}
-        </div>
 
-        <div className="progress-metrics">
-          <Metric label="Starting weight" value="65 kg" provenance="Programme" />
-          <Metric label="Target range" value="3 × 5–8" provenance="Programme" />
-          <Metric label="Load increase" value="2.5 kg" provenance="After clean 3 × 8" />
-          <Metric
-            label="Latest local volume"
-            value={recordedVolume ? `${recordedVolume.toLocaleString()} kg` : "—"}
-            provenance={recordedVolume ? "Calculated from recorded workout" : "No recorded workout"}
-          />
-        </div>
-      </section>
+            {selectedExercise ? (
+              <>
+                <div className="analytics-latest">
+                  <span>Latest recorded evidence</span>
+                  <strong>
+                    {formatExercisePoint(
+                      selectedExercise,
+                      selectedExercise.latest,
+                    )}
+                  </strong>
+                  <small>
+                    {selectedExercise.latest.workoutName} ·{" "}
+                    {formatAnalyticsDate(selectedExercise.latest.completedAt)}
+                    {selectedExercise.latest.averageRpe === null
+                      ? ""
+                      : ` · RPE ${selectedExercise.latest.averageRpe.toFixed(1)}`}
+                  </small>
+                </div>
+
+                <span className="analytics-trend-label">
+                  {exerciseTrendLabel(selectedExercise)}
+                </span>
+                <div
+                  aria-label={`${selectedExercise.name} newest ${selectedExercise.trend.length} recorded session trend using ${selectedExercise.trendMetric}`}
+                  className="analytics-trend"
+                  role="img"
+                  style={{
+                    gridTemplateColumns: `repeat(${selectedExercise.trend.length}, minmax(52px, 1fr))`,
+                  }}
+                >
+                  {selectedExercise.trend.map((point) => {
+                    const value = exerciseTrendValue(selectedExercise, point);
+                    return (
+                      <div
+                        className="analytics-bar-column"
+                        key={`${point.historyId}:${point.completedAt}`}
+                      >
+                        <span>
+                          {formatExerciseChartValue(selectedExercise, point)}
+                        </span>
+                        <div
+                          style={{
+                            height: `${Math.max(8, (value / trendMaximum) * 100)}%`,
+                          }}
+                        />
+                        <small>
+                          {formatAnalyticsShortDate(point.completedAt)}
+                        </small>
+                      </div>
+                    );
+                  })}
+                </div>
+                <ul
+                  aria-label={`${selectedExercise.name} recorded trend values`}
+                  className="sr-only"
+                >
+                  {selectedExercise.trend.map((point) => (
+                    <li key={`${point.historyId}:${point.completedAt}:text`}>
+                      {formatAnalyticsDate(point.completedAt)} ·{" "}
+                      {point.workoutName} ·{" "}
+                      {formatExercisePoint(selectedExercise, point)}
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="progress-metrics">
+                  <Metric
+                    label="Lifetime best"
+                    value={formatExerciseBest(selectedExercise)}
+                    provenance={`Calculated across ${selectedExercise.recordedSessions} recorded session${
+                      selectedExercise.recordedSessions === 1 ? "" : "s"
+                    }`}
+                  />
+                  <Metric
+                    label="Completed entries"
+                    value={String(selectedExercise.completedExecutions)}
+                    provenance="Recorded detailed executions"
+                  />
+                  <Metric
+                    label="Working volume"
+                    value={
+                      selectedExercise.totalWorkingVolume
+                        ? `${selectedExercise.totalWorkingVolume.toLocaleString()} kg`
+                        : "—"
+                    }
+                    provenance={
+                      selectedExercise.totalWorkingVolume
+                        ? "Calculated from Working load × reps"
+                        : "Unavailable for this exercise record"
+                    }
+                  />
+                  <Metric
+                    label="Average RPE"
+                    value={
+                      selectedExercise.averageRpe === null
+                        ? "—"
+                        : selectedExercise.averageRpe.toFixed(1)
+                    }
+                    provenance={
+                      selectedExercise.rpeCount
+                        ? `Calculated from ${selectedExercise.rpeCount} recorded RPE value${
+                            selectedExercise.rpeCount === 1 ? "" : "s"
+                          }`
+                        : "No recorded RPE"
+                    }
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="analytics-unavailable">
+                <strong>No detailed exercise ledger is available.</strong>
+                <p>
+                  Summary-only legacy workouts still contribute to workout and
+                  programme totals below. Save a workout with set detail to add
+                  exercise evidence.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section className="analytics-ledger-section">
+            <div className="section-heading">
+              <div>
+                <span className="section-code">BY WORKOUT</span>
+                <h2>Repeated sessions, grouped by identity.</h2>
+              </div>
+              <span className="sample-badge">
+                {analytics.workouts.length} WORKOUT
+                {analytics.workouts.length === 1 ? "" : "S"}
+              </span>
+            </div>
+            <div className="analytics-ledger">
+              {analytics.workouts.map((workout, index) => (
+                <article key={workout.workoutId}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h3>{workout.workoutName}</h3>
+                    <p>
+                      Latest {formatAnalyticsDate(workout.latestCompletedAt)} ·{" "}
+                      {workout.detailedSessions}/{workout.recordedSessions} with
+                      detail
+                    </p>
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>Recorded</dt>
+                      <dd>{workout.recordedSessions}</dd>
+                    </div>
+                    <div>
+                      <dt>Average time</dt>
+                      <dd>{formatDuration(workout.averageDurationSeconds)}</dd>
+                    </div>
+                    <div>
+                      <dt>Working volume</dt>
+                      <dd>{workout.totalWorkingVolume.toLocaleString()} kg</dd>
+                    </div>
+                    <div>
+                      <dt>Resolved sets</dt>
+                      <dd>
+                        {workout.completedSets} done · {workout.skippedSets} skipped
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="analytics-ledger-section">
+            <div className="section-heading">
+              <div>
+                <span className="section-code">BUNDLED PROGRAMME RECORD</span>
+                <h2>Only weeks represented in history.</h2>
+              </div>
+              <span className="sample-badge">
+                {analytics.programmeWeeks.length} WEEK
+                {analytics.programmeWeeks.length === 1 ? "" : "S"}
+              </span>
+            </div>
+            {analytics.programmeWeeks.length ? (
+              <div className="analytics-week-ledger">
+                {analytics.programmeWeeks.map((week) => (
+                  <article key={week.weekNumber}>
+                    <strong>W{String(week.weekNumber).padStart(2, "0")}</strong>
+                    <div>
+                      <span>
+                        {week.recordedSessions} recorded session
+                        {week.recordedSessions === 1 ? "" : "s"}
+                      </span>
+                      <small>
+                        Latest {formatAnalyticsDate(week.latestCompletedAt)}
+                      </small>
+                    </div>
+                    <p>
+                      {week.completedSets} completed · {week.modifiedSets} modified
+                      · {week.skippedSets} skipped
+                    </p>
+                    <b>{week.totalWorkingVolume.toLocaleString()} kg</b>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="analytics-unavailable">
+                <strong>No bundled programme week is represented.</strong>
+                <p>
+                  Custom workout records remain separate and do not imply a
+                  bundled programme week.
+                </p>
+              </div>
+            )}
+            <p className="analytics-boundary">
+              {analytics.overview.customSessions} custom workout record
+              {analytics.overview.customSessions === 1 ? "" : "s"} kept
+              separate. Weeks without a saved record are not classified as
+              missed or incomplete.
+            </p>
+          </section>
+        </>
+      )}
 
       <aside className="measurement-note">
         <strong>Measurement rule</strong>
-        <p>Targets are programme data. Actuals are recorded by you. Volume and estimated 1RM are calculations. Sensor-only metrics remain unavailable.</p>
+        <p>
+          Workout results are recorded by you. Totals, averages, bests, and
+          trend bars are calculated from those records. No adherence,
+          readiness, or coaching score is inferred.
+        </p>
       </aside>
     </div>
   );

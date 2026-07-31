@@ -123,11 +123,23 @@ the complete execution ledger when the session is saved.
   ledger before saving the complete record to history
 
 ### Requirement: Basic progress view
-The system SHALL show basic exercise progress using recorded values and clearly label calculated values.
+
+The system SHALL show deterministic overview, exercise, workout, and
+programme-week analytics using recorded history and SHALL clearly label
+recorded source values, calculated aggregations, and unavailable detail.
 
 #### Scenario: User reviews progress
-- **WHEN** the user opens the progress view
-- **THEN** the system shows recent recorded weight and repetition performance plus explicitly derived volume or change indicators
+
+- **WHEN** the user opens the Progress view with saved history
+- **THEN** the system shows recorded session evidence, recent exercise
+  performance, workout aggregates, and represented programme-week outcomes
+  without collapsing them into a coaching score
+
+#### Scenario: User has no progress record
+
+- **WHEN** the user opens Progress before saving a workout
+- **THEN** the system shows an honest empty state without illustrative training
+  results
 
 ### Requirement: Accessible responsive operation
 The system SHALL support keyboard navigation, visible focus, reduced motion, legible contrast, and layouts suitable for phone, tablet, and desktop widths.
