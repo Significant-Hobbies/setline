@@ -1,8 +1,8 @@
 {
   "$schema": "fleet.design-review.v1",
   "version": 1,
-  "project": "setline-progression-recommendations",
-  "target": "Active workout progression recommendation decision panel",
+  "project": "setline-account-deletion",
+  "target": "Authenticated account management and self-service cloud-data deletion",
   "mode": "preserve",
   "register": "product",
   "context": {
@@ -54,6 +54,6 @@
   },
   "ownerFeedback": {
     "decision": "delegated",
-    "note": "The owner pre-approved the issue sweep and delegated final judgment after the required evidence and quality gates pass."
+    "note": "The owner approved the issue sweep and delegated final judgment after the required evidence and quality gates pass."
   }
 }

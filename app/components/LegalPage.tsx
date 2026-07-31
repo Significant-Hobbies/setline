@@ -54,10 +54,12 @@ export function LegalPage({ kind }: { kind: "privacy" | "terms" }) {
 
             <h2>Retention and choices</h2>
             <p>
-              Cloud state remains associated with the account until account-deletion
-              tooling is provided or a deletion request is fulfilled. You can use
-              device-only mode, sign out, revoke Google access, or stop using the service
-              at any time.
+              A signed-in user can permanently delete their Setline account,
+              private cloud workout copy, and that browser’s bound workout copy
+              from the account menu. This does not revoke Setline access in
+              Google; revoke that separately in your Google Account if wanted.
+              You can also use device-only mode, sign out, or stop using the
+              service at any time.
             </p>
           </>
         ) : (

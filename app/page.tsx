@@ -22,7 +22,9 @@ import { CustomProgrammePlanner } from "./components/CustomProgrammePlanner";
 import { CustomWorkoutManager } from "./components/CustomWorkoutManager";
 import {
   bindStateToAccount,
+  clearDeletedAccountBrowserStorage,
   clearStateAccountBinding,
+  deleteSetlineAccount,
   getAccountState,
   getGoogleConfiguration,
   getStateAccountId,
@@ -171,6 +173,9 @@ export default function SetlineApp() {
   const [googleConfigured, setGoogleConfigured] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [accountReceipt, setAccountReceipt] = useState("");
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
   const [correction, setCorrection] = useState<{
     id: string;
@@ -527,6 +532,8 @@ export default function SetlineApp() {
     }
     setAuthBusy(true);
     setAuthError("");
+    setDeleteError("");
+    setAccountReceipt("");
     try {
       await signInWithGoogle();
     } catch (error) {
@@ -540,6 +547,8 @@ export default function SetlineApp() {
     setAccountState({ status: "local" });
     setSyncStatus("local");
     setAuthError("");
+    setDeleteError("");
+    setAccountReceipt("");
     setNotice("Device-only mode is ready. Nothing is sent to an account.");
   };
 
@@ -553,6 +562,7 @@ export default function SetlineApp() {
     }
     setAuthBusy(true);
     setAuthError("");
+    setDeleteError("");
     try {
       await signOutAccount();
       cloudReadyRef.current = false;
@@ -574,6 +584,48 @@ export default function SetlineApp() {
     } finally {
       setAuthBusy(false);
     }
+  };
+
+  const deleteAccount = async () => {
+    setAuthBusy(true);
+    setDeletingAccount(true);
+    setDeleteError("");
+    setAccountReceipt("");
+    try {
+      await deleteSetlineAccount();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Account deletion could not be confirmed. This browser copy was kept.";
+      setDeleteError(message);
+      setDeletingAccount(false);
+      setAuthBusy(false);
+      return;
+    }
+
+    if (syncTimerRef.current !== null) {
+      window.clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
+    cloudReadyRef.current = false;
+    lastSyncedAtRef.current = 0;
+    const browserStorageCleared = clearDeletedAccountBrowserStorage([
+      PENDING_SYNC_KEY,
+      STORAGE_KEY,
+    ]);
+    const resetState = emptyStoredState();
+    workoutStateRef.current = resetState;
+    setWorkoutState(resetState);
+    setSyncStatus("local");
+    setAccountReceipt(
+      browserStorageCleared
+        ? "Your Setline account, private cloud copy, and this browser’s bound workout copy were deleted."
+        : "Your Setline account and private cloud copy were deleted. Setline could not clear this browser copy; clear this site’s browser data before using device-only mode.",
+    );
+    setAccountState({ status: "anonymous" });
+    setDeletingAccount(false);
+    setAuthBusy(false);
   };
 
   const navigate = (nextView: View) => {
@@ -1217,6 +1269,7 @@ export default function SetlineApp() {
         googleConfigured={googleConfigured}
         onDeviceOnly={continueOnDevice}
         onGoogle={() => void beginGoogleSignIn()}
+        receipt={accountReceipt}
       />
     );
   }
@@ -1594,8 +1647,12 @@ export default function SetlineApp() {
           <AccountControl
             accountState={accountState}
             busy={authBusy}
+            deleting={deletingAccount}
+            deletionError={deleteError}
             googleConfigured={googleConfigured}
+            onDeleteAccount={() => void deleteAccount()}
             onGoogle={() => void beginGoogleSignIn()}
+            onOpenDelete={() => setDeleteError("")}
             onRetry={() => void reconcileCloudState()}
             onSignOut={() => void signOut()}
             syncStatus={syncStatus}
@@ -1702,20 +1759,31 @@ function AccountChoice({
   googleConfigured,
   onDeviceOnly,
   onGoogle,
+  receipt,
 }: {
   busy: boolean;
   error: string;
   googleConfigured: boolean;
   onDeviceOnly: () => void;
   onGoogle: () => void;
+  receipt: string;
 }) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (!receipt) return;
+    requestAnimationFrame(() => headingRef.current?.focus());
+  }, [receipt]);
+
   return (
     <main className="account-shell">
       <section className="account-board">
         <div className="account-wordmark">SETLINE</div>
         <div className="account-heading">
           <span className="section-code">ACCOUNT OR DEVICE · YOUR CALL</span>
-          <h1>Keep the plan close.</h1>
+          <h1 ref={headingRef} tabIndex={receipt ? -1 : undefined}>
+            Keep the plan close.
+          </h1>
           <p>
             Google sign-in keeps one private Setline workout copy available across devices. Device-only
             mode keeps everything in this browser.
@@ -1752,6 +1820,11 @@ function AccountChoice({
         <button className="secondary-action account-local-action" onClick={onDeviceOnly} type="button">
           Use this device only
         </button>
+        {receipt ? (
+          <p className="account-receipt" role="status">
+            {receipt}
+          </p>
+        ) : null}
         {error ? (
           <p className="input-error" role="alert">
             {error}
@@ -1773,20 +1846,43 @@ function AccountChoice({
 function AccountControl({
   accountState,
   busy,
+  deleting,
+  deletionError,
   googleConfigured,
+  onDeleteAccount,
   onGoogle,
+  onOpenDelete,
   onRetry,
   onSignOut,
   syncStatus,
 }: {
   accountState: Exclude<AccountState, { status: "anonymous" }>;
   busy: boolean;
+  deleting: boolean;
+  deletionError: string;
   googleConfigured: boolean;
+  onDeleteAccount: () => void;
   onGoogle: () => void;
+  onOpenDelete: () => void;
   onRetry: () => void;
   onSignOut: () => void;
   syncStatus: SyncStatus;
 }) {
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const deleteTriggerRef = useRef<HTMLButtonElement>(null);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+
+  const openDeleteConfirmation = () => {
+    onOpenDelete();
+    setDeleteConfirmationOpen(true);
+    requestAnimationFrame(() => cancelDeleteRef.current?.focus());
+  };
+
+  const closeDeleteConfirmation = () => {
+    setDeleteConfirmationOpen(false);
+    requestAnimationFrame(() => deleteTriggerRef.current?.focus());
+  };
+
   if (accountState.status === "local") {
     return (
       <button
@@ -1829,8 +1925,56 @@ function AccountControl({
           </button>
         ) : null}
         <button disabled={busy} onClick={onSignOut} type="button">
-          {busy ? "Signing out…" : "Sign out"}
+          {busy && !deleting ? "Signing out…" : "Sign out"}
         </button>
+        <button
+          aria-controls="account-delete-confirmation"
+          aria-expanded={deleteConfirmationOpen}
+          className="account-delete-trigger"
+          disabled={busy}
+          onClick={openDeleteConfirmation}
+          ref={deleteTriggerRef}
+          type="button"
+        >
+          Delete account and cloud data
+        </button>
+        {deleteConfirmationOpen ? (
+          <section
+            aria-labelledby="account-delete-heading"
+            className="account-delete-confirmation"
+            id="account-delete-confirmation"
+          >
+            <strong id="account-delete-heading">Permanently delete Setline?</strong>
+            <p>
+              This removes your Setline account, private cloud workout copy,
+              and this browser’s bound workout copy. Revoke Google access
+              separately if you no longer want Google to remember Setline.
+            </p>
+            <div role="group" aria-label="Account deletion confirmation">
+              <button
+                disabled={busy}
+                onClick={closeDeleteConfirmation}
+                ref={cancelDeleteRef}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="account-delete-confirm"
+                disabled={busy}
+                onClick={onDeleteAccount}
+                type="button"
+              >
+                {deleting ? "Deleting…" : "Delete permanently"}
+              </button>
+            </div>
+            {deletionError ? (
+              <p className="input-error" role="alert">
+                {deletionError}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
       </div>
     </details>
   );
