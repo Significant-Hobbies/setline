@@ -165,7 +165,8 @@ test("migrates a version 2 session without changing its set order", async () => 
     };
 
     const migrated = parseStoredState(legacy, 99);
-    assert.equal(migrated?.version, 4);
+    assert.equal(migrated?.version, 5);
+    assert.deepEqual(migrated?.customWorkouts, []);
     assert.equal(migrated?.updatedAt, 42);
     assert.equal(migrated?.session?.workoutId, "legacy-upper-a");
     assert.deepEqual(
@@ -386,7 +387,7 @@ test("records flexible execution without mutating the authored workout", async (
         },
       ],
     });
-    assert.equal(legacyHistory?.version, 4);
+    assert.equal(legacyHistory?.version, 5);
     assert.equal(legacyHistory?.history[0].detailsAvailable, false);
     assert.deepEqual(legacyHistory?.history[0].executions, []);
   } finally {

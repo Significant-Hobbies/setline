@@ -5,6 +5,7 @@ import { resolveWorkout } from "../app/lib/programme.ts";
 
 let transfer;
 let workoutState;
+let customWorkouts;
 let vite;
 
 test.before(async () => {
@@ -15,6 +16,7 @@ test.before(async () => {
   });
   transfer = await vite.ssrLoadModule("/app/lib/workout-data-transfer.ts");
   workoutState = await vite.ssrLoadModule("/app/lib/workout-state.ts");
+  customWorkouts = await vite.ssrLoadModule("/app/lib/custom-workouts.ts");
 });
 
 test.after(async () => {
@@ -104,6 +106,7 @@ test("previews a valid active session without mutating the export", () => {
   assert.equal(result.status, "ok");
   assert.deepEqual(state, before);
   assert.deepEqual(result.preview.activeSession, {
+    workoutId: "upper",
     workoutName: "Upper",
     weekNumber: 1,
     phase: "active",
@@ -111,7 +114,32 @@ test("previews a valid active session without mutating the export", () => {
     totalExecutions: session.records.length,
   });
   assert.equal(result.preview.historyCount, 0);
+  assert.equal(result.preview.customWorkoutCount, 0);
   assert.equal(result.preview.latestWorkout, null);
+});
+
+test("round-trips custom templates in the whole-state backup", () => {
+  const custom = customWorkouts.duplicateWorkoutTemplate(
+    resolveWorkout("lower", 1, 2),
+    "custom:backup",
+    1_000,
+  );
+  const state = {
+    ...workoutState.emptyStoredState(),
+    updatedAt: 2_000,
+    customWorkouts: [custom],
+  };
+  const raw = transfer.serializeWorkoutData(
+    state,
+    new Date("2026-07-31T03:00:00.000Z"),
+  ).json;
+  const result = transfer.parseWorkoutDataImport(raw, 5_000);
+
+  assert.equal(result.status, "ok");
+  assert.equal(result.preview.customWorkoutCount, 1);
+  assert.deepEqual(result.preview.state.customWorkouts, [
+    JSON.parse(JSON.stringify(custom)),
+  ]);
 });
 
 test("rejects malformed, unknown, and invalid workout exports", () => {
@@ -169,7 +197,8 @@ test("migrates a supported legacy state inside the transfer envelope", () => {
   );
 
   assert.equal(result.status, "ok");
-  assert.equal(result.preview.state.version, 4);
+  assert.equal(result.preview.state.version, 5);
+  assert.deepEqual(result.preview.state.customWorkouts, []);
   assert.equal(result.preview.state.updatedAt, 7_000);
 });
 

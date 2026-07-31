@@ -18,6 +18,7 @@ import {
   type SetStateAction,
 } from "react";
 import Link from "next/link";
+import { CustomWorkoutManager } from "./components/CustomWorkoutManager";
 import {
   bindStateToAccount,
   clearStateAccountBinding,
@@ -31,13 +32,18 @@ import {
 } from "./lib/auth-client";
 import { readCloudState, writeCloudState } from "./lib/cloud-sync";
 import {
+  isCustomWorkoutTemplate,
+  MAX_CUSTOM_WORKOUTS,
+  type CustomWorkoutTemplate,
+} from "./lib/custom-workouts";
+import {
   formatStepTarget,
   getProgrammePosition,
   PROGRAMME,
   PROGRAMME_SCHEDULE,
   resolveWorkout,
+  type BuiltInWorkoutId,
   type PlannedStep,
-  type WorkoutId,
 } from "./lib/programme";
 import {
   emptyStoredState,
@@ -138,6 +144,7 @@ function statusLabel(record: ExecutionRecord, index: number, activeIndex: number
 
 export default function SetlineApp() {
   const [view, setView] = useState<View>("today");
+  const [customWorkoutEditing, setCustomWorkoutEditing] = useState(false);
   const [workoutState, setWorkoutState] = useState<StoredState>(emptyStoredState);
   const [hydrated, setHydrated] = useState(false);
   const [now, setNow] = useState(0);
@@ -417,9 +424,17 @@ export default function SetlineApp() {
   const sessionWorkout = useMemo(
     () =>
       session
-        ? resolveWorkout(session.workoutId, session.weekNumber, session.dayIndex)
+        ? session.workoutId.startsWith("custom:")
+          ? workoutState.customWorkouts.find(
+              (workout) => workout.id === session.workoutId,
+            ) ?? null
+          : resolveWorkout(
+              session.workoutId as BuiltInWorkoutId,
+              session.weekNumber,
+              session.dayIndex,
+            )
         : null,
-    [session],
+    [session, workoutState.customWorkouts],
   );
   const orderedExecutions = useMemo(
     () =>
@@ -514,14 +529,29 @@ export default function SetlineApp() {
   };
 
   const navigate = (nextView: View) => {
+    if (
+      customWorkoutEditing &&
+      nextView !== "programme" &&
+      !window.confirm("Discard the unsaved custom workout draft and leave?")
+    ) {
+      return;
+    }
+    if (nextView !== "programme") setCustomWorkoutEditing(false);
     setView(nextView);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const startWorkout = (
-    workoutId: Exclude<WorkoutId, "legacy-upper-a"> = programmePosition.schedule.workoutId,
+    workoutId: Exclude<BuiltInWorkoutId, "legacy-upper-a"> = programmePosition.schedule.workoutId,
     dayIndex = programmePosition.dayIndex,
   ) => {
+    if (
+      customWorkoutEditing &&
+      !window.confirm("Discard the unsaved custom workout draft and start this workout?")
+    ) {
+      return;
+    }
+    setCustomWorkoutEditing(false);
     const template = resolveWorkout(workoutId, programmePosition.weekNumber, dayIndex);
     setCorrection(null);
     setSession(
@@ -536,6 +566,68 @@ export default function SetlineApp() {
     );
     setNow(wallClockNow());
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
+  };
+
+  const startCustomWorkout = (template: CustomWorkoutTemplate) => {
+    if (
+      customWorkoutEditing &&
+      !window.confirm("Discard the unsaved custom workout draft and start this workout?")
+    ) {
+      return;
+    }
+    setCustomWorkoutEditing(false);
+    setCorrection(null);
+    setSession(
+      (existing) =>
+        existing ??
+        makeWorkoutSession(
+          structuredClone(template),
+          programmePosition.weekNumber,
+          programmePosition.dayIndex,
+        ),
+    );
+    setNotice(
+      accountState?.status === "authenticated"
+        ? `${template.name} started. Progress saves on this device first, then syncs.`
+        : `${template.name} started. Progress is saved on this device.`,
+    );
+    setNow(wallClockNow());
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
+  };
+
+  const saveCustomWorkout = (template: CustomWorkoutTemplate) => {
+    if (!isCustomWorkoutTemplate(template)) {
+      setNotice("That custom workout could not be saved.");
+      return;
+    }
+    const existing = workoutState.customWorkouts.some(
+      (workout) => workout.id === template.id,
+    );
+    if (!existing && workoutState.customWorkouts.length >= MAX_CUSTOM_WORKOUTS) {
+      setNotice(`Setline keeps at most ${MAX_CUSTOM_WORKOUTS} custom workouts.`);
+      return;
+    }
+    setWorkoutState((current) => {
+      return updateStoredState(current, {
+        customWorkouts: existing
+          ? current.customWorkouts.map((workout) =>
+              workout.id === template.id ? structuredClone(template) : workout,
+            )
+          : [...current.customWorkouts, structuredClone(template)],
+      });
+    });
+    setNotice(`${template.name} saved in authored order.`);
+  };
+
+  const deleteCustomWorkout = (id: CustomWorkoutTemplate["id"]) => {
+    setWorkoutState((current) =>
+      updateStoredState(current, {
+        customWorkouts: current.customWorkouts.filter(
+          (workout) => workout.id !== id,
+        ),
+      }),
+    );
+    setNotice("Custom workout deleted. Existing sessions and history were kept.");
   };
 
   const updateCurrentRecord = (patch: Partial<ExecutionRecord>) => {
@@ -867,13 +959,18 @@ export default function SetlineApp() {
   };
 
   const clearLocalData = () => {
-    if (!window.confirm("Clear this device’s Setline session and recorded workout history?")) {
+    if (
+      !window.confirm(
+        "Clear this device’s Setline session, workout history, and custom workouts?",
+      )
+    ) {
       return;
     }
     setWorkoutState((current) =>
       updateStoredState(current, {
         session: null,
         history: [],
+        customWorkouts: [],
       }),
     );
     clearStateAccountBinding();
@@ -961,6 +1058,8 @@ export default function SetlineApp() {
     setWorkoutDataReceipt(
       `Restored ${incomingPreview.historyCount} saved workout${
         incomingPreview.historyCount === 1 ? "" : "s"
+      } and ${incomingPreview.customWorkoutCount} custom template${
+        incomingPreview.customWorkoutCount === 1 ? "" : "s"
       }. ${
         incomingPreview.activeSession
           ? `${incomingPreview.activeSession.workoutName} is now the active session.`
@@ -1083,7 +1182,9 @@ export default function SetlineApp() {
           </button>
           <div>
             <span className="session-kicker">
-              Week {session.weekNumber} · {session.workoutName}
+              {session.workoutId.startsWith("custom:")
+                ? `Custom workout · ${session.workoutName}`
+                : `Week ${session.weekNumber} · ${session.workoutName}`}
             </span>
             <strong>{session.phase === "summary" ? "Session review" : "Workout in progress"}</strong>
           </div>
@@ -1122,7 +1223,11 @@ export default function SetlineApp() {
 
             <div className="summary-lead">
               <strong>{formatDuration(elapsedSeconds)}</strong>
-              <span>Planned {sessionWorkout?.expectedMinutes ?? 0} min</span>
+              <span>
+                {sessionWorkout
+                  ? `Planned ${sessionWorkout.expectedMinutes} min`
+                  : "Planned duration unavailable"}
+              </span>
             </div>
 
             <div className="metric-grid">
@@ -1378,6 +1483,7 @@ export default function SetlineApp() {
       {view === "programme" ? (
         <ProgrammeView
           accountState={accountState}
+          customWorkouts={workoutState.customWorkouts}
           currentHistoryCount={history.length}
           currentSession={session}
           importError={workoutDataError}
@@ -1387,8 +1493,12 @@ export default function SetlineApp() {
           onChooseImport={(event) => void chooseWorkoutDataFile(event)}
           onClear={clearLocalData}
           onConfirmImport={confirmWorkoutDataImport}
+          onCustomWorkoutEditingChange={setCustomWorkoutEditing}
+          onDeleteCustomWorkout={deleteCustomWorkout}
           onDownload={downloadWorkoutData}
+          onSaveCustomWorkout={saveCustomWorkout}
           onStart={startWorkout}
+          onStartCustomWorkout={startCustomWorkout}
           position={programmePosition}
         />
       ) : null}
@@ -1584,7 +1694,7 @@ function TodayView({
   accountState: Exclude<AccountState, { status: "anonymous" }>;
   position: ReturnType<typeof getProgrammePosition>;
   onStart: (
-    workoutId?: Exclude<WorkoutId, "legacy-upper-a">,
+    workoutId?: Exclude<BuiltInWorkoutId, "legacy-upper-a">,
     dayIndex?: number,
   ) => void;
   onViewProgramme: () => void;
@@ -1688,6 +1798,7 @@ function TodayView({
 
 function ProgrammeView({
   accountState,
+  customWorkouts,
   currentHistoryCount,
   currentSession,
   importError,
@@ -1697,11 +1808,16 @@ function ProgrammeView({
   onChooseImport,
   onClear,
   onConfirmImport,
+  onCustomWorkoutEditingChange,
+  onDeleteCustomWorkout,
   onDownload,
+  onSaveCustomWorkout,
   onStart,
+  onStartCustomWorkout,
   position,
 }: {
   accountState: Exclude<AccountState, { status: "anonymous" }>;
+  customWorkouts: CustomWorkoutTemplate[];
   currentHistoryCount: number;
   currentSession: WorkoutSession | null;
   importError: string;
@@ -1714,11 +1830,15 @@ function ProgrammeView({
   onChooseImport: (event: ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
   onConfirmImport: () => void;
+  onCustomWorkoutEditingChange: (editing: boolean) => void;
+  onDeleteCustomWorkout: (id: CustomWorkoutTemplate["id"]) => void;
   onDownload: () => void;
+  onSaveCustomWorkout: (template: CustomWorkoutTemplate) => void;
   onStart: (
-    workoutId?: Exclude<WorkoutId, "legacy-upper-a">,
+    workoutId?: Exclude<BuiltInWorkoutId, "legacy-upper-a">,
     dayIndex?: number,
   ) => void;
+  onStartCustomWorkout: (template: CustomWorkoutTemplate) => void;
   position: ReturnType<typeof getProgrammePosition>;
 }) {
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -1731,6 +1851,18 @@ function ProgrammeView({
     onConfirmImport();
     requestAnimationFrame(() => importTriggerRef.current?.focus());
   };
+  const builtInWorkouts = Array.from(
+    new Map(
+      PROGRAMME_SCHEDULE.map((item) => {
+        const workout = resolveWorkout(
+          item.workoutId,
+          position.weekNumber,
+          item.dayIndex,
+        );
+        return [workout.id, workout] as const;
+      }),
+    ).values(),
+  );
 
   return (
     <div className="page-view programme-view">
@@ -1795,8 +1927,8 @@ function ProgrammeView({
             <h2 id="workout-data-heading">Keep your own copy.</h2>
             <p>
               Download a versioned Setline backup of this device’s active
-              session and history. Treat the JSON file like a private training
-              log.
+              session, history, and custom workout templates. Treat the JSON
+              file like a private training log.
             </p>
             <div className="workout-data-actions">
               <button type="button" onClick={onDownload}>
@@ -1829,6 +1961,7 @@ function ProgrammeView({
             ) : null}
             {importPreview ? (
               <WorkoutDataImportPreviewCard
+                currentCustomWorkoutCount={customWorkouts.length}
                 currentHistoryCount={currentHistoryCount}
                 currentSession={currentSession}
                 fileName={importPreview.fileName}
@@ -1849,11 +1982,20 @@ function ProgrammeView({
           )}
         </aside>
       </div>
+      <CustomWorkoutManager
+        builtInWorkouts={builtInWorkouts}
+        customWorkouts={customWorkouts}
+        onDelete={onDeleteCustomWorkout}
+        onEditingChange={onCustomWorkoutEditingChange}
+        onSave={onSaveCustomWorkout}
+        onStart={onStartCustomWorkout}
+      />
     </div>
   );
 }
 
 function WorkoutDataImportPreviewCard({
+  currentCustomWorkoutCount,
   currentHistoryCount,
   currentSession,
   fileName,
@@ -1861,6 +2003,7 @@ function WorkoutDataImportPreviewCard({
   onConfirm,
   preview,
 }: {
+  currentCustomWorkoutCount: number;
   currentHistoryCount: number;
   currentSession: WorkoutSession | null;
   fileName: string;
@@ -1878,14 +2021,20 @@ function WorkoutDataImportPreviewCard({
       ).toLocaleDateString()}`
     : "No saved workouts";
   const activeSession = preview.activeSession
-    ? `${preview.activeSession.workoutName} · Week ${
-        preview.activeSession.weekNumber
+    ? `${preview.activeSession.workoutName} · ${
+        preview.activeSession.workoutId.startsWith("custom:")
+          ? "Custom workout"
+          : `Week ${preview.activeSession.weekNumber}`
       } · ${preview.activeSession.completedExecutions}/${
         preview.activeSession.totalExecutions
       } resolved`
     : "No active workout";
   const currentActiveSession = currentSession
-    ? `${currentSession.workoutName} · Week ${currentSession.weekNumber} · ${
+    ? `${currentSession.workoutName} · ${
+        currentSession.workoutId.startsWith("custom:")
+          ? "Custom workout"
+          : `Week ${currentSession.weekNumber}`
+      } · ${
         currentSession.records.filter((record) => record.status !== "pending")
           .length
       }/${currentSession.records.length} resolved`
@@ -1917,14 +2066,20 @@ function WorkoutDataImportPreviewCard({
           </dd>
         </div>
         <div>
+          <dt>Custom templates</dt>
+          <dd>
+            {preview.customWorkoutCount} incoming · {currentCustomWorkoutCount} current
+          </dd>
+        </div>
+        <div>
           <dt>Latest</dt>
           <dd>{latestWorkout}</dd>
         </div>
       </dl>
       <p>
-        Replace this device’s active session and history together. Setline does
-        not merge files. Download the current backup first if you may need to
-        restore it.
+        Replace this device’s active session, history, and custom templates
+        together. Setline does not merge files. Download the current backup
+        first if you may need to restore it.
       </p>
       <div className="workout-data-preview-actions">
         <button type="button" onClick={onCancel}>
@@ -1967,7 +2122,10 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
                 <div>
                   <h2>{entry.workoutName}</h2>
                   <p>
-                    Week {entry.weekNumber} · {entry.completedSets} completed ·{" "}
+                    {entry.workoutId.startsWith("custom:")
+                      ? "Custom workout"
+                      : `Week ${entry.weekNumber}`}{" "}
+                    · {entry.completedSets} completed ·{" "}
                     {entry.modifiedSets} modified · {entry.skippedSets} skipped · quality{" "}
                     {entry.quality === null ? "not recorded" : `${entry.quality}/5`}
                   </p>

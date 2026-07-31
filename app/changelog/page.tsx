@@ -4,6 +4,14 @@ import Link from "next/link";
 const repository = "https://github.com/Significant-Hobbies/setline";
 const releases = [
   {
+    date: "2026-07-31",
+    title: "Your own workouts, in your own order",
+    outcomes: [
+      "Create an ordered workout from scratch or duplicate a bundled or custom template into an independent copy.",
+      "Custom templates stay device-first, travel in Setline backups and private account sync, and never rewrite sessions or history after an edit or deletion.",
+    ],
+  },
+  {
     date: "2026-07-28",
     title: "The full twelve-week programme arrived",
     outcomes: [

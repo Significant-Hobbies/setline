@@ -22,6 +22,7 @@
 
 html {
   min-width: 320px;
+  scroll-padding-bottom: 120px;
   background: var(--chalk);
   color: var(--ink);
   scroll-behavior: smooth;
@@ -1166,6 +1167,266 @@ button:disabled {
   color: #9c1d10;
   font-size: 0.73rem;
   font-weight: 850;
+}
+
+.custom-workouts {
+  margin: 34px 0 18px;
+  padding: 30px 0;
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.custom-workouts-heading,
+.custom-editor-heading,
+.custom-step-heading,
+.custom-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.custom-workouts-heading {
+  align-items: end;
+}
+
+.custom-workouts-heading h2,
+.custom-editor-heading h3,
+.custom-workout-library h3 {
+  margin: 7px 0 0;
+  font-family: var(--font-data);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.custom-workouts-heading h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+.custom-workouts-heading p {
+  max-width: 64ch;
+  margin: 12px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.custom-workouts button,
+.custom-workouts input,
+.custom-workouts select {
+  min-height: 44px;
+  scroll-margin-bottom: 120px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.custom-workouts button {
+  padding: 8px 14px;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.custom-workouts-heading > button,
+.custom-editor-actions button[type="submit"],
+.custom-workout-list article > div:last-child button:first-child {
+  background: var(--lime);
+}
+
+.custom-workout-receipt,
+.custom-workout-error {
+  margin: 18px 0 0;
+  padding: 11px 13px;
+  border: 1px solid var(--ink);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.custom-workout-receipt {
+  background: var(--blue);
+}
+
+.custom-workout-error {
+  border-color: var(--coral);
+  background: var(--coral-soft);
+  color: var(--coral-ink);
+}
+
+.custom-workout-editor {
+  margin-top: 24px;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.custom-editor-heading {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.custom-editor-heading h3,
+.custom-workout-library h3 {
+  font-size: 1.55rem;
+}
+
+.custom-workout-fields,
+.custom-step-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.custom-workout-fields {
+  margin-top: 20px;
+}
+
+.custom-workouts label {
+  display: grid;
+  gap: 6px;
+}
+
+.custom-workouts label > span {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.custom-workouts input,
+.custom-workouts select {
+  width: 100%;
+  padding: 10px 12px;
+  border-color: var(--steel-dark);
+  border-radius: 0;
+}
+
+.custom-step-list {
+  display: grid;
+  margin: 24px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+  list-style: none;
+}
+
+.custom-step-editor {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--steel-dark);
+}
+
+.custom-step-heading {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.custom-step-heading > strong {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--ink);
+  background: var(--blue);
+  font-family: var(--font-data);
+}
+
+.custom-step-heading > span {
+  flex: 1;
+  padding-top: 12px;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.custom-step-heading > div,
+.custom-workout-list article > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.custom-step-heading button {
+  min-width: 44px;
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.custom-step-heading button:last-child,
+.custom-workout-list article > div:last-child button:last-child {
+  border-color: var(--coral);
+  color: var(--coral-ink);
+}
+
+.custom-editor-actions {
+  margin-top: 20px;
+}
+
+.custom-workout-library {
+  display: grid;
+  margin-top: 34px;
+  gap: 34px;
+}
+
+.custom-workout-library > section {
+  min-width: 0;
+}
+
+.custom-workout-list {
+  margin-top: 14px;
+  border-top: 1px solid var(--ink);
+}
+
+.custom-workout-list article {
+  display: grid;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--steel-dark);
+  gap: 16px;
+}
+
+.custom-workout-list article > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.custom-workout-list article strong {
+  font-family: var(--font-data);
+  font-size: 1.3rem;
+  text-transform: uppercase;
+}
+
+.custom-workout-list article span,
+.custom-workout-list article small,
+.custom-source-list small,
+.custom-workout-empty {
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+}
+
+.custom-workout-empty {
+  min-height: 86px;
+  margin: 14px 0 0;
+  padding: 22px 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--steel-dark);
+}
+
+.custom-source-list {
+  display: grid;
+  margin-top: 14px;
+  gap: 8px;
+}
+
+.custom-source-list button {
+  display: grid;
+  height: auto;
+  padding: 12px 14px;
+  text-align: left;
+  gap: 3px;
+}
+
+.custom-source-list button span {
+  font-family: var(--font-data);
+  font-size: 1rem;
+  text-transform: uppercase;
 }
 
 .history-list {
@@ -2482,6 +2743,24 @@ button:disabled {
     grid-template-columns: minmax(0, 1fr) 310px;
   }
 
+  .custom-workout-fields {
+    grid-template-columns: minmax(0, 1fr) 180px;
+  }
+
+  .custom-step-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .custom-step-exercise,
+  .custom-step-cue {
+    grid-column: 1 / -1;
+  }
+
+  .custom-workout-list article {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
   .history-row {
     grid-template-columns: 90px minmax(180px, 1fr) minmax(160px, 0.6fr) auto;
   }
@@ -2705,6 +2984,24 @@ button:disabled {
 
   .target-notation {
     gap: 5px;
+  }
+
+  .custom-workouts-heading,
+  .custom-editor-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-step-heading {
+    flex-wrap: wrap;
+  }
+
+  .custom-step-heading > div {
+    width: 100%;
+  }
+
+  .custom-step-heading > div button {
+    flex: 1;
   }
 
 }

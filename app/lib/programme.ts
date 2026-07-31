@@ -1,10 +1,12 @@
-export type WorkoutId =
+export type BuiltInWorkoutId =
   | "upper"
   | "lower"
   | "easy-mobility"
   | "upper-hard"
   | "mobility"
   | "legacy-upper-a";
+export type CustomWorkoutId = `custom:${string}`;
+export type WorkoutId = BuiltInWorkoutId | CustomWorkoutId;
 
 export type TrackingKind =
   | "weight-reps"
@@ -52,7 +54,7 @@ export type ScheduleEntry = {
   day: string;
   name: string;
   time: string;
-  workoutId: Exclude<WorkoutId, "legacy-upper-a">;
+  workoutId: Exclude<BuiltInWorkoutId, "legacy-upper-a">;
   required: boolean;
 };
 
@@ -796,7 +798,7 @@ export const LEGACY_UPPER_STEPS: PlannedStep[] = [
 ];
 
 export function resolveWorkout(
-  workoutId: WorkoutId,
+  workoutId: BuiltInWorkoutId,
   weekNumber: number,
   dayIndex = 0,
 ): WorkoutTemplate {

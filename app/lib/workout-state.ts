@@ -1,12 +1,18 @@
 import {
   LEGACY_UPPER_STEPS,
   resolveWorkout,
+  type BuiltInWorkoutId,
   type PlannedStep,
   type StepType,
   type TrackingKind,
   type WorkoutId,
   type WorkoutTemplate,
 } from "./programme";
+import {
+  isCustomWorkoutTemplate,
+  MAX_CUSTOM_WORKOUTS,
+  type CustomWorkoutTemplate,
+} from "./custom-workouts";
 
 export type SessionPhase = "active" | "rest" | "summary";
 export type ExecutionStatus = "pending" | "completed" | "skipped";
@@ -97,10 +103,11 @@ export type HistoryEntry = {
 };
 
 export type StoredState = {
-  version: 4;
+  version: 5;
   updatedAt: number;
   session: WorkoutSession | null;
   history: HistoryEntry[];
+  customWorkouts: CustomWorkoutTemplate[];
 };
 
 export type SessionMetrics = {
@@ -119,7 +126,7 @@ export type SessionMetrics = {
 export const STORAGE_KEY = "setline:v1";
 export const PENDING_SYNC_KEY = "setline:sync-pending";
 
-const workoutIds: WorkoutId[] = [
+const workoutIds: BuiltInWorkoutId[] = [
   "upper",
   "lower",
   "easy-mobility",
@@ -164,8 +171,17 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || typeof value === "string";
 }
 
+function isBuiltInWorkoutId(value: unknown): value is BuiltInWorkoutId {
+  return workoutIds.includes(value as BuiltInWorkoutId);
+}
+
 function isWorkoutId(value: unknown): value is WorkoutId {
-  return workoutIds.includes(value as WorkoutId);
+  return (
+    isBuiltInWorkoutId(value) ||
+    (typeof value === "string" &&
+      value.startsWith("custom:") &&
+      value.length <= 240)
+  );
 }
 
 function isSegment(value: unknown): value is SetSegment {
@@ -292,12 +308,22 @@ function isWorkoutSession(value: unknown): value is WorkoutSession {
     return false;
   }
 
+  const planned = session.records.filter((record) => record.source === "planned");
+  if (String(session.workoutId).startsWith("custom:")) {
+    return (
+      planned.length >= 1 &&
+      planned.every(
+        (record, index) =>
+          record.step.plannedStepId === record.step.id &&
+          record.plannedPosition === index + 1,
+      )
+    );
+  }
   const template = resolveWorkout(
-    session.workoutId as WorkoutId,
+    session.workoutId as BuiltInWorkoutId,
     session.weekNumber as number,
     session.dayIndex as number,
   );
-  const planned = session.records.filter((record) => record.source === "planned");
   return (
     planned.length === template.steps.length &&
     planned.every((record, index) => {
@@ -728,7 +754,7 @@ function migrateV3Session(value: unknown): WorkoutSession | null | undefined {
   const legacy = value as V3Session;
   if (
     typeof legacy.id !== "string" ||
-    !isWorkoutId(legacy.workoutId) ||
+    !isBuiltInWorkoutId(legacy.workoutId) ||
     typeof legacy.workoutName !== "string" ||
     !Number.isInteger(legacy.weekNumber) ||
     !Number.isInteger(legacy.dayIndex) ||
@@ -866,10 +892,11 @@ function migrateV1OrV2Session(value: unknown): WorkoutSession | null | undefined
 
 export function emptyStoredState(): StoredState {
   return {
-    version: 4,
+    version: 5,
     updatedAt: 0,
     session: null,
     history: [],
+    customWorkouts: [],
   };
 }
 
@@ -883,9 +910,10 @@ export function parseStoredState(
     updatedAt?: unknown;
     session?: unknown;
     history?: unknown;
+    customWorkouts?: unknown;
   };
 
-  if (candidate.version === 4) {
+  if (candidate.version === 5) {
     const session =
       candidate.session === null || isWorkoutSession(candidate.session)
         ? candidate.session
@@ -896,19 +924,38 @@ export function parseStoredState(
       candidate.history.every(isHistoryEntry)
         ? candidate.history
         : undefined;
+    const customWorkouts =
+      Array.isArray(candidate.customWorkouts) &&
+      candidate.customWorkouts.length <= MAX_CUSTOM_WORKOUTS &&
+      candidate.customWorkouts.every(isCustomWorkoutTemplate) &&
+      new Set(candidate.customWorkouts.map((workout) => workout.id)).size ===
+        candidate.customWorkouts.length
+        ? candidate.customWorkouts
+        : undefined;
     if (
       session === undefined ||
       history === undefined ||
+      customWorkouts === undefined ||
       !isNonNegativeNumber(candidate.updatedAt)
     ) {
       return null;
     }
     return {
-      version: 4,
+      version: 5,
       updatedAt: candidate.updatedAt,
       session,
       history,
+      customWorkouts,
     };
+  }
+
+  if (candidate.version === 4) {
+    const migrated = parseStoredState({
+      ...candidate,
+      version: 5,
+      customWorkouts: [],
+    });
+    return migrated;
   }
 
   if (candidate.version === 3) {
@@ -926,10 +973,11 @@ export function parseStoredState(
       return null;
     }
     return {
-      version: 4,
+      version: 5,
       updatedAt: candidate.updatedAt,
       session,
       history,
+      customWorkouts: [],
     };
   }
 
@@ -942,7 +990,7 @@ export function parseStoredState(
     });
     if (session === undefined || history === undefined) return null;
     return {
-      version: 4,
+      version: 5,
       updatedAt:
         candidate.version === 2 &&
         isNonNegativeNumber(candidate.updatedAt)
@@ -950,6 +998,7 @@ export function parseStoredState(
           : migrationTime,
       session,
       history,
+      customWorkouts: [],
     };
   }
   return null;
@@ -966,12 +1015,12 @@ export function parseStoredStateJson(raw: string | null) {
 
 export function updateStoredState(
   current: StoredState,
-  patch: Partial<Pick<StoredState, "session" | "history">>,
+  patch: Partial<Pick<StoredState, "session" | "history" | "customWorkouts">>,
 ): StoredState {
   return {
     ...current,
     ...patch,
-    version: 4,
+    version: 5,
     updatedAt: Math.max(Date.now(), current.updatedAt + 1),
   };
 }

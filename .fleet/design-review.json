@@ -2,7 +2,7 @@
   "$schema": "fleet.design-review.v1",
   "version": 1,
   "project": "setline",
-  "target": "Owned product changelog",
+  "target": "Custom workout templates",
   "mode": "preserve",
   "register": "product",
   "context": {
@@ -14,33 +14,33 @@
     "probes": [],
     "selected": "existing-design",
     "approval": "not-required",
-    "before": "artifacts/design/before.png"
+    "before": "artifacts/design/workout-data-after-390.png"
   },
   "evidence": {
     "screenshots": [
       {
         "width": 390,
-        "path": "artifacts/design/after-390.png"
+        "path": "artifacts/design/custom-workout-editor-390.png"
       },
       {
         "width": 768,
-        "path": "artifacts/design/after-768.png"
+        "path": "artifacts/design/custom-workout-editor-768.png"
       },
       {
         "width": 1440,
-        "path": "artifacts/design/after-1440.png"
+        "path": "artifacts/design/custom-workout-editor-1440.png"
       }
     ],
     "projectCheck": {
-      "command": "npm run check && git diff --check",
+      "command": "npm run check && openspec validate --all --strict && git diff --check",
       "status": "pass"
     },
     "critique": {
-      "score": 36,
+      "score": 35,
       "maximum": 40
     },
     "audit": {
-      "score": 18,
+      "score": 20,
       "maximum": 20
     },
     "unresolved": {
@@ -50,12 +50,12 @@
     "detector": {
       "posture": "advisory",
       "findings": [
-        "The detector reported one pre-existing inset badge stripe in the workout UI, outside the changelog surface."
+        "One pre-existing side-tab warning on .day-chip and .sample-badge, outside the custom-workout surface."
       ]
     }
   },
   "ownerFeedback": {
     "decision": "delegated",
-    "note": "The owner explicitly delegated changelog implementation across all projects on 2026-07-29."
+    "note": "The owner approved all work in this thread and delegated final judgment for this preserve-mode issue."
   }
 }

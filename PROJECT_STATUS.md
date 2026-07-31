@@ -21,6 +21,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-07-31 — added device-first custom workout authoring and independent
+  duplication with ordered, modality-aware exercise targets; session and
+  history snapshots remain unchanged after template edits or deletion.
 - 2026-07-31 — added a versioned local JSON workout-data export and bounded
   import preview with explicit whole-state replacement; no account credentials
   or server-side data are included.
@@ -95,6 +98,11 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
   completion and next-start timestamps.
 - Detailed per-set execution history preserved on device and in authenticated
   cloud state.
+- Bounded custom workout templates with ordered exercise authoring, edit,
+  independent duplication from bundled or custom workouts, confirmed deletion,
+  and the existing offline-first workout player.
+- Custom templates included in private whole-state sync and versioned JSON
+  backup/restore, while active sessions and history retain immutable snapshots.
 
 ## Work queue
 
