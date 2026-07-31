@@ -54,6 +54,11 @@ import {
   type PlannedStep,
 } from "./lib/programme";
 import {
+  applyProgressionValues,
+  getProgressionRecommendation,
+  type ProgressionRecommendation,
+} from "./lib/progression";
+import {
   emptyStoredState,
   deferActiveExecution,
   executionIsModified,
@@ -177,6 +182,9 @@ export default function SetlineApp() {
   } | null>(null);
   const [workoutDataError, setWorkoutDataError] = useState("");
   const [workoutDataReceipt, setWorkoutDataReceipt] = useState("");
+  const [keptRecommendationKeys, setKeptRecommendationKeys] = useState<string[]>(
+    [],
+  );
   const workoutStateRef = useRef(workoutState);
   const lastSyncedAtRef = useRef(0);
   const cloudReadyRef = useRef(false);
@@ -474,6 +482,19 @@ export default function SetlineApp() {
   );
   const currentRecord = session ? getActiveExecution(session) : null;
   const currentSet = currentRecord?.step ?? null;
+  const progressionRecommendation = currentSet
+    ? getProgressionRecommendation(currentSet, history)
+    : null;
+  const progressionRecommendationKey =
+    session && currentRecord ? `${session.id}:${currentRecord.id}` : null;
+  const visibleProgressionRecommendation =
+    progressionRecommendation &&
+    progressionRecommendationKey &&
+    currentRecord?.segments.length === 1 &&
+    !executionIsModified(currentRecord) &&
+    !keptRecommendationKeys.includes(progressionRecommendationKey)
+      ? progressionRecommendation
+      : null;
   const metrics = useMemo(
     () => (session ? getSessionMetrics(session) : null),
     [session],
@@ -718,6 +739,42 @@ export default function SetlineApp() {
       segments: currentRecord.segments.map((segment) =>
         segment.id === segmentId ? { ...segment, ...patch } : segment,
       ),
+    });
+  };
+
+  const applyCurrentProgression = (weight: number, reps: number) => {
+    if (!currentRecord || !progressionRecommendationKey) return;
+    const nextRecord = applyProgressionValues(currentRecord, weight, reps);
+    if (nextRecord === currentRecord) return;
+    updateCurrentRecord({ segments: nextRecord.segments });
+    setNotice(
+      `${weight} kg × ${reps} loaded into this ${currentRecord.step.exercise} set only.`,
+    );
+    requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLInputElement>(
+          '[aria-label="Segment 1 weight in kilograms"]',
+        )
+        ?.focus();
+    });
+  };
+
+  const keepCurrentProgression = () => {
+    if (!currentRecord || !progressionRecommendationKey) return;
+    setKeptRecommendationKeys((current) =>
+      current.includes(progressionRecommendationKey)
+        ? current
+        : [...current, progressionRecommendationKey],
+    );
+    setNotice(
+      `${currentRecord.step.exercise} keeps the authored target for this set.`,
+    );
+    requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLInputElement>(
+          '[aria-label="Segment 1 weight in kilograms"]',
+        )
+        ?.focus();
     });
   };
 
@@ -1414,13 +1471,28 @@ export default function SetlineApp() {
                     </div>
                   </div>
 
-                  <div className="previous-strip">
-                    <span>PLAN DOSE</span>
-                    <strong>
-                      {currentSet.setLabel}
-                      {currentSet.optional ? " · Optional / conditional" : ""}
-                    </strong>
-                  </div>
+                  {visibleProgressionRecommendation ? (
+                    <ProgressionDecision
+                      key={progressionRecommendationKey}
+                      recommendation={visibleProgressionRecommendation}
+                      onAccept={() =>
+                        applyCurrentProgression(
+                          visibleProgressionRecommendation.suggestedWeight,
+                          visibleProgressionRecommendation.suggestedReps,
+                        )
+                      }
+                      onApplyEdit={applyCurrentProgression}
+                      onKeep={keepCurrentProgression}
+                    />
+                  ) : (
+                    <div className="previous-strip">
+                      <span>PLAN DOSE</span>
+                      <strong>
+                        {currentSet.setLabel}
+                        {currentSet.optional ? " · Optional / conditional" : ""}
+                      </strong>
+                    </div>
+                  )}
 
                   <div className="cue-strip">
                     <span>FORM CUE</span>
@@ -1445,18 +1517,20 @@ export default function SetlineApp() {
                   ) : null}
 
                   <div className="attempt-actions">
-                    <button
-                      className="action-slab"
-                      disabled={!currentValuesValid}
-                      onClick={completeSet}
-                    >
-                      Complete step
-                      <span>
-                        {currentSet.restSeconds
-                          ? `Starts ${formatClock(currentSet.restSeconds)} rest`
-                          : "Advances in the written order"}
-                      </span>
-                    </button>
+                    <div className="completion-action">
+                      <button
+                        className="action-slab"
+                        disabled={!currentValuesValid}
+                        onClick={completeSet}
+                      >
+                        Complete step
+                        <span>
+                          {currentSet.restSeconds
+                            ? `Starts ${formatClock(currentSet.restSeconds)} rest`
+                            : "Advances in the written order"}
+                        </span>
+                      </button>
+                    </div>
                     <button className="secondary-action" onClick={skipSet}>
                       Skip this {currentSet.optional ? "optional step" : "step"}
                     </button>
@@ -2457,6 +2531,171 @@ function ProgressView({ history }: { history: HistoryEntry[] }) {
         <p>Targets are programme data. Actuals are recorded by you. Volume and estimated 1RM are calculations. Sensor-only metrics remain unavailable.</p>
       </aside>
     </div>
+  );
+}
+
+function ProgressionDecision({
+  recommendation,
+  onAccept,
+  onApplyEdit,
+  onKeep,
+}: {
+  recommendation: ProgressionRecommendation;
+  onAccept: () => void;
+  onApplyEdit: (weight: number, reps: number) => void;
+  onKeep: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [weight, setWeight] = useState(recommendation.suggestedWeight);
+  const [reps, setReps] = useState(recommendation.suggestedReps);
+  const restoreEditFocusRef = useRef(false);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  const weightInputRef = useRef<HTMLInputElement>(null);
+  const weightValid = Number.isFinite(weight) && weight >= 0;
+  const repsValid = Number.isInteger(reps) && reps > 0;
+  const editedValuesValid = weightValid && repsValid;
+  const sourceDate = new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
+    .format(new Date(recommendation.sourceCompletedAt))
+    .toUpperCase();
+
+  useEffect(() => {
+    if (editing) {
+      weightInputRef.current?.focus();
+    } else if (restoreEditFocusRef.current) {
+      editButtonRef.current?.focus();
+      restoreEditFocusRef.current = false;
+    }
+  }, [editing]);
+
+  return (
+    <details
+      className="progression-decision"
+    >
+      <summary className="progression-decision-heading">
+        <div>
+          <span className="section-code">CALCULATED · PROGRESSION AVAILABLE</span>
+          <h2>
+            {recommendation.suggestedWeight} kg × {recommendation.suggestedReps}
+          </h2>
+        </div>
+        <span className="progression-review-label">
+          <span>Review</span>
+          <span>Close</span>
+        </span>
+      </summary>
+      <div className="progression-decision-body">
+        <p>
+          {recommendation.sourceWorkoutName} · {sourceDate}:{" "}
+          {recommendation.evidenceSetCount} sets at{" "}
+          {recommendation.previousWeight} kg reached{" "}
+          {recommendation.repetitionThreshold}+ reps at RPE{" "}
+          {recommendation.rpeCeiling} or lower.
+        </p>
+        <p className="progression-boundary">
+          This is a deterministic proposal for this set’s actual inputs. The
+          authored target and future sessions stay unchanged.
+        </p>
+
+        {editing ? (
+          <form
+            className="progression-edit"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (editedValuesValid) onApplyEdit(weight, reps);
+            }}
+          >
+            <label>
+              <span>Proposed weight</span>
+              <div>
+                <input
+                  aria-label="Edited progression weight in kilograms"
+                  aria-describedby={
+                    weightValid ? undefined : "progression-edit-error"
+                  }
+                  aria-invalid={!weightValid}
+                  inputMode="decimal"
+                  min="0"
+                  onChange={(event) => setWeight(Number(event.target.value))}
+                  ref={weightInputRef}
+                  step="0.5"
+                  type="number"
+                  value={weight}
+                />
+                <b>kg</b>
+              </div>
+            </label>
+            <label>
+              <span>Proposed repetitions</span>
+              <div>
+                <input
+                  aria-label="Edited progression repetitions"
+                  aria-describedby={
+                    repsValid ? undefined : "progression-edit-error"
+                  }
+                  aria-invalid={!repsValid}
+                  inputMode="numeric"
+                  min="1"
+                  onChange={(event) => setReps(Number(event.target.value))}
+                  step="1"
+                  type="number"
+                  value={reps}
+                />
+                <b>reps</b>
+              </div>
+            </label>
+            {!editedValuesValid ? (
+              <p
+                className="input-error"
+                id="progression-edit-error"
+                role="alert"
+              >
+                Enter a non-negative weight and positive whole repetitions.
+              </p>
+            ) : null}
+            <div className="progression-edit-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  restoreEditFocusRef.current = true;
+                  setEditing(false);
+                }}
+              >
+                Cancel edit
+              </button>
+              <button type="submit" disabled={!editedValuesValid}>
+                Apply edited values
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="progression-actions">
+            <button className="progression-accept" type="button" onClick={onAccept}>
+              <strong>Accept</strong>
+              <span>Use {recommendation.suggestedWeight} kg × {recommendation.suggestedReps}</span>
+            </button>
+            <button
+              ref={editButtonRef}
+              type="button"
+              onClick={() => setEditing(true)}
+            >
+              <strong>Edit</strong>
+              <span>Choose this set’s values</span>
+            </button>
+            <button type="button" onClick={onKeep}>
+              <strong>Keep current</strong>
+              <span>
+                Retain {recommendation.previousWeight} kg ×{" "}
+                {recommendation.suggestedReps}
+              </span>
+            </button>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }
 

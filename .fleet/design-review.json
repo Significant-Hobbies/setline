@@ -1,8 +1,8 @@
 {
   "$schema": "fleet.design-review.v1",
   "version": 1,
-  "project": "setline",
-  "target": "Custom workout programme schedule",
+  "project": "setline-progression-recommendations",
+  "target": "Active workout progression recommendation decision panel",
   "mode": "preserve",
   "register": "product",
   "context": {
@@ -14,33 +14,33 @@
     "probes": [],
     "selected": "existing-design",
     "approval": "not-required",
-    "before": "artifacts/design/custom-workout-editor-390.png"
+    "before": "artifacts/design/before.png"
   },
   "evidence": {
     "screenshots": [
       {
         "width": 390,
-        "path": "artifacts/design/custom-programme-390.png"
+        "path": "artifacts/design/after-390.png"
       },
       {
         "width": 768,
-        "path": "artifacts/design/custom-programme-768.png"
+        "path": "artifacts/design/after-768.png"
       },
       {
         "width": 1440,
-        "path": "artifacts/design/custom-programme-1440.png"
+        "path": "artifacts/design/after-1440.png"
       }
     ],
     "projectCheck": {
-      "command": "npm run check && openspec validate add-custom-workout-programme-scheduling --strict && git diff --check",
+      "command": "npm run check",
       "status": "pass"
     },
     "critique": {
-      "score": 36,
+      "score": 40,
       "maximum": 40
     },
     "audit": {
-      "score": 18,
+      "score": 20,
       "maximum": 20
     },
     "unresolved": {
@@ -54,6 +54,6 @@
   },
   "ownerFeedback": {
     "decision": "delegated",
-    "note": "Owner delegated final release judgment in PRODUCT.md and approved the requested work."
+    "note": "The owner pre-approved the issue sweep and delegated final judgment after the required evidence and quality gates pass."
   }
 }
