@@ -32,7 +32,7 @@
       }
     ],
     "projectCheck": {
-      "command": "npm run check && git diff --check",
+      "command": "pnpm run check && git diff --check",
       "status": "pass"
     },
     "critique": {

@@ -32,7 +32,7 @@
       }
     ],
     "projectCheck": {
-      "command": "npm run check",
+      "command": "pnpm run check",
       "status": "pass"
     },
     "critique": {

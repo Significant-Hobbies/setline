@@ -10,14 +10,14 @@ Production: [setline.significanthobbies.com](https://setline.significanthobbies.
 ## Local development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## Checks
 
 ```bash
-npm run check
+pnpm run check
 ```
 
 The release includes the owner-authored 12-week programme, custom workout

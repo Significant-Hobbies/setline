@@ -10,7 +10,7 @@
 - Keep active workouts device-first and functional without a network request.
 - Keep recorded, calculated, authored, adjusted, and unavailable values
   visibly distinct.
-- Use npm and the committed `package-lock.json`.
-- Run `npm run check` before broader release validation.
+- Use pnpm and the committed `pnpm-lock.yaml`.
+- Run `pnpm run check` before broader release validation.
 - Do not deploy, migrate D1, change OAuth configuration, or change production
   secrets without explicit approval.
