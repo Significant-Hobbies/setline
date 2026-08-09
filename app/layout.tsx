@@ -5,18 +5,6 @@ import "./globals.css";
 const SITE_ORIGIN = "https://setline.significanthobbies.com";
 const description =
   "Build the plan once. Follow it precisely every day with guided sets, rest timing, and device-local workout history.";
-const structuredData = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "Setline",
-  applicationCategory: "HealthApplication",
-  operatingSystem: "Web",
-  url: `${SITE_ORIGIN}/`,
-  image: `${SITE_ORIGIN}/og.png`,
-  description,
-  sameAs: ["https://github.com/Significant-Hobbies/setline"],
-};
-
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host =
