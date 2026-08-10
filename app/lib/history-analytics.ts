@@ -100,11 +100,6 @@ function nonNegative(value: number) {
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
-function maxNullable(values: Array<number | null>) {
-  const available = values.filter((value): value is number => value !== null);
-  return available.length ? Math.max(...available) : null;
-}
-
 function trendValue(point: ExerciseTrendPoint, metric: ExerciseTrendMetric) {
   if (metric === "weight") return point.bestWeight;
   if (metric === "duration") return point.longestDurationSeconds;
@@ -112,15 +107,73 @@ function trendValue(point: ExerciseTrendPoint, metric: ExerciseTrendMetric) {
   return point.completedExecutions;
 }
 
-function selectTrendMetric(points: ExerciseTrendPoint[]): ExerciseTrendMetric {
-  if (points.some((point) => point.bestWeight !== null)) return "weight";
-  if (points.some((point) => point.longestDurationSeconds !== null)) {
-    return "duration";
+function summarizeExercisePoints(points: ExerciseTrendPoint[]) {
+  let bestWeight: number | null = null;
+  let repetitionsAtBestWeight: number | null = null;
+  let bestRepetitions: number | null = null;
+  let longestDurationSeconds: number | null = null;
+  let completedExecutions = 0;
+  let totalWorkingVolume = 0;
+  let rpeCount = 0;
+  let rpeTotal = 0;
+
+  for (const point of points) {
+    completedExecutions += point.completedExecutions;
+    totalWorkingVolume += point.workingVolume;
+    rpeCount += point.rpeCount;
+    rpeTotal += (point.averageRpe ?? 0) * point.rpeCount;
+
+    if (point.bestWeight !== null) {
+      if (bestWeight === null || point.bestWeight > bestWeight) {
+        bestWeight = point.bestWeight;
+        repetitionsAtBestWeight = point.repetitionsAtBestWeight;
+      } else if (
+        point.bestWeight === bestWeight &&
+        point.repetitionsAtBestWeight !== null
+      ) {
+        repetitionsAtBestWeight = Math.max(
+          repetitionsAtBestWeight ?? 0,
+          point.repetitionsAtBestWeight,
+        );
+      }
+    }
+    if (
+      point.bestRepetitions !== null &&
+      (bestRepetitions === null || point.bestRepetitions > bestRepetitions)
+    ) {
+      bestRepetitions = point.bestRepetitions;
+    }
+    if (
+      point.longestDurationSeconds !== null &&
+      (longestDurationSeconds === null ||
+        point.longestDurationSeconds > longestDurationSeconds)
+    ) {
+      longestDurationSeconds = point.longestDurationSeconds;
+    }
   }
-  if (points.some((point) => point.bestRepetitions !== null)) {
-    return "repetitions";
-  }
-  return "completions";
+
+  const trendMetric: ExerciseTrendMetric =
+    bestWeight !== null
+      ? "weight"
+      : longestDurationSeconds !== null
+        ? "duration"
+        : bestRepetitions !== null
+          ? "repetitions"
+          : "completions";
+  return {
+    bestWeight,
+    repetitionsAtBestWeight,
+    bestRepetitions,
+    longestDurationSeconds,
+    completedExecutions,
+    totalWorkingVolume,
+    averageRpe: rpeCount ? rpeTotal / rpeCount : null,
+    rpeCount,
+    trendMetric,
+    metricPoints: points.filter(
+      (point) => trendValue(point, trendMetric) !== null,
+    ),
+  };
 }
 
 function makeExercisePoint(
@@ -303,56 +356,22 @@ export function deriveHistoryAnalytics(
 
   const exercises = Array.from(exerciseGroups.values())
     .map((group): ExerciseAnalytics => {
-      const trendMetric = selectTrendMetric(group.points);
-      const metricPoints = group.points.filter(
-        (point) => trendValue(point, trendMetric) !== null,
-      );
-      const bestWeight = maxNullable(
-        group.points.map((point) => point.bestWeight),
-      );
-      const rpeCount = group.points.reduce(
-        (total, point) => total + point.rpeCount,
-        0,
-      );
-      const rpeTotal = group.points.reduce(
-        (total, point) =>
-          total + (point.averageRpe ?? 0) * point.rpeCount,
-        0,
-      );
+      const summary = summarizeExercisePoints(group.points);
       return {
         id: group.id,
         name: group.name,
         recordedSessions: group.points.length,
-        completedExecutions: group.points.reduce(
-          (total, point) => total + point.completedExecutions,
-          0,
-        ),
-        bestWeight,
-        repetitionsAtBestWeight:
-          bestWeight === null
-            ? null
-            : maxNullable(
-                group.points.map((point) =>
-                  point.bestWeight === bestWeight
-                    ? point.repetitionsAtBestWeight
-                    : null,
-                ),
-              ),
-        bestRepetitions: maxNullable(
-          group.points.map((point) => point.bestRepetitions),
-        ),
-        longestDurationSeconds: maxNullable(
-          group.points.map((point) => point.longestDurationSeconds),
-        ),
-        totalWorkingVolume: group.points.reduce(
-          (total, point) => total + point.workingVolume,
-          0,
-        ),
-        averageRpe: rpeCount ? rpeTotal / rpeCount : null,
-        rpeCount,
-        trendMetric,
-        latest: metricPoints[0] ?? group.points[0],
-        trend: metricPoints.slice(0, 8).reverse(),
+        completedExecutions: summary.completedExecutions,
+        bestWeight: summary.bestWeight,
+        repetitionsAtBestWeight: summary.repetitionsAtBestWeight,
+        bestRepetitions: summary.bestRepetitions,
+        longestDurationSeconds: summary.longestDurationSeconds,
+        totalWorkingVolume: summary.totalWorkingVolume,
+        averageRpe: summary.averageRpe,
+        rpeCount: summary.rpeCount,
+        trendMetric: summary.trendMetric,
+        latest: summary.metricPoints[0] ?? group.points[0],
+        trend: summary.metricPoints.slice(0, 8).reverse(),
       };
     })
     .sort((left, right) => {
