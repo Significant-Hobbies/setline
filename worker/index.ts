@@ -2,6 +2,7 @@
 import handler from "vinext/server/app-router-entry";
 import { handleAgentEdge } from "./agent-edge.mjs";
 import { createAuth, isGoogleConfigured, type SetlineBindings } from "./auth";
+import { handleMcpRead, handleMcpTokenManagement } from "./mcp";
 import { handlePrivateState } from "./state";
 
 const SECURITY_HEADERS = {
@@ -66,6 +67,38 @@ const worker = {
       }
       const response = await createAuth(env, request.url).handler(request);
       return withApiHeaders(response);
+    }
+
+    if (url.pathname.startsWith("/api/app/mcp-tokens")) {
+      try {
+        return withApiHeaders(await handleMcpTokenManagement(request, env));
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            event: "setline_mcp_token_error",
+            method: request.method,
+            path: url.pathname,
+            message: error instanceof Error ? error.message : "Unknown error",
+          }),
+        );
+        return json({ code: "TOKEN_UNAVAILABLE", message: "Read-token access is unavailable." }, 503);
+      }
+    }
+
+    if (url.pathname.startsWith("/api/mcp/")) {
+      try {
+        return withApiHeaders(await handleMcpRead(request, env));
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            event: "setline_mcp_read_error",
+            method: request.method,
+            path: url.pathname,
+            message: error instanceof Error ? error.message : "Unknown error",
+          }),
+        );
+        return json({ code: "READ_UNAVAILABLE", message: "Workout reads are unavailable." }, 503);
+      }
     }
 
     if (url.pathname === "/api/app/state") {
