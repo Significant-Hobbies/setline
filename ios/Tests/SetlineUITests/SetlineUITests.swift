@@ -51,4 +51,14 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(app.textFields["Name"].exists)
         XCTAssertTrue(app.buttons["Add exercise"].exists)
     }
+
+    func testAccountScreenOffersAppleAlongsideGoogle() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--fresh-demo"]
+        app.launch()
+
+        app.tabBars.buttons["You"].tap()
+        XCTAssertTrue(app.buttons["Connect Google account"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["apple-account-button"].exists)
+    }
 }

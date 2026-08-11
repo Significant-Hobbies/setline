@@ -25,3 +25,9 @@
 - [x] 4.2 Complete Dynamic Type, VoiceOver, Reduce Motion, contrast, empty/error/loading states, and native polish review
 - [x] 4.3 Add release metadata, privacy/support copy, simulator screenshots, and documented device-only checks
 - [x] 4.4 Run strict OpenSpec validation, tests, Release simulator build, personal-team archive, and signature verification without upload
+
+## 5. Equivalent Native Account Access
+
+- [x] 5.1 Add the Apple entitlement, nonce-backed AuthenticationServices UI, native token exchange, provider visibility, and explicit Apple linking
+- [x] 5.2 Configure Better Auth for native Apple token validation with disabled implicit linking and no browser-only Apple secret requirement
+- [x] 5.3 Add account/auth tests, run the complete native and web checks, archive with the personal team, and update App Store metadata

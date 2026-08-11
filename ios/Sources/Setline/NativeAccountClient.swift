@@ -1,12 +1,24 @@
 import AuthenticationServices
+import CryptoKit
 import Foundation
 import Security
 import SetlineCore
 import UIKit
 
+struct AppleIdentityPayload: Sendable {
+    let identityToken: String
+    let nonce: String
+    let email: String?
+    let firstName: String?
+    let lastName: String?
+}
+
 struct SetlineAccount: Equatable, Sendable {
     let name: String
     let email: String
+    let providers: Set<String>
+
+    var hasApple: Bool { providers.contains("apple") }
 }
 
 enum NativeAccountError: LocalizedError {
@@ -142,6 +154,20 @@ actor SetlineNativeAccountClient {
         return try await account()
     }
 
+    func signInWithApple(_ payload: AppleIdentityPayload) async throws -> SetlineAccount {
+        let response = try await appleRequest(path: "/api/auth/sign-in/social", payload: payload)
+        guard let token = response.response.value(forHTTPHeaderField: "set-auth-token") else {
+            throw NativeAccountError.missingSession
+        }
+        try await sessionStore.save(token)
+        return try await account()
+    }
+
+    func linkApple(_ payload: AppleIdentityPayload) async throws -> SetlineAccount {
+        _ = try await appleRequest(path: "/api/auth/link-social", payload: payload, authenticated: true)
+        return try await account()
+    }
+
     func fetchState() async throws -> SetlineCloudSnapshot? {
         let response = try await request(path: "/api/native/state", method: "GET")
         return try decoder.decode(StateResponse.self, from: response.data).state
@@ -170,10 +196,51 @@ actor SetlineNativeAccountClient {
         try await sessionStore.delete()
     }
 
+    private func appleRequest(
+        path: String,
+        payload: AppleIdentityPayload,
+        authenticated: Bool = false
+    ) async throws -> NetworkResponse {
+        var idToken: [String: Any] = ["token": payload.identityToken, "nonce": payload.nonce]
+        if path.hasSuffix("sign-in/social") {
+            var user: [String: Any] = [:]
+            if let email = payload.email { user["email"] = email }
+            var name: [String: String] = [:]
+            if let firstName = payload.firstName { name["firstName"] = firstName }
+            if let lastName = payload.lastName { name["lastName"] = lastName }
+            if !name.isEmpty { user["name"] = name }
+            if !user.isEmpty { idToken["user"] = user }
+        }
+        return try await request(
+            path: path,
+            jsonBody: ["provider": "apple", "idToken": idToken],
+            authenticated: authenticated
+        )
+    }
+
     private func account() async throws -> SetlineAccount {
         let response = try await request(path: "/api/auth/get-session", method: "GET")
         let session = try decoder.decode(SessionResponse.self, from: response.data)
-        return SetlineAccount(name: session.user.name, email: session.user.email)
+        let accountsResponse = try await request(path: "/api/auth/list-accounts", method: "GET")
+        let accounts = try decoder.decode([ProviderAccount].self, from: accountsResponse.data)
+        return SetlineAccount(
+            name: session.user.name,
+            email: session.user.email,
+            providers: Set(accounts.map(\.providerId))
+        )
+    }
+
+    private func request(
+        path: String,
+        jsonBody: [String: Any],
+        authenticated: Bool
+    ) async throws -> NetworkResponse {
+        try await request(
+            path: path,
+            method: "POST",
+            data: try JSONSerialization.data(withJSONObject: jsonBody),
+            authenticated: authenticated
+        )
     }
 
     private func request(
@@ -254,6 +321,17 @@ actor SetlineNativeAccountClient {
     }
 }
 
+enum AppleNonce {
+    static func make() -> String {
+        let alphabet = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        return String((0..<32).map { _ in alphabet.randomElement()! })
+    }
+
+    static func digest(_ nonce: String) -> String {
+        SHA256.hash(data: Data(nonce.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+}
+
 @MainActor
 final class SetlineWebAuthenticator: NSObject, ASWebAuthenticationPresentationContextProviding {
     private var session: ASWebAuthenticationSession?
@@ -301,6 +379,7 @@ final class SetlineWebAuthenticator: NSObject, ASWebAuthenticationPresentationCo
 private struct TokenResponse: Decodable { let token: String }
 private struct SessionResponse: Decodable { let user: SessionUser }
 private struct SessionUser: Decodable { let name: String; let email: String }
+private struct ProviderAccount: Decodable { let providerId: String }
 private struct ErrorResponse: Decodable { let message: String }
 private struct StateResponse: Decodable { let state: SetlineCloudSnapshot? }
 private struct StateWrite: Encodable {

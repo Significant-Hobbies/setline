@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createServer } from "vite";
 
@@ -52,4 +53,18 @@ test("native state requires schema one and an explicit base revision", () => {
     nativeState.parseNativeStateEnvelope({ document: { schemaVersion: 1 }, baseRevision: -1 }),
     null,
   );
+});
+
+test("native Apple auth validates the bundle audience and never links by email implicitly", async () => {
+  const [auth, client] = await Promise.all([
+    readFile(new URL("../worker/auth.ts", import.meta.url), "utf8"),
+    readFile(new URL("../ios/Sources/Setline/NativeAccountClient.swift", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(auth, /appBundleIdentifier:\s*appleBundleIdentifier/);
+  assert.match(auth, /disableImplicitLinking:\s*true/);
+  assert.match(auth, /allowDifferentEmails:\s*true/);
+  assert.match(client, /\/api\/auth\/sign-in\/social/);
+  assert.match(client, /\/api\/auth\/link-social/);
+  assert.match(client, /set-auth-token/);
 });
