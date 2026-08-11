@@ -44,7 +44,18 @@ workout,training,strength,gym,sets,reps,rest timer,programme,fitness log
 - Tracking: none
 - Third-party advertising: none
 - Local workout and profile data: remains on device in device-only mode
-- App Store Connect answer for this build: “No, we do not collect data from this app”
+- Optional account mode sends the user's name, email address, account identifier,
+  programme, templates, workout history, and profile settings to Setline's service
+  so the data can sync across devices
+- App Store Connect answer for this build: “Yes, we collect data from this app”
+- Data linked to the user for App Functionality:
+  - Contact Info: Name, Email Address
+  - Health & Fitness: Fitness
+  - Identifiers: User ID
+  - User Content: Other User Content (authored programmes, workout templates,
+    workout records, and profile settings)
+- Data is not used for tracking, third-party advertising, developer advertising,
+  or analytics
 - IDFA: not used
 
 ## Age rating draft
@@ -60,10 +71,18 @@ Confirm the rating produced by App Store Connect's current questionnaire.
 
 Setline does not generate or prescribe a training programme. The bundled sample demonstrates exact-order workout playback. All active workout actions work offline. No HealthKit or sensor data is requested.
 
+Device-only mode is available without creating an account. Optional cloud sync
+currently authenticates with Google. Do not submit this build for App Review
+until Sign in with Apple is implemented and configured as an equivalent login
+option, or the Google login is removed; neither exception in App Review
+Guideline 4.8 applies to this primary account flow.
+
 ## Screenshots and release
 
-- iPhone 6.9-inch portrait: `today.png`, `plan.png`, `workout-player.png`, `rest-timer.png`, and `history.png`
-- Each store image is `1206 × 2622`, an accepted 6.9-inch screenshot size
+- iPhone 6.9-inch portrait: `artifacts/app-store/iphone-6.9/today.jpg`,
+  `plan.jpg`, `workout-player.jpg`, `rest-timer.jpg`, and `history.jpg`
+- Each store image is `1320 × 2868`, has no alpha channel, and is an accepted
+  6.9-inch screenshot size
 - Accessibility evidence is retained separately and is not part of the default store sequence
 - iPad screenshots: not required; the target is iPhone only
 - App previews: omit for version 1.0
