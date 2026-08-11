@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { bearer } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1";
 import { account, session, user, verification } from "./schema";
 
@@ -59,7 +60,8 @@ export function createAuth(env: SetlineBindings, requestUrl: string) {
         enabled: true,
       },
     },
-    trustedOrigins: [...new Set([baseURL, ...LOCAL_ORIGINS])],
+    plugins: [bearer()],
+    trustedOrigins: [...new Set([baseURL, ...LOCAL_ORIGINS, "setline://auth"])],
     rateLimit: {
       enabled: false,
     },

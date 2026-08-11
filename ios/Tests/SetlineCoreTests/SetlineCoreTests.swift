@@ -2,6 +2,26 @@ import XCTest
 @testable import SetlineCore
 
 final class SetlineCoreTests: XCTestCase {
+    func testCloudDocumentExcludesDeviceSyncMetadata() {
+        var first = SetlineDocument.sample
+        first.syncState = .pending
+        first.lastSyncedAt = Date(timeIntervalSince1970: 100)
+        var second = first
+        second.syncState = .failed
+        second.lastSyncedAt = Date(timeIntervalSince1970: 200)
+
+        XCTAssertEqual(SetlineCloudDocument(document: first), SetlineCloudDocument(document: second))
+    }
+
+    func testCloudDocumentRestoresAsSyncedLocalDocument() {
+        let cloud = SetlineCloudDocument(document: .sample)
+        let restored = cloud.localDocument(lastSyncedAt: Date(timeIntervalSince1970: 300))
+
+        XCTAssertEqual(restored.syncState, .synced)
+        XCTAssertEqual(restored.lastSyncedAt, Date(timeIntervalSince1970: 300))
+        XCTAssertEqual(SetlineCloudDocument(document: restored), cloud)
+    }
+
     func testSessionSnapshotKeepsAuthoredOrderWhenTemplateChanges() throws {
         var document = SetlineDocument.sample
         let templateID = try XCTUnwrap(document.templates.first?.id)

@@ -20,6 +20,8 @@
 ## 4. Accounts And Quality
 
 - [ ] 4.1 Add isolated native authentication, Keychain session storage, whole-state sync status, conflicts, sign out, and deletion controls
+  - [x] Implement and test the personal-account OAuth handoff, bearer session, versioned native state adapter, revision conflicts, and native controls
+  - [ ] Apply the reviewed D1 migration and deploy the callback/API contract before enabling live account connection
 - [x] 4.2 Complete Dynamic Type, VoiceOver, Reduce Motion, contrast, empty/error/loading states, and native polish review
 - [x] 4.3 Add release metadata, privacy/support copy, simulator screenshots, and documented device-only checks
 - [x] 4.4 Run strict OpenSpec validation, tests, Release simulator build, personal-team archive, and signature verification without upload
