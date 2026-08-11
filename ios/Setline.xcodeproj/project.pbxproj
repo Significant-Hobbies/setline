@@ -20,9 +20,11 @@
 		BE5FDC83C2B64F526F64979C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 824EFFB1023C857CE4F1FE1C /* RootView.swift */; };
 		C66AD84C2D8FAD24149B2445 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F52F5D64B932696BAEDEE0AC /* PrivacyInfo.xcprivacy */; };
 		C7E1EDD15D038B815CB78D27 /* SetlineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608F81A574360691A58B8581 /* SetlineApp.swift */; };
+		C953D5949A40703738078819 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F51113C8A77901F17242774D /* CloudSync.swift */; };
 		D9647D921553DE22AB36226A /* SetlineCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E85DFE444A157EC32C671B9B /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B839442BFCCB000A563CD704 /* AppModel.swift */; };
 		EC589E605EEE16DA5E0F613E /* SetlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */; };
+		EF0C5CDD67CA95C3309607B0 /* NativeAccountClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A4007C0EBCEA2C015905F8 /* NativeAccountClient.swift */; };
 		F5D0CC71C826F541575E7D99 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E8358BE39000A0F7E1BB90 /* Persistence.swift */; };
 /* End PBXBuildFile section */
 
@@ -78,6 +80,8 @@
 /* Begin PBXFileReference section */
 		0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SetlineCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1211B40E359F4BBD82A557A9 /* SetlineCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineCoreTests.swift; sourceTree = "<group>"; };
+		15268979096821BD9ABB22E0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		27A4007C0EBCEA2C015905F8 /* NativeAccountClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAccountClient.swift; sourceTree = "<group>"; };
 		3C2CB1821B5B5AE4C75873C6 /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
 		594DC48A6CD7B68259549A12 /* Progression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Progression.swift; sourceTree = "<group>"; };
 		608F81A574360691A58B8581 /* SetlineApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineApp.swift; sourceTree = "<group>"; };
@@ -91,6 +95,7 @@
 		B839442BFCCB000A563CD704 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		BA87F29CCAE78D4F24E75B1F /* Setline.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Setline.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DFAE6EB21BC26F97140F4FEE /* SecondaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryViews.swift; sourceTree = "<group>"; };
+		F51113C8A77901F17242774D /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
 		F52F5D64B932696BAEDEE0AC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FEE9CEC1CE889DCD183F4CF7 /* SetlineUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -129,6 +134,8 @@
 			children = (
 				B839442BFCCB000A563CD704 /* AppModel.swift */,
 				3C2CB1821B5B5AE4C75873C6 /* Design.swift */,
+				15268979096821BD9ABB22E0 /* Info.plist */,
+				27A4007C0EBCEA2C015905F8 /* NativeAccountClient.swift */,
 				824EFFB1023C857CE4F1FE1C /* RootView.swift */,
 				DFAE6EB21BC26F97140F4FEE /* SecondaryViews.swift */,
 				608F81A574360691A58B8581 /* SetlineApp.swift */,
@@ -153,6 +160,7 @@
 		5745423AFF1E15935A399E22 /* SetlineCore */ = {
 			isa = PBXGroup;
 			children = (
+				F51113C8A77901F17242774D /* CloudSync.swift */,
 				B0859DE334CC4D97FFE0DFDA /* Domain.swift */,
 				65E8358BE39000A0F7E1BB90 /* Persistence.swift */,
 				594DC48A6CD7B68259549A12 /* Progression.swift */,
@@ -346,6 +354,7 @@
 			files = (
 				E85DFE444A157EC32C671B9B /* AppModel.swift in Sources */,
 				3CE2DEDE101DA826A45AC5F8 /* Design.swift in Sources */,
+				EF0C5CDD67CA95C3309607B0 /* NativeAccountClient.swift in Sources */,
 				BE5FDC83C2B64F526F64979C /* RootView.swift in Sources */,
 				A949A76428AB4118FB259A70 /* SecondaryViews.swift in Sources */,
 				C7E1EDD15D038B815CB78D27 /* SetlineApp.swift in Sources */,
@@ -365,6 +374,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C953D5949A40703738078819 /* CloudSync.swift in Sources */,
 				7DFE7762F43344AFC746CDC6 /* Domain.swift in Sources */,
 				F5D0CC71C826F541575E7D99 /* Persistence.swift in Sources */,
 				309CBBBA2928642CBD999F67 /* Progression.swift in Sources */,
@@ -454,14 +464,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Setline;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_FILE = Sources/Setline/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -470,7 +473,7 @@
 				PRODUCT_NAME = Setline;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -502,14 +505,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Setline;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_FILE = Sources/Setline/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -518,7 +514,7 @@
 				PRODUCT_NAME = Setline;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};

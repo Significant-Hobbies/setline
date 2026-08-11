@@ -365,6 +365,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var isImporterPresented = false
     @State private var showResetConfirmation = false
+    @State private var showDeleteAccountConfirmation = false
 
     var body: some View {
         @Bindable var model = model
@@ -379,18 +380,59 @@ struct SettingsView: View {
                             .background(SetlinePalette.blue)
                             .clipShape(RoundedRectangle(cornerRadius: 9))
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Device-only mode").font(.headline)
-                            Text("Workout actions work offline.").font(.subheadline).foregroundStyle(.secondary)
+                            Text(model.account?.name ?? "Device-only mode").font(.headline)
+                            Text(model.account?.email ?? "Workout actions work offline.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Text(model.document.syncState.rawValue.uppercased())
+                        Text(syncLabel(model.document.syncState).uppercased())
                             .font(.caption2.weight(.black))
                     }
-                    Link(destination: URL(string: "https://setline.significanthobbies.com")!) {
-                        Label("Open Setline account", systemImage: "safari")
-                            .frame(maxWidth: .infinity, minHeight: 48)
+                    if model.isAccountBusy {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Contacting Setline…")
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                    } else if model.account == nil {
+                        Button { Task { await model.connectAccount() } } label: {
+                            Label("Connect Google account", systemImage: "person.crop.circle.badge.plus")
+                                .frame(maxWidth: .infinity, minHeight: 48)
+                                .foregroundStyle(.white)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(SetlinePalette.ink)
+                    } else {
+                        if let lastSync = model.document.lastSyncedAt {
+                            LabeledContent("Last synced") {
+                                Text(lastSync, style: .relative).foregroundStyle(.secondary)
+                            }
+                        }
+                        Button { Task { await model.syncNow() } } label: {
+                            Label("Sync now", systemImage: "arrow.triangle.2.circlepath")
+                                .frame(maxWidth: .infinity, minHeight: 48)
+                                .foregroundStyle(.white)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(SetlinePalette.ink)
+                        Button { Task { await model.signOut() } } label: {
+                            Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(minHeight: 48)
+                        Button(role: .destructive) { showDeleteAccountConfirmation = true } label: {
+                            Label("Delete Setline account", systemImage: "person.crop.circle.badge.minus")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(minHeight: 48)
                     }
-                    .buttonStyle(.bordered)
+                    if let accountMessage = model.accountMessage {
+                        Text(accountMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Account status: \(accountMessage)")
+                    }
                 }
                 settingsSection("Your data") {
                     ShareLink(
@@ -444,6 +486,53 @@ struct SettingsView: View {
             Button("Reset local data", role: .destructive) { Task { await model.resetLocalData() } }
             Button("Cancel", role: .cancel) {}
         }
+        .confirmationDialog(
+            "Delete your Setline account and private cloud copy?",
+            isPresented: $showDeleteAccountConfirmation
+        ) {
+            Button("Delete account", role: .destructive) { Task { await model.deleteAccount() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Workouts already saved on this iPhone remain local. This account action cannot be undone.")
+        }
+        .sheet(item: $model.cloudConflict) { conflict in
+            NavigationStack {
+                VStack(alignment: .leading, spacing: 22) {
+                    Image(systemName: "arrow.triangle.branch")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(SetlinePalette.blue)
+                    Text("Choose the workout copy to keep")
+                        .font(.title2.bold())
+                    Text("This iPhone and your private account changed separately. Review the totals, then choose. Nothing is replaced until you decide.")
+                        .foregroundStyle(.secondary)
+                    LabeledContent("This iPhone") {
+                        Text(workoutCount(model.document.history.count))
+                    }
+                    LabeledContent("Account copy") {
+                        Text(workoutCount(conflict.document.history.count))
+                    }
+                    Button { Task { await model.keepDeviceCopy() } } label: {
+                        Text("Keep this iPhone’s copy").foregroundStyle(.white)
+                    }
+                        .buttonStyle(.borderedProminent)
+                        .tint(SetlinePalette.ink)
+                        .controlSize(.large)
+                        .frame(maxWidth: .infinity)
+                    Button("Use the account copy") { Task { await model.useAccountCopy() } }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                        .frame(maxWidth: .infinity)
+                    Button("Decide later") { model.decideConflictLater() }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                    Spacer()
+                }
+                .padding(24)
+                .navigationTitle("Sync conflict")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .presentationDetents([.large])
+            .interactiveDismissDisabled()
+        }
     }
 
     private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -454,6 +543,20 @@ struct SettingsView: View {
                 .background(SetlinePalette.paper)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
         }
+    }
+
+    private func syncLabel(_ state: SyncState) -> String {
+        switch state {
+        case .deviceOnly: "On device"
+        case .pending: "Syncing"
+        case .synced: "Synced"
+        case .conflict: "Decision needed"
+        case .failed: "Retry needed"
+        }
+    }
+
+    private func workoutCount(_ count: Int) -> String {
+        "\(count) workout\(count == 1 ? "" : "s")"
     }
 }
 

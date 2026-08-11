@@ -23,6 +23,8 @@
       {"width": 390, "path": "ios/artifacts/simulator/rest-timer.png"},
       {"width": 390, "path": "ios/artifacts/simulator/plan.png"},
       {"width": 390, "path": "ios/artifacts/simulator/history.png"},
+      {"width": 390, "path": "ios/artifacts/simulator/account-sync.png"},
+      {"width": 390, "path": "ios/artifacts/simulator/sync-conflict.png"},
       {"width": 390, "path": "ios/artifacts/simulator/accessibility-xl.png"}
     ],
     "projectCheck": {"command": "cd ios && ./scripts/check.sh", "status": "pass"},

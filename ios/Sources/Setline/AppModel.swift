@@ -1,3 +1,4 @@
+import AuthenticationServices
 import Foundation
 import Observation
 import SetlineCore
@@ -12,13 +13,33 @@ final class AppModel {
     var message: String?
     var importPreview: SetlineDocument?
     var isImportConfirmationPresented = false
+    var account: SetlineAccount?
+    var isAccountBusy = false
+    var cloudConflict: SetlineCloudSnapshot?
+    var accountMessage: String?
 
     private let store: SetlineStore
+    private let accountClient: SetlineNativeAccountClient
+    private let webAuthenticator: SetlineWebAuthenticator
+    private var remoteRevision: Int?
+    private var syncRequested = false
+    private var isSyncing = false
+    private var deferredConflict: SetlineCloudSnapshot?
 
-    init(store: SetlineStore = SetlineStore()) {
+    init(
+        store: SetlineStore = SetlineStore(),
+        accountClient: SetlineNativeAccountClient = SetlineNativeAccountClient(),
+        webAuthenticator: SetlineWebAuthenticator = SetlineWebAuthenticator()
+    ) {
         self.store = store
+        self.accountClient = accountClient
+        self.webAuthenticator = webAuthenticator
         if ProcessInfo.processInfo.arguments.contains("--plan-demo") { selectedTab = 1 }
         if ProcessInfo.processInfo.arguments.contains("--history-demo") { selectedTab = 2 }
+        if ProcessInfo.processInfo.arguments.contains("--account-demo") ||
+            ProcessInfo.processInfo.arguments.contains("--account-conflict-demo") {
+            selectedTab = 3
+        }
     }
 
     func load() async {
@@ -39,6 +60,32 @@ final class AppModel {
                 try document.startWorkout(templateID: first.id)
                 try document.completeCurrent(with: [SetSegment(weight: 40, repetitions: 8)])
                 isWorkoutPresented = true
+            }
+            if ProcessInfo.processInfo.arguments.contains("--account-demo") {
+                account = SetlineAccount(name: "Sarthak", email: "sarthak@example.com")
+                document.syncState = .synced
+                document.lastSyncedAt = Date().addingTimeInterval(-240)
+            } else if ProcessInfo.processInfo.arguments.contains("--account-conflict-demo") {
+                account = SetlineAccount(name: "Sarthak", email: "sarthak@example.com")
+                document.syncState = .conflict
+                var accountDocument = document
+                if let template = accountDocument.templates.first {
+                    accountDocument.history = [
+                        WorkoutSession(
+                            templateID: template.id,
+                            templateName: template.name,
+                            startedAt: Date().addingTimeInterval(-3_600),
+                            completedAt: Date().addingTimeInterval(-2_700),
+                            steps: []
+                        ),
+                    ]
+                }
+                cloudConflict = SetlineCloudSnapshot(
+                    document: SetlineCloudDocument(document: accountDocument),
+                    revision: 3
+                )
+            } else {
+                await restoreAccount()
             }
         } catch {
             document = .sample
@@ -143,6 +190,11 @@ final class AppModel {
             self.importPreview = nil
             isImportConfirmationPresented = false
             message = "Setline data replaced."
+            if account != nil, deferredConflict == nil, cloudConflict == nil {
+                document.syncState = .pending
+                try await store.save(document)
+                Task { await self.queueSync() }
+            }
         } catch {
             message = error.localizedDescription
         }
@@ -153,9 +205,175 @@ final class AppModel {
             try await store.reset()
             document = .sample
             message = "Local data reset."
+            if account != nil, deferredConflict == nil, cloudConflict == nil {
+                document.syncState = .pending
+                try await store.save(document)
+                Task { await self.queueSync() }
+            }
         } catch {
             message = error.localizedDescription
         }
+    }
+
+    func connectAccount() async {
+        isAccountBusy = true
+        accountMessage = nil
+        defer { isAccountBusy = false }
+        do {
+            let url = await accountClient.googleStartURL
+            let code = try await webAuthenticator.authenticate(at: url)
+            account = try await accountClient.exchangeHandoff(code)
+            try await reconcileAccountCopy()
+        } catch let error as NSError
+            where error.domain == ASWebAuthenticationSessionErrorDomain && error.code == 1 {
+            accountMessage = nil
+        } catch {
+            accountMessage = friendlyMessage(for: error)
+        }
+    }
+
+    func syncNow() async {
+        guard account != nil else { return }
+        if let deferredConflict {
+            self.deferredConflict = nil
+            cloudConflict = deferredConflict
+            return
+        }
+        await queueSync()
+    }
+
+    func keepDeviceCopy() async {
+        guard let conflict = cloudConflict else { return }
+        cloudConflict = nil
+        deferredConflict = nil
+        remoteRevision = conflict.revision
+        await queueSync()
+    }
+
+    func useAccountCopy() async {
+        guard let conflict = cloudConflict else { return }
+        do {
+            let restored = conflict.document.localDocument()
+            try await store.replace(with: restored)
+            document = restored
+            remoteRevision = conflict.revision
+            cloudConflict = nil
+            deferredConflict = nil
+            accountMessage = "Account copy restored on this iPhone."
+        } catch {
+            accountMessage = friendlyMessage(for: error)
+        }
+    }
+
+    func decideConflictLater() {
+        deferredConflict = cloudConflict
+        cloudConflict = nil
+        document.syncState = .conflict
+        Task { try? await store.save(document) }
+    }
+
+    func signOut() async {
+        await accountClient.signOut()
+        account = nil
+        remoteRevision = nil
+        cloudConflict = nil
+        deferredConflict = nil
+        document.syncState = .deviceOnly
+        try? await store.save(document)
+        accountMessage = "Signed out. Your workouts remain on this iPhone."
+    }
+
+    func deleteAccount() async {
+        isAccountBusy = true
+        defer { isAccountBusy = false }
+        do {
+            try await accountClient.deleteAccount()
+            account = nil
+            remoteRevision = nil
+            cloudConflict = nil
+            deferredConflict = nil
+            document.syncState = .deviceOnly
+            try await store.save(document)
+            accountMessage = "Setline account and its private cloud copy were deleted."
+        } catch {
+            accountMessage = friendlyMessage(for: error)
+        }
+    }
+
+    private func restoreAccount() async {
+        do {
+            account = try await accountClient.restoreAccount()
+            if account != nil { try await reconcileAccountCopy() }
+        } catch {
+            account = nil
+            document.syncState = .deviceOnly
+            accountMessage = friendlyMessage(for: error)
+        }
+    }
+
+    private func reconcileAccountCopy() async throws {
+        let remote = try await accountClient.fetchState()
+        guard let remote else {
+            let saved = try await accountClient.pushState(
+                SetlineCloudDocument(document: document),
+                baseRevision: nil
+            )
+            remoteRevision = saved.revision
+            await markSynced()
+            return
+        }
+        remoteRevision = remote.revision
+        if remote.document == SetlineCloudDocument(document: document) {
+            await markSynced()
+        } else {
+            document.syncState = .conflict
+            try await store.save(document)
+            cloudConflict = remote
+        }
+    }
+
+    private func queueSync() async {
+        syncRequested = true
+        guard !isSyncing else { return }
+        isSyncing = true
+        defer { isSyncing = false }
+        while syncRequested {
+            syncRequested = false
+            document.syncState = .pending
+            try? await store.save(document)
+            do {
+                let saved = try await accountClient.pushState(
+                    SetlineCloudDocument(document: document),
+                    baseRevision: remoteRevision
+                )
+                remoteRevision = saved.revision
+                await markSynced()
+            } catch let NativeAccountError.conflict(conflict) {
+                document.syncState = .conflict
+                try? await store.save(document)
+                cloudConflict = conflict
+                return
+            } catch {
+                document.syncState = .failed
+                try? await store.save(document)
+                accountMessage = friendlyMessage(for: error)
+                return
+            }
+        }
+    }
+
+    private func markSynced() async {
+        document.syncState = .synced
+        document.lastSyncedAt = .now
+        try? await store.save(document)
+        accountMessage = "Private account copy is up to date."
+    }
+
+    private func friendlyMessage(for error: Error) -> String {
+        if let native = error as? NativeAccountError {
+            return native.errorDescription ?? "Setline account service is unavailable."
+        }
+        return "Setline could not complete that account action. Try again."
     }
 
     private func mutate(_ operation: (inout SetlineDocument) throws -> Void) async {
@@ -164,6 +382,11 @@ final class AppModel {
             try operation(&next)
             try await store.save(next)
             document = next
+            if account != nil, deferredConflict == nil, cloudConflict == nil {
+                document.syncState = .pending
+                try await store.save(document)
+                Task { await self.queueSync() }
+            }
         } catch {
             message = error.localizedDescription
         }
