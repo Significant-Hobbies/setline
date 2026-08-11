@@ -18,20 +18,20 @@ This file is preparation only. No App Store Connect record has been created.
 
 ## Store copy
 
-**Subtitle**  
+**Subtitle**
 Follow every set precisely
 
-**Promotional text**  
+**Promotional text**
 Bring your authored programme into the gym, record what really happened, and keep every set usable offline.
 
-**Description**  
+**Description**
 Setline is the execution layer for a programme you already trust. Start the planned workout, follow exercises and sets in their exact authored order, record weight, repetitions, timed work, cardio, mobility, and drop segments, and let timestamp-based rest timing survive interruptions.
 
 Explicit session changes stay explicit: skip a set, do it later, or add an extra without silently rewriting the next workout. History keeps planned and recorded values separate, while deterministic progression suggestions require your approval.
 
 Active workouts are device-first and remain usable without a connection. Export or preview-replace the complete local state whenever you choose.
 
-**Keywords**  
+**Keywords**
 workout,training,strength,gym,sets,reps,rest timer,programme,fitness log
 
 ## URLs
