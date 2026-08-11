@@ -46,6 +46,13 @@ The iOS client SHALL support versioned whole-state export, preview-before-replac
 - **WHEN** the user selects a compatible Setline export
 - **THEN** the client validates and summarizes the replacement before requiring explicit confirmation
 
+### Requirement: Native account access includes Sign in with Apple
+The iOS client SHALL offer Sign in with Apple beside Google account connection. Apple identity tokens SHALL be verified by the service for the native bundle identifier. The service SHALL disable implicit email-based linking; an existing signed-in account MAY add Apple only through an explicit authenticated linking action.
+
+#### Scenario: Existing Google user adds Apple
+- **WHEN** an authenticated Google user chooses the Apple control and completes Apple's authorization
+- **THEN** Apple is linked to that same account without replacing local workout data or inferring identity from matching email text
+
 ### Requirement: The native experience is accessible and honest
 The iOS client SHALL support Dynamic Type, VoiceOver labels and values, Reduce Motion, sufficient contrast, 44-point targets, and status cues that do not rely on color alone. Unsupported sensor or health values SHALL be omitted or labelled unavailable rather than estimated.
 

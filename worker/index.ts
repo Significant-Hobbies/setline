@@ -1,7 +1,12 @@
 /** Cloudflare Worker entry point for Setline. */
 import handler from "vinext/server/app-router-entry";
 import { handleAgentEdge } from "./agent-edge.mjs";
-import { createAuth, isGoogleConfigured, type SetlineBindings } from "./auth";
+import {
+  createAuth,
+  isAppleConfigured,
+  isGoogleConfigured,
+  type SetlineBindings,
+} from "./auth";
 import { handleMcpRead, handleMcpTokenManagement } from "./mcp";
 import {
   consumeNativeHandoff,
@@ -50,13 +55,19 @@ const worker = {
     if (url.pathname === "/api/health" && request.method === "GET") {
       return json({
         ok: true,
-        auth: { googleConfigured: isGoogleConfigured(env) },
+        auth: {
+          googleConfigured: isGoogleConfigured(env),
+          appleConfigured: isAppleConfigured(env),
+        },
         storage: "d1",
       });
     }
 
     if (url.pathname === "/api/auth/config" && request.method === "GET") {
-      return json({ googleConfigured: isGoogleConfigured(env) });
+      return json({
+        googleConfigured: isGoogleConfigured(env),
+        appleConfigured: isAppleConfigured(env),
+      });
     }
 
     if (url.pathname === "/api/native/auth/google/start" && request.method === "GET") {
@@ -116,16 +127,29 @@ const worker = {
     if (url.pathname.startsWith("/api/auth/")) {
       if (
         url.pathname.endsWith("/sign-in/social") &&
-        request.method === "POST" &&
-        !isGoogleConfigured(env)
+        request.method === "POST"
       ) {
-        return json(
-          {
-            code: "OAUTH_NOT_CONFIGURED",
-            message: "Google sign-in is not configured in this environment.",
-          },
-          503,
-        );
+        const body = (await request.clone().json().catch(() => null)) as {
+          provider?: unknown;
+        } | null;
+        if (body?.provider === "google" && !isGoogleConfigured(env)) {
+          return json(
+            {
+              code: "OAUTH_NOT_CONFIGURED",
+              message: "Google sign-in is not configured in this environment.",
+            },
+            503,
+          );
+        }
+        if (body?.provider === "apple" && !isAppleConfigured(env)) {
+          return json(
+            {
+              code: "OAUTH_NOT_CONFIGURED",
+              message: "Apple sign-in is not configured in this environment.",
+            },
+            503,
+          );
+        }
       }
       const response = await createAuth(env, request.url).handler(request);
       return withApiHeaders(response);

@@ -8,6 +8,7 @@ export type SetlineBindings = CloudflareBindings & {
   BETTER_AUTH_SECRET?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  APPLE_APP_BUNDLE_IDENTIFIER?: string;
 };
 
 const PRODUCTION_ORIGIN = "https://setline.significanthobbies.com";
@@ -31,6 +32,10 @@ export function isGoogleConfigured(env: SetlineBindings) {
   );
 }
 
+export function isAppleConfigured(env: SetlineBindings) {
+  return Boolean(env.APPLE_APP_BUNDLE_IDENTIFIER?.trim());
+}
+
 export function createAuth(env: SetlineBindings, requestUrl: string) {
   const requestOrigin = new URL(requestUrl).origin;
   const baseURL = isLocalOrigin(requestOrigin) ? requestOrigin : PRODUCTION_ORIGIN;
@@ -39,6 +44,7 @@ export function createAuth(env: SetlineBindings, requestUrl: string) {
     (isLocalOrigin(requestOrigin)
       ? "setline-local-development-secret-never-use-in-production"
       : undefined);
+  const appleBundleIdentifier = env.APPLE_APP_BUNDLE_IDENTIFIER?.trim() ?? "";
 
   return betterAuth({
     database: drizzleAdapter(drizzle(env.DB), {
@@ -54,6 +60,23 @@ export function createAuth(env: SetlineBindings, requestUrl: string) {
         scope: ["openid", "email", "profile"],
         prompt: "select_account",
       },
+      ...(isAppleConfigured(env)
+        ? {
+            apple: {
+              clientId: appleBundleIdentifier,
+              clientSecret: "",
+              appBundleIdentifier: appleBundleIdentifier,
+            },
+          }
+        : {}),
+    },
+    account: {
+      accountLinking: {
+        enabled: true,
+        disableImplicitLinking: true,
+        trustedProviders: ["google", "apple"],
+        allowDifferentEmails: true,
+      },
     },
     user: {
       deleteUser: {
@@ -61,7 +84,9 @@ export function createAuth(env: SetlineBindings, requestUrl: string) {
       },
     },
     plugins: [bearer()],
-    trustedOrigins: [...new Set([baseURL, ...LOCAL_ORIGINS, "setline://auth"])],
+    trustedOrigins: [
+      ...new Set([baseURL, ...LOCAL_ORIGINS, "https://appleid.apple.com", "setline://auth"]),
+    ],
     rateLimit: {
       enabled: false,
     },

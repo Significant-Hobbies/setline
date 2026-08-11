@@ -46,7 +46,9 @@ final class AppModel {
         defer { isLoading = false }
         do {
             if ProcessInfo.processInfo.arguments.contains("--fresh-demo") {
-                document = .sample
+                var sample = SetlineDocument.sample
+                sample.programme = nil
+                document = sample
             } else {
                 document = try await store.load()
             }
@@ -62,11 +64,11 @@ final class AppModel {
                 isWorkoutPresented = true
             }
             if ProcessInfo.processInfo.arguments.contains("--account-demo") {
-                account = SetlineAccount(name: "Sarthak", email: "sarthak@example.com")
+                account = SetlineAccount(name: "Sarthak", email: "sarthak@example.com", providers: ["google"])
                 document.syncState = .synced
                 document.lastSyncedAt = Date().addingTimeInterval(-240)
             } else if ProcessInfo.processInfo.arguments.contains("--account-conflict-demo") {
-                account = SetlineAccount(name: "Sarthak", email: "sarthak@example.com")
+                account = SetlineAccount(name: "Sarthak", email: "sarthak@example.com", providers: ["google"])
                 document.syncState = .conflict
                 var accountDocument = document
                 if let template = accountDocument.templates.first {
@@ -84,7 +86,7 @@ final class AppModel {
                     document: SetlineCloudDocument(document: accountDocument),
                     revision: 3
                 )
-            } else {
+            } else if !ProcessInfo.processInfo.arguments.contains("--fresh-demo") {
                 await restoreAccount()
             }
         } catch {
@@ -227,6 +229,23 @@ final class AppModel {
         } catch let error as NSError
             where error.domain == ASWebAuthenticationSessionErrorDomain && error.code == 1 {
             accountMessage = nil
+        } catch {
+            accountMessage = friendlyMessage(for: error)
+        }
+    }
+
+    func completeAppleSignIn(_ payload: AppleIdentityPayload) async {
+        isAccountBusy = true
+        accountMessage = nil
+        defer { isAccountBusy = false }
+        do {
+            if let account, !account.hasApple {
+                self.account = try await accountClient.linkApple(payload)
+                accountMessage = "Apple sign-in added to this Setline account."
+            } else {
+                account = try await accountClient.signInWithApple(payload)
+            }
+            try await reconcileAccountCopy()
         } catch {
             accountMessage = friendlyMessage(for: error)
         }

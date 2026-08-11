@@ -35,6 +35,10 @@ Domain types and operations live in `SetlineCore`; the app target owns SwiftUI c
 
 Optional account connection uses `ASWebAuthenticationSession` and URLSession against existing Setline endpoints. Credentials are stored only in Keychain. The remote adapter exchanges versioned whole-state payloads and never performs per-set merging or silent template rewrites. No secrets or environment files are embedded.
 
+### Apple identity is native and account linking is explicit
+
+The iPhone app obtains an Apple identity token with AuthenticationServices and a SHA-256 nonce, then sends it directly to Better Auth for signature, issuer, audience, expiry, and nonce validation against `com.significanthobbies.setline`. A new Apple identity may create an account. An existing Google account can add Apple only while already authenticated through an explicit link action. Matching email addresses never silently merge accounts, and a hidden Apple relay address is accepted when the owner deliberately links it.
+
 ### Preserve-mode visual adaptation
 
 The native app inherits `DESIGN.md`: chalk/paper daylight surfaces, ink structure, lime execution signals, tabular numerals, Scoreboard Split hierarchy, sparse rounding, and one dominant action. Native navigation, sheets, focus, Dynamic Type, VoiceOver, and Reduce Motion behavior take precedence where platform conventions improve operation.

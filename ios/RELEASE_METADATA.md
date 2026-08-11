@@ -72,10 +72,10 @@ Confirm the rating produced by App Store Connect's current questionnaire.
 Setline does not generate or prescribe a training programme. The bundled sample demonstrates exact-order workout playback. All active workout actions work offline. No HealthKit or sensor data is requested.
 
 Device-only mode is available without creating an account. Optional cloud sync
-currently authenticates with Google. Do not submit this build for App Review
-until Sign in with Apple is implemented and configured as an equivalent login
-option, or the Google login is removed; neither exception in App Review
-Guideline 4.8 applies to this primary account flow.
+offers Sign in with Apple beside Google. Existing Google users explicitly add
+Apple while authenticated; matching email text does not silently merge
+identities. The Apple token is nonce-bound and validated by the service for
+`com.significanthobbies.setline`.
 
 ## Screenshots and release
 

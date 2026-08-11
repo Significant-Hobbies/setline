@@ -83,6 +83,7 @@
 		15268979096821BD9ABB22E0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		27A4007C0EBCEA2C015905F8 /* NativeAccountClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAccountClient.swift; sourceTree = "<group>"; };
 		3C2CB1821B5B5AE4C75873C6 /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
+		40CADB4F69054A14B366A16D /* Setline.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Setline.entitlements; sourceTree = "<group>"; };
 		594DC48A6CD7B68259549A12 /* Progression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Progression.swift; sourceTree = "<group>"; };
 		608F81A574360691A58B8581 /* SetlineApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineApp.swift; sourceTree = "<group>"; };
 		65E8358BE39000A0F7E1BB90 /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
@@ -138,6 +139,7 @@
 				27A4007C0EBCEA2C015905F8 /* NativeAccountClient.swift */,
 				824EFFB1023C857CE4F1FE1C /* RootView.swift */,
 				DFAE6EB21BC26F97140F4FEE /* SecondaryViews.swift */,
+				40CADB4F69054A14B366A16D /* Setline.entitlements */,
 				608F81A574360691A58B8581 /* SetlineApp.swift */,
 				818A8EDA05B5D0B4E9DE47B3 /* WorkoutPlayerView.swift */,
 				1DB949AB54ED01CA9EBB90BB /* Resources */,
@@ -463,6 +465,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/Setline/Setline.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Sources/Setline/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -504,6 +507,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/Setline/Setline.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Sources/Setline/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
