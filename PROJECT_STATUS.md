@@ -14,13 +14,21 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 - React, Next.js, and Vinext for the web application.
 - Vite and the Cloudflare plugin for the Worker build.
-- Better Auth and Google OAuth for optional identity.
+- Better Auth with Google OAuth and native Sign in with Apple for optional
+  identity; existing accounts use an explicit linking flow rather than
+  email-based implicit linking.
 - Cloudflare Workers and D1 for authenticated, user-scoped state.
 - Browser `localStorage`, Service Worker, vibration, and installation APIs where supported.
 - No email provider, paid service, sensor, or native runtime dependency.
 
 ## Timeline
 
+- 2026-08-12 — shipped the native account connection path on the personal
+  Apple and Cloudflare accounts: native Sign in with Apple, explicit existing
+  Google-account linking, Keychain-backed sessions, private workout sync, and
+  the additive D1 handoff/state migration. The production Worker is tagged to
+  the exact main commit; App Store Connect record creation and TestFlight upload
+  remain external release gates.
 - 2026-08-11 — prepared the first native SwiftUI iPhone beta with complete
   local-first workout execution, planning, history, data transfer,
   accessibility, simulator coverage, App Store metadata, and a personal-team
