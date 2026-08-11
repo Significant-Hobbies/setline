@@ -79,7 +79,7 @@ identities. The Apple token is nonce-bound and validated by the service for
 
 ## Screenshots and release
 
-- iPhone 6.9-inch portrait: `artifacts/app-store/iphone-6.9/today.jpg`,
+- iPhone 6.9-inch portrait: `ios/artifacts/app-store/iphone-6.9/today.jpg`,
   `plan.jpg`, `workout-player.jpg`, `rest-timer.jpg`, and `history.jpg`
 - Each store image is `1320 × 2868`, has no alpha channel, and is an accepted
   6.9-inch screenshot size
