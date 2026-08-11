@@ -61,11 +61,21 @@ workout,training,strength,gym,sets,reps,rest timer,programme,fitness log
 ## Age rating draft
 
 - Made for Kids: No
-- Violence, sexual content, profanity, drugs, alcohol, gambling, horror: None
-- Medical or treatment claims: None
-- User-generated content, messaging, unrestricted web access: None
+- In-app parental controls or age assurance: None
+- Unrestricted web access, broadly distributed user-generated content, social
+  media, messaging/chat, and advertising: No
+- Health or Wellness Topics: Yes — workout execution and fitness logging
+- Medical or Treatment Information: None — Setline does not diagnose, prescribe,
+  or provide treatment guidance
+- Violence, sexuality or nudity, profanity, horror, drugs, alcohol, gambling,
+  contests, and loot boxes: None
 
 Confirm the rating produced by App Store Connect's current questionnaire.
+
+## Regulated medical device declaration
+
+- Regulated medical device in the EU/EEA, UK, or U.S.: No
+- Use statement or medical-device safety information: Not applicable
 
 ## Review notes draft
 
