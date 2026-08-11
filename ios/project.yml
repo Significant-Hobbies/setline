@@ -1,0 +1,88 @@
+name: Setline
+options:
+  minimumXcodeGenVersion: 2.42.0
+  deploymentTarget:
+    iOS: "17.0"
+  generateEmptyDirectories: true
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    DEVELOPMENT_TEAM: 8F7LXHTJZR
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0.0
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  SetlineCore:
+    type: framework
+    platform: iOS
+    sources: Sources/SetlineCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.significanthobbies.setline.core
+        DEFINES_MODULE: YES
+        SKIP_INSTALL: YES
+        GENERATE_INFOPLIST_FILE: YES
+  Setline:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/Setline
+      - path: Sources/Setline/Resources
+        buildPhase: resources
+    dependencies:
+      - target: SetlineCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.significanthobbies.setline
+        PRODUCT_NAME: Setline
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Setline
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.healthcare-fitness
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDarkContent
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        SUPPORTS_MACCATALYST: NO
+  SetlineCoreTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: Tests/SetlineCoreTests
+    dependencies:
+      - target: SetlineCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.significanthobbies.setline.core-tests
+        GENERATE_INFOPLIST_FILE: YES
+  SetlineUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: Tests/SetlineUITests
+    dependencies:
+      - target: Setline
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.significanthobbies.setline.ui-tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Setline:
+    build:
+      targets:
+        Setline: all
+        SetlineCoreTests: [test]
+        SetlineUITests: [test]
+    test:
+      targets:
+        - SetlineCoreTests
+        - SetlineUITests
+      gatherCoverageData: true
+    run:
+      config: Debug
+    archive:
+      config: Release
