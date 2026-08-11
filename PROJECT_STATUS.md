@@ -21,6 +21,11 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Timeline
 
+- 2026-08-11 — prepared the first native SwiftUI iPhone beta with complete
+  local-first workout execution, planning, history, data transfer,
+  accessibility, simulator coverage, App Store metadata, and a personal-team
+  signed archive path; native account synchronization remains tracked
+  separately.
 - 2026-07-31 — replaced static progress examples with recorded-history
   analytics for exercises, workouts, and represented programme weeks, including
   bounded trends, honest legacy/empty boundaries, and explicit measurement
@@ -72,6 +77,8 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Products
 
+- `ios/` — native SwiftUI iPhone beta for local-first workout execution;
+  App Store Connect/TestFlight transport remains manual.
 - Repository root — installable mobile-first Setline web app.
 - [Public GitHub repository](https://github.com/Significant-Hobbies/setline) —
   canonical source, product planning, and issue owner.
@@ -82,6 +89,10 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Features (shipped)
 
+- Native iPhone workout player with authored-order snapshots, activity-specific
+  recording, drop segments, skips, session-only extras, deferrals,
+  timestamp-derived rest, relaunch recovery, planning, history, progression,
+  data transfer, accessibility, simulator tests, and personal-team archiving.
 - Public editorial product changelog at `/changelog`.
 - Dated seven-day schedule for the supplied 12-week strength, cardio, and
   mobility programme.
