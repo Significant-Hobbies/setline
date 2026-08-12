@@ -17,6 +17,18 @@ const productionPaths = [
   "next.config.ts",
   "vite.config.ts",
 ];
+const hygienePaths = [
+  ...productionPaths,
+  ".github",
+  "scripts",
+  "tests",
+  "eslint.config.mjs",
+  "knip.json",
+  "package.json",
+  "pnpm-lock.yaml",
+  "tsconfig.json",
+  "wrangler.jsonc",
+];
 const sourceExtensions = new Set([
   ".js",
   ".mjs",
@@ -327,9 +339,19 @@ function checkHygiene() {
   const parent = run("git", ["rev-parse", "--verify", "HEAD^"], {
     allowFailure: true,
   });
-  if (parent.status === 0) run("git", ["diff", "--check", "HEAD^", "HEAD"]);
-  else run("git", ["diff-tree", "--check", "--root", "-r", "HEAD"]);
-  run("git", ["diff", "--check", "HEAD", "--", "."]);
+  if (parent.status === 0)
+    run("git", ["diff", "--check", "HEAD^", "HEAD", "--", ...hygienePaths]);
+  else
+    run("git", [
+      "diff-tree",
+      "--check",
+      "--root",
+      "-r",
+      "HEAD",
+      "--",
+      ...hygienePaths,
+    ]);
+  run("git", ["diff", "--check", "HEAD", "--", ...hygienePaths]);
   const conflicts = run(
     "git",
     ["grep", "-nE", "^(<<<<<<< |=======$|>>>>>>> )", "--", "."],
