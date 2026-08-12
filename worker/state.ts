@@ -14,7 +14,7 @@ type ReadResult =
   | { ok: true; value: unknown }
   | { ok: false; status: 400 | 413 | 415; message: string };
 
-export function parseStateEnvelope(value: unknown): StoredState | null {
+function parseStateEnvelope(value: unknown): StoredState | null {
   const state = parseStoredState(value);
   if (
     !state ||
@@ -27,7 +27,12 @@ export function parseStateEnvelope(value: unknown): StoredState | null {
 }
 
 async function readJsonWithLimit(request: Request): Promise<ReadResult> {
-  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+  if (
+    !request.headers
+      .get("content-type")
+      ?.toLowerCase()
+      .startsWith("application/json")
+  ) {
     return { ok: false, status: 415, message: "Expected application/json." };
   }
 
@@ -59,7 +64,11 @@ async function readJsonWithLimit(request: Request): Promise<ReadResult> {
   try {
     return { ok: true, value: JSON.parse(text) };
   } catch {
-    return { ok: false, status: 400, message: "Workout state must be valid JSON." };
+    return {
+      ok: false,
+      status: 400,
+      message: "Workout state must be valid JSON.",
+    };
   }
 }
 
@@ -84,7 +93,10 @@ async function resolveUserId(request: Request, env: SetlineBindings) {
   return authSession?.user?.id ?? null;
 }
 
-export async function handlePrivateState(request: Request, env: SetlineBindings) {
+export async function handlePrivateState(
+  request: Request,
+  env: SetlineBindings,
+) {
   const userId = await resolveUserId(request, env);
   if (!userId) {
     return json({ code: "UNAUTHORIZED", message: "Sign in to continue." }, 401);
@@ -108,7 +120,10 @@ export async function handlePrivateState(request: Request, env: SetlineBindings)
 
   const parsed = await readJsonWithLimit(request);
   if (!parsed.ok) {
-    return json({ code: "INVALID_STATE", message: parsed.message }, parsed.status);
+    return json(
+      { code: "INVALID_STATE", message: parsed.message },
+      parsed.status,
+    );
   }
   const incomingState = parseStateEnvelope(parsed.value);
   if (!incomingState) {

@@ -32,9 +32,15 @@ test("server-renders the Setline restoration shell and public legal pages", asyn
   assert.match(html, /<title>Setline — Workout execution tracker<\/title>/i);
   assert.match(html, /ACCOUNT OR DEVICE · YOUR CALL/);
   assert.match(html, /Keep the plan close\./);
-  assert.doesNotMatch(html, /Your site is taking shape|codex-preview|react-loading-skeleton/i);
+  assert.doesNotMatch(
+    html,
+    /Your site is taking shape|codex-preview|react-loading-skeleton/i,
+  );
 
-  const [privacy, terms] = await Promise.all([render("/privacy"), render("/terms")]);
+  const [privacy, terms] = await Promise.all([
+    render("/privacy"),
+    render("/terms"),
+  ]);
   assert.equal(privacy.status, 200);
   assert.equal(terms.status, 200);
   assert.match(await privacy.text(), /Privacy notice/);
@@ -80,7 +86,10 @@ test("ships the installable offline shell and local workout state", async () => 
       new URL("../app/components/CustomWorkoutManager.tsx", import.meta.url),
       "utf8",
     ),
-    readFile(new URL("../app/lib/custom-programme.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/lib/custom-programme.ts", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../app/lib/workout-state.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/programme.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/progression.ts", import.meta.url), "utf8"),
@@ -127,17 +136,29 @@ test("ships the installable offline shell and local workout state", async () => 
   assert.match(page, /CustomProgrammePlanner/);
   assert.match(page, /customWorkouts=\{workoutState\.customWorkouts\}/);
   assert.match(page, /Discard unsaved authoring changes and leave Programme/);
-  assert.match(page, /Discard unsaved authoring changes and start this workout/);
+  assert.match(
+    page,
+    /Discard unsaved authoring changes and start this workout/,
+  );
   assert.match(page, /Today is unplanned/);
   assert.match(page, /removeProgrammeWorkoutAssignments/);
-  assert.match(customWorkoutManager, /Discard this unsaved custom workout draft/);
-  assert.match(customWorkoutManager, /Discard the current unsaved draft and open another/);
+  assert.match(
+    customWorkoutManager,
+    /Discard this unsaved custom workout draft/,
+  );
+  assert.match(
+    customWorkoutManager,
+    /Discard the current unsaved draft and open another/,
+  );
   assert.match(customWorkoutManager, /Remove .* from the unsaved draft/);
   assert.match(customWorkoutManager, /returnFocusRef/);
   assert.match(customWorkoutManager, /role="group"/);
   assert.match(customWorkoutManager, /Moved .* to step/);
   assert.match(customProgrammePlanner, /Starts Monday/);
-  assert.match(customProgrammePlanner, /Repeat Week \{activeWeek\} through Week/);
+  assert.match(
+    customProgrammePlanner,
+    /Repeat Week \{activeWeek\} through Week/,
+  );
   assert.match(customProgrammePlanner, /Discard this unsaved programme draft/);
   assert.match(customProgrammePlanner, /beforeunload/);
   assert.match(customProgrammePlanner, /Choose a Monday/);

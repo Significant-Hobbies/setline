@@ -63,17 +63,23 @@ const releases = [
 
 export const metadata: Metadata = {
   title: "Changelog — Setline",
-  description: "Meaningful improvements to Setline workout execution and history.",
+  description:
+    "Meaningful improvements to Setline workout execution and history.",
 };
 
 export default function ChangelogPage() {
   return (
     <main className="changelog-shell">
       <header className="changelog-header">
-        <Link className="wordmark changelog-wordmark" href="/">SETLINE</Link>
+        <Link className="wordmark changelog-wordmark" href="/">
+          SETLINE
+        </Link>
         <span className="section-code">PRODUCT HISTORY</span>
         <h1>Changelog</h1>
-        <p>Meaningful improvements to programme execution, rest timing, and workout history.</p>
+        <p>
+          Meaningful improvements to programme execution, rest timing, and
+          workout history.
+        </p>
         <nav aria-label="Project links">
           <a href={`${repository}/issues`}>Roadmap</a>
           <a href={repository}>Source</a>
@@ -85,15 +91,20 @@ export default function ChangelogPage() {
           <li key={`${release.date}-${release.title}`}>
             <article className="changelog-entry">
               <time dateTime={release.date}>
-                {new Date(`${release.date}T00:00:00`).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {new Date(`${release.date}T00:00:00`).toLocaleDateString(
+                  "en-US",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  },
+                )}
               </time>
               <h2>{release.title}</h2>
               <ul>
-                {release.outcomes.map((outcome) => <li key={outcome}>{outcome}</li>)}
+                {release.outcomes.map((outcome) => (
+                  <li key={outcome}>{outcome}</li>
+                ))}
               </ul>
             </article>
           </li>

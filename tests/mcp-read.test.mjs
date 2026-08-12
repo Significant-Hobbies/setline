@@ -53,7 +53,9 @@ test("history filtering preserves newest-first records and exact bounds", () => 
 });
 
 test("MCP reads reject mutations and missing PATs before loading state", async () => {
-  const env = { DB: { prepare: () => assert.fail("database should not be read") } };
+  const env = {
+    DB: { prepare: () => assert.fail("database should not be read") },
+  };
   const mutation = await mcp.handleMcpRead(
     new Request("https://setline.example/api/mcp/history", { method: "POST" }),
     env,
@@ -77,7 +79,9 @@ test("active tokens bind every private read to the resolved owner", async () => 
             calls.push({ sql, args });
             return {
               first: async () =>
-                sql.includes("FROM mcp_read_tokens") ? { user_id: "owner-a" } : null,
+                sql.includes("FROM mcp_read_tokens")
+                  ? { user_id: "owner-a" }
+                  : null,
             };
           },
         };
@@ -96,7 +100,9 @@ test("active tokens bind every private read to the resolved owner", async () => 
   assert.deepEqual(body.items, []);
   assert.equal(body.page.limit, 100);
   assert.equal(body.page.nextOffset, null);
-  const stateRead = calls.find((call) => call.sql.includes("FROM workout_state"));
+  const stateRead = calls.find((call) =>
+    call.sql.includes("FROM workout_state"),
+  );
   assert.deepEqual(stateRead?.args, ["owner-a"]);
 });
 
@@ -118,5 +124,8 @@ test("revoked tokens fail before private state is read", async () => {
   );
 
   assert.equal(response.status, 401);
-  assert.equal(calls.some((sql) => sql.includes("FROM workout_state")), false);
+  assert.equal(
+    calls.some((sql) => sql.includes("FROM workout_state")),
+    false,
+  );
 });

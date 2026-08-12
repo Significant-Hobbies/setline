@@ -11,10 +11,7 @@ test("account deletion uses Better Auth and the existing D1 ownership cascades",
     ),
   ]);
 
-  assert.match(
-    auth,
-    /user:\s*\{\s*deleteUser:\s*\{\s*enabled:\s*true/,
-  );
+  assert.match(auth, /user:\s*\{\s*deleteUser:\s*\{\s*enabled:\s*true/);
   for (const table of ["session", "account"]) {
     assert.match(
       migration,
@@ -37,9 +34,7 @@ test("browser state is cleared only after confirmed account deletion", async () 
 
   const deleteHelper = authClient.slice(
     authClient.indexOf("export async function deleteSetlineAccount"),
-    authClient.indexOf(
-      "export function clearDeletedAccountBrowserStorage",
-    ),
+    authClient.indexOf("export function clearDeletedAccountBrowserStorage"),
   );
   assert.match(deleteHelper, /fetch\("\/api\/auth\/delete-user"/);
   assert.match(deleteHelper, /body\?\.success !== true/);
@@ -67,7 +62,10 @@ test("browser state is cleared only after confirmed account deletion", async () 
 test("account deletion requires an explicit accessible confirmation", async () => {
   const [page, privacy] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/components/LegalPage.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/components/LegalPage.tsx", import.meta.url),
+      "utf8",
+    ),
   ]);
 
   assert.match(page, /Delete account and cloud data/);

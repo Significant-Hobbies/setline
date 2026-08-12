@@ -61,7 +61,10 @@ function numberOrNull(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function stepForTracking(step: PlannedStep, tracking: TrackingKind): PlannedStep {
+function stepForTracking(
+  step: PlannedStep,
+  tracking: TrackingKind,
+): PlannedStep {
   return {
     ...step,
     tracking,
@@ -71,7 +74,7 @@ function stepForTracking(step: PlannedStep, tracking: TrackingKind): PlannedStep
         : null,
     targetReps:
       tracking === "weight-reps" || tracking === "reps"
-        ? step.targetReps ?? 8
+        ? (step.targetReps ?? 8)
         : null,
     targetRepsMax:
       tracking === "weight-reps" || tracking === "reps"
@@ -79,7 +82,7 @@ function stepForTracking(step: PlannedStep, tracking: TrackingKind): PlannedStep
         : null,
     targetDurationSeconds:
       tracking === "duration" || tracking === "weight-duration"
-        ? step.targetDurationSeconds ?? 60
+        ? (step.targetDurationSeconds ?? 60)
         : null,
   };
 }
@@ -139,7 +142,9 @@ export function CustomWorkoutManager({
 
   const canReplaceDraft = () =>
     draft === null ||
-    window.confirm("Discard the current unsaved draft and open another workout?");
+    window.confirm(
+      "Discard the current unsaved draft and open another workout?",
+    );
 
   const cancelEditing = () => {
     if (!window.confirm("Discard this unsaved custom workout draft?")) return;
@@ -158,7 +163,10 @@ export function CustomWorkoutManager({
     setDraft(blankCustomWorkoutTemplate(customWorkoutId()));
   };
 
-  const beginDuplicate = (source: WorkoutTemplate, opener: HTMLButtonElement) => {
+  const beginDuplicate = (
+    source: WorkoutTemplate,
+    opener: HTMLButtonElement,
+  ) => {
     if (!canReplaceDraft()) return;
     if (customWorkouts.length >= MAX_CUSTOM_WORKOUTS) {
       setError(`Setline keeps at most ${MAX_CUSTOM_WORKOUTS} custom workouts.`);
@@ -304,7 +312,10 @@ export function CustomWorkoutManager({
   };
 
   return (
-    <section className="custom-workouts" aria-labelledby="custom-workouts-heading">
+    <section
+      className="custom-workouts"
+      aria-labelledby="custom-workouts-heading"
+    >
       <div className="custom-workouts-heading">
         <div>
           <span className="section-code">YOUR WORKOUTS</span>
@@ -336,7 +347,8 @@ export function CustomWorkoutManager({
       ) : null}
       {authoringLocked ? (
         <p className="custom-workout-lock" role="status">
-          Finish or discard the programme draft before changing workout templates.
+          Finish or discard the programme draft before changing workout
+          templates.
         </p>
       ) : null}
 
@@ -351,7 +363,11 @@ export function CustomWorkoutManager({
           <div className="custom-editor-heading">
             <div>
               <span className="section-code">AUTHORING MODE</span>
-              <h3>{draft.createdAt === draft.updatedAt ? "Custom workout" : "Edit workout"}</h3>
+              <h3>
+                {draft.createdAt === draft.updatedAt
+                  ? "Custom workout"
+                  : "Edit workout"}
+              </h3>
             </div>
             <button type="button" onClick={cancelEditing}>
               Cancel
@@ -368,7 +384,9 @@ export function CustomWorkoutManager({
                 value={draft.name}
                 onChange={(event) =>
                   setDraft((current) =>
-                    current ? { ...current, name: event.target.value } : current,
+                    current
+                      ? { ...current, name: event.target.value }
+                      : current,
                   )
                 }
                 placeholder="e.g. Travel-day strength"
@@ -672,9 +690,7 @@ export function CustomWorkoutManager({
                 }
               >
                 <span>{template.name}</span>
-                <small>
-                  {template.steps.length} steps · copy to edit
-                </small>
+                <small>{template.steps.length} steps · copy to edit</small>
               </button>
             ))}
           </div>

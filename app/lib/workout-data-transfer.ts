@@ -4,8 +4,8 @@ import {
   type WorkoutSession,
 } from "./workout-state";
 
-export const WORKOUT_DATA_FORMAT = "setline-workout-data";
-export const WORKOUT_DATA_FORMAT_VERSION = 1;
+const WORKOUT_DATA_FORMAT = "setline-workout-data";
+const WORKOUT_DATA_FORMAT_VERSION = 1;
 export const MAX_WORKOUT_DATA_FILE_BYTES = 2 * 1024 * 1024;
 
 export type WorkoutDataFileMetadata = {
@@ -61,7 +61,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isIsoTimestamp(value: unknown): value is string {
   if (typeof value !== "string") return false;
   const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
+  return (
+    Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value
+  );
 }
 
 export function validateWorkoutDataFileMetadata(
@@ -115,7 +117,9 @@ function buildImportPreview(
   const activeSession = state.session;
   const latestHistoryEntry = state.history.reduce(
     (latest, entry) =>
-      latest === null || entry.completedAt > latest.completedAt ? entry : latest,
+      latest === null || entry.completedAt > latest.completedAt
+        ? entry
+        : latest,
     null as StoredState["history"][number] | null,
   );
   return {

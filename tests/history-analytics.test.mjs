@@ -80,9 +80,11 @@ function historyEntry({
   executions = [],
   durationSeconds = 1_800,
   workingVolume = 0,
-  completedSets = executions.filter((record) => record.status === "completed").length,
+  completedSets = executions.filter((record) => record.status === "completed")
+    .length,
   modifiedSets = 0,
-  skippedSets = executions.filter((record) => record.status === "skipped").length,
+  skippedSets = executions.filter((record) => record.status === "skipped")
+    .length,
 }) {
   return {
     id,
@@ -128,7 +130,11 @@ test("groups normalized exercise identity and calculates only recorded detail", 
     id: "older",
     completedAt: 1_000,
     executions: [
-      execution({ id: "old-working", exercise: "  Bench   Press ", weight: 60 }),
+      execution({
+        id: "old-working",
+        exercise: "  Bench   Press ",
+        weight: 60,
+      }),
     ],
     workingVolume: 480,
   });
@@ -136,7 +142,12 @@ test("groups normalized exercise identity and calculates only recorded detail", 
     id: "newer",
     completedAt: 2_000,
     executions: [
-      execution({ id: "new-working", exercise: "Bench Press", weight: 65, reps: 5 }),
+      execution({
+        id: "new-working",
+        exercise: "Bench Press",
+        weight: 65,
+        reps: 5,
+      }),
       execution({
         id: "new-warmup",
         exercise: "BENCH PRESS",
@@ -156,7 +167,9 @@ test("groups normalized exercise identity and calculates only recorded detail", 
   });
 
   const result = analytics.deriveHistoryAnalytics([newer, older]);
-  const bench = result.exercises.find((exercise) => exercise.id === "bench press");
+  const bench = result.exercises.find(
+    (exercise) => exercise.id === "bench press",
+  );
 
   assert.ok(bench);
   assert.equal(bench.name, "Bench Press");
@@ -171,7 +184,10 @@ test("groups normalized exercise identity and calculates only recorded detail", 
     bench.trend.map((point) => point.historyId),
     ["older", "newer"],
   );
-  assert.equal(result.exercises.some((exercise) => exercise.id === "cable row"), true);
+  assert.equal(
+    result.exercises.some((exercise) => exercise.id === "cable row"),
+    true,
+  );
 });
 
 test("uses summary-only records only where their fields can support analytics", () => {
@@ -254,7 +270,9 @@ test("groups workouts by stable id, keeps the newest name, and separates custom 
     }),
   ]);
 
-  const upper = result.workouts.find((workout) => workout.workoutId === "upper");
+  const upper = result.workouts.find(
+    (workout) => workout.workoutId === "upper",
+  );
   assert.ok(upper);
   assert.equal(upper.workoutName, "Upper");
   assert.equal(upper.recordedSessions, 2);

@@ -134,9 +134,7 @@ test("round-trips custom templates and previews their programme", () => {
       startsOn: "2026-07-27",
       weekCount: 4,
       enabled: true,
-      assignments: [
-        { weekNumber: 1, dayIndex: 2, workoutId: custom.id },
-      ],
+      assignments: [{ weekNumber: 1, dayIndex: 2, workoutId: custom.id }],
       createdAt: 1_000,
       updatedAt: 2_000,
     },
