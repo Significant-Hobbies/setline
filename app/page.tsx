@@ -133,9 +133,7 @@ function recordSummary(planned: PlannedStep, record: ExecutionRecord): string {
   if (planned.tracking === "weight-reps") {
     return `${record.segments
       .map((segment) => `${segment.weight ?? 0} kg × ${segment.reps ?? 0}`)
-      .join(" → ")}${
-      record.actualRpe ? ` @ RPE ${record.actualRpe}` : ""
-    }`;
+      .join(" → ")}${record.actualRpe ? ` @ RPE ${record.actualRpe}` : ""}`;
   }
   if (planned.tracking === "weight-duration") {
     const segment = record.segments[0];
@@ -150,7 +148,11 @@ function recordSummary(planned: PlannedStep, record: ExecutionRecord): string {
   return "Completed";
 }
 
-function statusLabel(record: ExecutionRecord, index: number, activeIndex: number) {
+function statusLabel(
+  record: ExecutionRecord,
+  index: number,
+  activeIndex: number,
+) {
   if (record.status === "completed") return "Done";
   if (record.status === "skipped") return "Skipped";
   if (index === activeIndex) return "Current";
@@ -161,12 +163,15 @@ export default function SetlineApp() {
   const [view, setView] = useState<View>("today");
   const [customWorkoutEditing, setCustomWorkoutEditing] = useState(false);
   const [customProgrammeEditing, setCustomProgrammeEditing] = useState(false);
-  const [workoutState, setWorkoutState] = useState<StoredState>(emptyStoredState);
+  const [workoutState, setWorkoutState] =
+    useState<StoredState>(emptyStoredState);
   const [hydrated, setHydrated] = useState(false);
   const [now, setNow] = useState(0);
   const [online, setOnline] = useState(true);
   const [notice, setNotice] = useState("");
-  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
+    null,
+  );
   const [accountState, setAccountState] = useState<AccountState | null>(null);
   const [googleConfigured, setGoogleConfigured] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
@@ -185,9 +190,9 @@ export default function SetlineApp() {
   } | null>(null);
   const [workoutDataError, setWorkoutDataError] = useState("");
   const [workoutDataReceipt, setWorkoutDataReceipt] = useState("");
-  const [keptRecommendationKeys, setKeptRecommendationKeys] = useState<string[]>(
-    [],
-  );
+  const [keptRecommendationKeys, setKeptRecommendationKeys] = useState<
+    string[]
+  >([]);
   const workoutStateRef = useRef(workoutState);
   const lastSyncedAtRef = useRef(0);
   const cloudReadyRef = useRef(false);
@@ -196,25 +201,32 @@ export default function SetlineApp() {
   const session = workoutState.session;
   const history = workoutState.history;
 
-  const setSession = useCallback((next: SetStateAction<WorkoutSession | null>) => {
-    setWorkoutState((current) =>
-      updateStoredState(current, {
-        session:
-          typeof next === "function"
-            ? (next as (previous: WorkoutSession | null) => WorkoutSession | null)(
-                current.session,
-              )
-            : next,
-      }),
-    );
-  }, []);
+  const setSession = useCallback(
+    (next: SetStateAction<WorkoutSession | null>) => {
+      setWorkoutState((current) =>
+        updateStoredState(current, {
+          session:
+            typeof next === "function"
+              ? (
+                  next as (
+                    previous: WorkoutSession | null,
+                  ) => WorkoutSession | null
+                )(current.session)
+              : next,
+        }),
+      );
+    },
+    [],
+  );
 
   const setHistory = useCallback((next: SetStateAction<HistoryEntry[]>) => {
     setWorkoutState((current) =>
       updateStoredState(current, {
         history:
           typeof next === "function"
-            ? (next as (previous: HistoryEntry[]) => HistoryEntry[])(current.history)
+            ? (next as (previous: HistoryEntry[]) => HistoryEntry[])(
+                current.history,
+              )
             : next,
       }),
     );
@@ -222,7 +234,9 @@ export default function SetlineApp() {
 
   const pushCurrentState = useCallback(async () => {
     if (accountState?.status !== "authenticated" || !navigator.onLine) {
-      setSyncStatus(accountState?.status === "authenticated" ? "offline" : "local");
+      setSyncStatus(
+        accountState?.status === "authenticated" ? "offline" : "local",
+      );
       return;
     }
 
@@ -260,7 +274,9 @@ export default function SetlineApp() {
       startDeviceOnlyMode();
       setAccountState({ status: "local" });
       setSyncStatus("local");
-      setNotice("Your Google session ended. Workout data remains on this device.");
+      setNotice(
+        "Your Google session ended. Workout data remains on this device.",
+      );
       return;
     }
 
@@ -270,7 +286,9 @@ export default function SetlineApp() {
 
   const reconcileCloudState = useCallback(async () => {
     if (accountState?.status !== "authenticated" || !navigator.onLine) {
-      setSyncStatus(accountState?.status === "authenticated" ? "offline" : "local");
+      setSyncStatus(
+        accountState?.status === "authenticated" ? "offline" : "local",
+      );
       return;
     }
 
@@ -321,7 +339,8 @@ export default function SetlineApp() {
     if (parsed) {
       restoredState = parsed;
     } else if (raw) {
-      restorationNotice = "Local workout data could not be restored. A fresh session is ready.";
+      restorationNotice =
+        "Local workout data could not be restored. A fresh session is ready.";
     }
 
     const onOnline = () => {
@@ -355,12 +374,17 @@ export default function SetlineApp() {
       ([nextAccountState, configured]) => {
         if (nextAccountState.status === "authenticated") {
           const stateAccountId = getStateAccountId();
-          if (stateAccountId && stateAccountId !== nextAccountState.account.id) {
+          if (
+            stateAccountId &&
+            stateAccountId !== nextAccountState.account.id
+          ) {
             const resetState = emptyStoredState();
             workoutStateRef.current = resetState;
             setWorkoutState(resetState);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(resetState));
-            setNotice("This Google account will use its own private workout copy.");
+            setNotice(
+              "This Google account will use its own private workout copy.",
+            );
           }
           bindStateToAccount(nextAccountState.account.id);
         }
@@ -415,7 +439,8 @@ export default function SetlineApp() {
       return;
     }
     queueMicrotask(() => setSyncStatus("syncing"));
-    if (syncTimerRef.current !== null) window.clearTimeout(syncTimerRef.current);
+    if (syncTimerRef.current !== null)
+      window.clearTimeout(syncTimerRef.current);
     syncTimerRef.current = window.setTimeout(() => {
       void pushCurrentState();
     }, 700);
@@ -428,7 +453,8 @@ export default function SetlineApp() {
 
   useEffect(
     () => () => {
-      if (syncTimerRef.current !== null) window.clearTimeout(syncTimerRef.current);
+      if (syncTimerRef.current !== null)
+        window.clearTimeout(syncTimerRef.current);
     },
     [],
   );
@@ -453,9 +479,9 @@ export default function SetlineApp() {
   const scheduledCustomWorkout = useMemo(
     () =>
       customProgrammeDay?.status === "scheduled"
-        ? workoutState.customWorkouts.find(
+        ? (workoutState.customWorkouts.find(
             (workout) => workout.id === customProgrammeDay.workoutId,
-          ) ?? null
+          ) ?? null)
         : null,
     [customProgrammeDay, workoutState.customWorkouts],
   );
@@ -463,9 +489,9 @@ export default function SetlineApp() {
     () =>
       session
         ? session.workoutId.startsWith("custom:")
-          ? workoutState.customWorkouts.find(
+          ? (workoutState.customWorkouts.find(
               (workout) => workout.id === session.workoutId,
-            ) ?? null
+            ) ?? null)
           : resolveWorkout(
               session.workoutId as BuiltInWorkoutId,
               session.weekNumber,
@@ -502,21 +528,21 @@ export default function SetlineApp() {
     () => (session ? getSessionMetrics(session) : null),
     [session],
   );
-  const elapsedSeconds = session && now ? Math.max(0, (now - session.startedAt) / 1000) : 0;
+  const elapsedSeconds =
+    session && now ? Math.max(0, (now - session.startedAt) / 1000) : 0;
   const restSeconds =
     session?.phase === "rest"
-      ? session.pausedRestSeconds ??
-        Math.max(0, Math.ceil(((session.restEndsAt ?? now) - now) / 1000))
+      ? (session.pausedRestSeconds ??
+        Math.max(0, Math.ceil(((session.restEndsAt ?? now) - now) / 1000)))
       : 0;
   const currentValuesValid = executionIsValid(currentRecord);
-  const correctionSet =
-    correction === null ? null : correction.draft.step;
+  const correctionSet = correction === null ? null : correction.draft.step;
   const restFromRecord = session
     ? getExecution(session, session.restFromExecutionId)
     : null;
   const previousQueueRecord =
     session && session.activeIndex > 0
-      ? orderedExecutions[session.activeIndex - 1] ?? null
+      ? (orderedExecutions[session.activeIndex - 1] ?? null)
       : null;
 
   const beginGoogleSignIn = async () => {
@@ -535,7 +561,11 @@ export default function SetlineApp() {
     try {
       await signInWithGoogle();
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : "Google sign-in could not start.");
+      setAuthError(
+        error instanceof Error
+          ? error.message
+          : "Google sign-in could not start.",
+      );
       setAuthBusy(false);
     }
   };
@@ -573,10 +603,14 @@ export default function SetlineApp() {
       setWorkoutState(resetState);
       setAccountState({ status: "anonymous" });
       setSyncStatus("local");
-      setNotice("Signed out. This device copy was removed; your account copy remains.");
+      setNotice(
+        "Signed out. This device copy was removed; your account copy remains.",
+      );
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Sign-out could not be completed.";
+        error instanceof Error
+          ? error.message
+          : "Sign-out could not be completed.";
       setAuthError(message);
       setNotice(message);
     } finally {
@@ -643,18 +677,25 @@ export default function SetlineApp() {
   };
 
   const startWorkout = (
-    workoutId: Exclude<BuiltInWorkoutId, "legacy-upper-a"> = programmePosition.schedule.workoutId,
+    workoutId: Exclude<BuiltInWorkoutId, "legacy-upper-a"> = programmePosition
+      .schedule.workoutId,
     dayIndex = programmePosition.dayIndex,
   ) => {
     if (
       (customWorkoutEditing || customProgrammeEditing) &&
-      !window.confirm("Discard unsaved authoring changes and start this workout?")
+      !window.confirm(
+        "Discard unsaved authoring changes and start this workout?",
+      )
     ) {
       return;
     }
     setCustomWorkoutEditing(false);
     setCustomProgrammeEditing(false);
-    const template = resolveWorkout(workoutId, programmePosition.weekNumber, dayIndex);
+    const template = resolveWorkout(
+      workoutId,
+      programmePosition.weekNumber,
+      dayIndex,
+    );
     setCorrection(null);
     setSession(
       (existing) =>
@@ -676,7 +717,9 @@ export default function SetlineApp() {
   ) => {
     if (
       (customWorkoutEditing || customProgrammeEditing) &&
-      !window.confirm("Discard unsaved authoring changes and start this workout?")
+      !window.confirm(
+        "Discard unsaved authoring changes and start this workout?",
+      )
     ) {
       return;
     }
@@ -709,8 +752,13 @@ export default function SetlineApp() {
     const existing = workoutState.customWorkouts.some(
       (workout) => workout.id === template.id,
     );
-    if (!existing && workoutState.customWorkouts.length >= MAX_CUSTOM_WORKOUTS) {
-      setNotice(`Setline keeps at most ${MAX_CUSTOM_WORKOUTS} custom workouts.`);
+    if (
+      !existing &&
+      workoutState.customWorkouts.length >= MAX_CUSTOM_WORKOUTS
+    ) {
+      setNotice(
+        `Setline keeps at most ${MAX_CUSTOM_WORKOUTS} custom workouts.`,
+      );
       return;
     }
     setWorkoutState((current) => {
@@ -764,7 +812,9 @@ export default function SetlineApp() {
     setWorkoutState((current) =>
       updateStoredState(current, { customProgramme: null }),
     );
-    setNotice("Custom programme deleted. Workouts and recorded sessions were kept.");
+    setNotice(
+      "Custom programme deleted. Workouts and recorded sessions were kept.",
+    );
   };
 
   const updateCurrentRecord = (patch: Partial<ExecutionRecord>) => {
@@ -849,7 +899,9 @@ export default function SetlineApp() {
   const removeCurrentSegment = (segmentId: string) => {
     if (!currentRecord || currentRecord.segments.length === 1) return;
     updateCurrentRecord({
-      segments: currentRecord.segments.filter((segment) => segment.id !== segmentId),
+      segments: currentRecord.segments.filter(
+        (segment) => segment.id !== segmentId,
+      ),
     });
   };
 
@@ -895,25 +947,33 @@ export default function SetlineApp() {
       return;
     }
     setSession(deferActiveExecution(session, wallClockNow()));
-    setNotice(`${currentRecord.step.exercise} moved to the end of this session only.`);
+    setNotice(
+      `${currentRecord.step.exercise} moved to the end of this session only.`,
+    );
   };
 
   const completeSet = () => {
     if (!session || !currentSet || !currentRecord) return;
     const completedAt = wallClockNow();
     const isFinal = session.activeIndex === session.queue.length - 1;
-    const nextIndex = Math.min(session.activeIndex + 1, session.queue.length - 1);
+    const nextIndex = Math.min(
+      session.activeIndex + 1,
+      session.queue.length - 1,
+    );
     const needsRest = !isFinal && currentSet.restSeconds > 0;
     const nextId = isFinal ? null : session.queue[nextIndex];
     const performedPosition =
-      session.records.filter((record) => record.status !== "pending").length + 1;
+      session.records.filter((record) => record.status !== "pending").length +
+      1;
 
     setSession({
       ...session,
       completedAt: isFinal ? completedAt : null,
       phase: isFinal ? "summary" : needsRest ? "rest" : "active",
       activeIndex: nextIndex,
-      restEndsAt: needsRest ? completedAt + currentSet.restSeconds * 1000 : null,
+      restEndsAt: needsRest
+        ? completedAt + currentSet.restSeconds * 1000
+        : null,
       pausedRestSeconds: null,
       authoredRestSeconds: currentSet.restSeconds,
       adjustedRestSeconds: currentSet.restSeconds,
@@ -927,7 +987,8 @@ export default function SetlineApp() {
               completedAt,
               performedPosition,
               adjustedRestSeconds: currentSet.restSeconds,
-              actualRestSeconds: !needsRest && !isFinal ? 0 : record.actualRestSeconds,
+              actualRestSeconds:
+                !needsRest && !isFinal ? 0 : record.actualRestSeconds,
             }
           : record.id === nextId && !needsRest
             ? { ...record, startedAt: completedAt }
@@ -949,10 +1010,14 @@ export default function SetlineApp() {
     if (!session || !currentSet || !currentRecord) return;
     const completedAt = wallClockNow();
     const isFinal = session.activeIndex === session.queue.length - 1;
-    const nextIndex = Math.min(session.activeIndex + 1, session.queue.length - 1);
+    const nextIndex = Math.min(
+      session.activeIndex + 1,
+      session.queue.length - 1,
+    );
     const nextId = isFinal ? null : session.queue[nextIndex];
     const performedPosition =
-      session.records.filter((record) => record.status !== "pending").length + 1;
+      session.records.filter((record) => record.status !== "pending").length +
+      1;
     setSession({
       ...session,
       completedAt: isFinal ? completedAt : null,
@@ -977,7 +1042,9 @@ export default function SetlineApp() {
             : record,
       ),
     });
-    setNotice(`${currentSet.exercise} ${currentSet.setLabel.toLowerCase()} skipped.`);
+    setNotice(
+      `${currentSet.exercise} ${currentSet.setLabel.toLowerCase()} skipped.`,
+    );
   };
 
   const addRest = (seconds: number) => {
@@ -1207,7 +1274,9 @@ export default function SetlineApp() {
   const cancelWorkoutDataImport = () => {
     setWorkoutDataPreview(null);
     setWorkoutDataError("");
-    setWorkoutDataReceipt("Restore cancelled. Current workout data was not changed.");
+    setWorkoutDataReceipt(
+      "Restore cancelled. Current workout data was not changed.",
+    );
     setNotice("Import cancelled. Current workout data was not changed.");
   };
 
@@ -1247,7 +1316,9 @@ export default function SetlineApp() {
   };
 
   const discardSession = () => {
-    if (!window.confirm("End this workout and discard its recorded set progress?")) {
+    if (
+      !window.confirm("End this workout and discard its recorded set progress?")
+    ) {
       return;
     }
     setCorrection(null);
@@ -1305,10 +1376,7 @@ export default function SetlineApp() {
             }
             onAddSegment={() =>
               setCorrection((current) => {
-                if (
-                  !current ||
-                  current.draft.step.tracking !== "weight-reps"
-                ) {
+                if (!current || current.draft.step.tracking !== "weight-reps") {
                   return current;
                 }
                 const last =
@@ -1360,9 +1428,16 @@ export default function SetlineApp() {
                 ? `Custom workout · ${session.workoutName}`
                 : `Week ${session.weekNumber} · ${session.workoutName}`}
             </span>
-            <strong>{session.phase === "summary" ? "Session review" : "Workout in progress"}</strong>
+            <strong>
+              {session.phase === "summary"
+                ? "Session review"
+                : "Workout in progress"}
+            </strong>
           </div>
-          <div className="session-clock" aria-label={`Elapsed time ${formatClock(elapsedSeconds)}`}>
+          <div
+            className="session-clock"
+            aria-label={`Elapsed time ${formatClock(elapsedSeconds)}`}
+          >
             <span>ELAPSED</span>
             <strong>{formatClock(elapsedSeconds)}</strong>
           </div>
@@ -1405,15 +1480,43 @@ export default function SetlineApp() {
             </div>
 
             <div className="metric-grid">
-              <Metric label="Completed" value={`${metrics.completedSets}/${orderedExecutions.length}`} provenance="Recorded" />
-              <Metric label="Modified" value={String(metrics.modifiedSets)} provenance="Recorded vs programme" />
-              <Metric label="Extra" value={String(metrics.extraSets)} provenance="Session only" />
-              <Metric label="Skipped" value={String(metrics.skippedSets)} provenance="Recorded" />
-              <Metric label="Working volume" value={`${metrics.workingVolume.toLocaleString()} kg`} provenance="Calculated" />
-              <Metric label="Warm-up volume" value={`${metrics.warmupVolume.toLocaleString()} kg`} provenance="Calculated" />
+              <Metric
+                label="Completed"
+                value={`${metrics.completedSets}/${orderedExecutions.length}`}
+                provenance="Recorded"
+              />
+              <Metric
+                label="Modified"
+                value={String(metrics.modifiedSets)}
+                provenance="Recorded vs programme"
+              />
+              <Metric
+                label="Extra"
+                value={String(metrics.extraSets)}
+                provenance="Session only"
+              />
+              <Metric
+                label="Skipped"
+                value={String(metrics.skippedSets)}
+                provenance="Recorded"
+              />
+              <Metric
+                label="Working volume"
+                value={`${metrics.workingVolume.toLocaleString()} kg`}
+                provenance="Calculated"
+              />
+              <Metric
+                label="Warm-up volume"
+                value={`${metrics.warmupVolume.toLocaleString()} kg`}
+                provenance="Calculated"
+              />
               <Metric
                 label="Average RPE"
-                value={metrics.averageRpe === null ? "—" : metrics.averageRpe.toFixed(1)}
+                value={
+                  metrics.averageRpe === null
+                    ? "—"
+                    : metrics.averageRpe.toFixed(1)
+                }
                 provenance="Calculated from recorded RPE"
               />
               <Metric
@@ -1432,7 +1535,9 @@ export default function SetlineApp() {
 
             <fieldset className="quality-fieldset">
               <legend>How would you rate the session quality?</legend>
-              <p className="field-help">Optional. No rating is recorded until you choose one.</p>
+              <p className="field-help">
+                Optional. No rating is recorded until you choose one.
+              </p>
               <div className="quality-options">
                 {[
                   { score: 2, label: "Poor" },
@@ -1440,7 +1545,11 @@ export default function SetlineApp() {
                   { score: 5, label: "Excellent" },
                 ].map(({ score, label }) => (
                   <button
-                    className={session.quality === score ? "quality-option active" : "quality-option"}
+                    className={
+                      session.quality === score
+                        ? "quality-option active"
+                        : "quality-option"
+                    }
                     key={score}
                     onClick={() => setSession({ ...session, quality: score })}
                     type="button"
@@ -1608,7 +1717,9 @@ export default function SetlineApp() {
                   id: record.id,
                   draft: {
                     ...record,
-                    segments: record.segments.map((segment) => ({ ...segment })),
+                    segments: record.segments.map((segment) => ({
+                      ...segment,
+                    })),
                   },
                 })
               }
@@ -1622,11 +1733,17 @@ export default function SetlineApp() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <button className="wordmark" onClick={() => navigate("today")} aria-label="Setline home">
+        <button
+          className="wordmark"
+          onClick={() => navigate("today")}
+          aria-label="Setline home"
+        >
           SETLINE
         </button>
         <div className="header-actions">
-          <span className={online ? "connection-state" : "connection-state offline"}>
+          <span
+            className={online ? "connection-state" : "connection-state offline"}
+          >
             <i />
             {accountState.status === "authenticated"
               ? syncStatus === "syncing"
@@ -1742,8 +1859,8 @@ function AccountLoading() {
           <span className="section-code">ACCOUNT OR DEVICE · YOUR CALL</span>
           <h1>Keep the plan close.</h1>
           <p>
-            Google sign-in keeps one private Setline workout copy available across devices.
-            Device-only mode keeps everything in this browser.
+            Google sign-in keeps one private Setline workout copy available
+            across devices. Device-only mode keeps everything in this browser.
           </p>
         </div>
       </section>
@@ -1783,8 +1900,8 @@ function AccountChoice({
             Keep the plan close.
           </h1>
           <p>
-            Google sign-in keeps one private Setline workout copy available across devices. Device-only
-            mode keeps everything in this browser.
+            Google sign-in keeps one private Setline workout copy available
+            across devices. Device-only mode keeps everything in this browser.
           </p>
         </div>
 
@@ -1813,9 +1930,15 @@ function AccountChoice({
           {busy ? "Opening Google…" : "Continue with Google"}
         </button>
         {!googleConfigured ? (
-          <p className="account-availability">Google sign-in is not configured in this environment.</p>
+          <p className="account-availability">
+            Google sign-in is not configured in this environment.
+          </p>
         ) : null}
-        <button className="secondary-action account-local-action" onClick={onDeviceOnly} type="button">
+        <button
+          className="secondary-action account-local-action"
+          onClick={onDeviceOnly}
+          type="button"
+        >
           Use this device only
         </button>
         {receipt ? (
@@ -1830,10 +1953,14 @@ function AccountChoice({
         ) : null}
 
         <p className="account-legal">
-          By continuing with Google, you agree to the <Link href="/terms">terms</Link>{" "}
-          and acknowledge the <Link href="/privacy">privacy notice</Link>. Read the{" "}
+          By continuing with Google, you agree to the{" "}
+          <Link href="/terms">terms</Link> and acknowledge the{" "}
+          <Link href="/privacy">privacy notice</Link>. Read the{" "}
           <Link href="/changelog">changelog</Link>, view the{" "}
-          <a href="https://github.com/Significant-Hobbies/setline/issues">roadmap</a>, or inspect the{" "}
+          <a href="https://github.com/Significant-Hobbies/setline/issues">
+            roadmap
+          </a>
+          , or inspect the{" "}
           <a href="https://github.com/Significant-Hobbies/setline">source</a>.
         </p>
       </section>
@@ -1915,7 +2042,9 @@ function AccountControl({
         <span>{accountState.account.email}</span>
         <small>{syncLabel}</small>
         <Link href="/changelog">Changelog</Link>
-        <a href="https://github.com/Significant-Hobbies/setline/issues">Roadmap</a>
+        <a href="https://github.com/Significant-Hobbies/setline/issues">
+          Roadmap
+        </a>
         <a href="https://github.com/Significant-Hobbies/setline">Source</a>
         {syncStatus === "error" ? (
           <button disabled={busy} onClick={onRetry} type="button">
@@ -1942,11 +2071,13 @@ function AccountControl({
             className="account-delete-confirmation"
             id="account-delete-confirmation"
           >
-            <strong id="account-delete-heading">Permanently delete Setline?</strong>
+            <strong id="account-delete-heading">
+              Permanently delete Setline?
+            </strong>
             <p>
-              This removes your Setline account, private cloud workout copy,
-              and this browser’s bound workout copy. Revoke Google access
-              separately if you no longer want Google to remember Setline.
+              This removes your Setline account, private cloud workout copy, and
+              this browser’s bound workout copy. Revoke Google access separately
+              if you no longer want Google to remember Setline.
             </p>
             <div role="group" aria-label="Account deletion confirmation">
               <button
@@ -2020,10 +2151,14 @@ function TodayView({
     customProgrammeDay?.status === "unplanned"
       ? customProgrammeDay.dayIndex
       : position.dayIndex;
-  const preview = workout.steps.filter(
-    (planned, index, steps) =>
-      steps.findIndex((candidate) => candidate.exercise === planned.exercise) === index,
-  ).slice(0, 5);
+  const preview = workout.steps
+    .filter(
+      (planned, index, steps) =>
+        steps.findIndex(
+          (candidate) => candidate.exercise === planned.exercise,
+        ) === index,
+    )
+    .slice(0, 5);
   const customWeekAssignments = customApplies
     ? WEEK_DAY_LABELS.map((day, index) => {
         const assignment = customProgramme.assignments.find(
@@ -2033,8 +2168,9 @@ function TodayView({
         return {
           day,
           name:
-            customWorkouts.find((candidate) => candidate.id === assignment?.workoutId)
-              ?.name ?? "Unplanned",
+            customWorkouts.find(
+              (candidate) => candidate.id === assignment?.workoutId,
+            )?.name ?? "Unplanned",
           planned: Boolean(assignment),
         };
       })
@@ -2066,7 +2202,9 @@ function TodayView({
         </div>
         <div className="adherence-stamp">
           <strong>
-            {customProgrammeDay?.status === "unplanned" ? "—" : workout.steps.length}
+            {customProgrammeDay?.status === "unplanned"
+              ? "—"
+              : workout.steps.length}
           </strong>
           <span>
             {customProgrammeDay?.status === "unplanned"
@@ -2080,7 +2218,10 @@ function TodayView({
         <div className="workout-title">
           <div>
             <span className="day-chip">
-              TODAY · {customApplies ? WEEK_DAY_LABELS[dayIndex] : position.schedule.time}
+              TODAY ·{" "}
+              {customApplies
+                ? WEEK_DAY_LABELS[dayIndex]
+                : position.schedule.time}
             </span>
             <h2>
               {customProgrammeDay?.status === "unplanned"
@@ -2121,9 +2262,21 @@ function TodayView({
         {customProgrammeDay?.status !== "unplanned" ? (
           <>
             <div className="workout-facts">
-              <Metric label="Planned" value={`${workout.expectedMinutes} min`} provenance="Programme" />
-              <Metric label="Activities" value={String(preview.length)} provenance="First distinct movements" />
-              <Metric label="Steps" value={String(workout.steps.length)} provenance="Exact authored order" />
+              <Metric
+                label="Planned"
+                value={`${workout.expectedMinutes} min`}
+                provenance="Programme"
+              />
+              <Metric
+                label="Activities"
+                value={String(preview.length)}
+                provenance="First distinct movements"
+              />
+              <Metric
+                label="Steps"
+                value={String(workout.steps.length)}
+                provenance="Exact authored order"
+              />
               <Metric
                 label="First target"
                 value={formatStepTarget(workout.steps[0])}
@@ -2145,7 +2298,6 @@ function TodayView({
             </ol>
           </>
         ) : null}
-
       </section>
 
       <section className="week-strip">
@@ -2162,21 +2314,38 @@ function TodayView({
           {customApplies
             ? customWeekAssignments.map((item, index) => (
                 <div
-                  className={index === dayIndex ? "schedule-day active" : "schedule-day"}
+                  className={
+                    index === dayIndex ? "schedule-day active" : "schedule-day"
+                  }
                   key={item.day}
                 >
                   <span>{item.day}</span>
                   <strong>{item.name}</strong>
                   <small>{item.planned ? "Custom" : "Open"}</small>
-                  <b>{index === dayIndex ? "Today" : item.planned ? "Planned" : "Unplanned"}</b>
+                  <b>
+                    {index === dayIndex
+                      ? "Today"
+                      : item.planned
+                        ? "Planned"
+                        : "Unplanned"}
+                  </b>
                 </div>
               ))
             : PROGRAMME_SCHEDULE.map((item) => (
-                <div className={item.dayIndex === position.dayIndex ? "schedule-day active" : "schedule-day"} key={item.day}>
+                <div
+                  className={
+                    item.dayIndex === position.dayIndex
+                      ? "schedule-day active"
+                      : "schedule-day"
+                  }
+                  key={item.day}
+                >
                   <span>{item.day}</span>
                   <strong>{item.name}</strong>
                   <small>{item.time}</small>
-                  <b>{item.dayIndex === position.dayIndex ? "Today" : "Planned"}</b>
+                  <b>
+                    {item.dayIndex === position.dayIndex ? "Today" : "Planned"}
+                  </b>
                 </div>
               ))}
         </div>
@@ -2280,26 +2449,49 @@ function ProgrammeView({
   return (
     <div className="page-view programme-view">
       <section className="page-heading">
-        <span className="section-code">WEEK {position.weekNumber} OF 12 · FIXED BLOCK</span>
+        <span className="section-code">
+          WEEK {position.weekNumber} OF 12 · FIXED BLOCK
+        </span>
         <h1>Strength, cardio and mobility—already decided.</h1>
-        <p>{PROGRAMME.name}. Exercise and step order is locked during execution.</p>
+        <p>
+          {PROGRAMME.name}. Exercise and step order is locked during execution.
+        </p>
       </section>
 
       <div className="programme-layout">
         <section className="programme-schedule">
           {PROGRAMME_SCHEDULE.map((item, index) => {
-            const workout = resolveWorkout(item.workoutId, position.weekNumber, item.dayIndex);
+            const workout = resolveWorkout(
+              item.workoutId,
+              position.weekNumber,
+              item.dayIndex,
+            );
             return (
-              <article key={item.day} className={item.dayIndex === position.dayIndex ? "programme-day current" : "programme-day"}>
-                <div className="programme-index">{String(index + 1).padStart(2, "0")}</div>
+              <article
+                key={item.day}
+                className={
+                  item.dayIndex === position.dayIndex
+                    ? "programme-day current"
+                    : "programme-day"
+                }
+              >
+                <div className="programme-index">
+                  {String(index + 1).padStart(2, "0")}
+                </div>
                 <div>
-                  <span>{item.day} · {item.time}</span>
+                  <span>
+                    {item.day} · {item.time}
+                  </span>
                   <h2>{item.name}</h2>
-                  <p>{workout.steps.length} ordered steps · {workout.notes[0]}</p>
+                  <p>
+                    {workout.steps.length} ordered steps · {workout.notes[0]}
+                  </p>
                 </div>
                 <div className="programme-day-actions">
                   <strong>{workout.expectedMinutes} min</strong>
-                  <button onClick={() => onStart(item.workoutId, item.dayIndex)}>
+                  <button
+                    onClick={() => onStart(item.workoutId, item.dayIndex)}
+                  >
                     Start
                   </button>
                 </div>
@@ -2390,7 +2582,8 @@ function ProgrammeView({
             </button>
           ) : (
             <p className="storage-help">
-              Sign out and choose device-only mode before clearing this device copy.
+              Sign out and choose device-only mode before clearing this device
+              copy.
             </p>
           )}
         </aside>
@@ -2490,7 +2683,8 @@ function WorkoutDataImportPreviewCard({
         <div>
           <dt>Custom templates</dt>
           <dd>
-            {preview.customWorkoutCount} incoming · {currentCustomWorkoutCount} current
+            {preview.customWorkoutCount} incoming · {currentCustomWorkoutCount}{" "}
+            current
           </dd>
         </div>
         <div>
@@ -2537,7 +2731,10 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
       <section className="page-heading">
         <span className="section-code">WORKOUT HISTORY</span>
         <h1>The record, without interpretation.</h1>
-        <p>Recorded values are yours. Volume and averages are calculated from those entries.</p>
+        <p>
+          Recorded values are yours. Volume and averages are calculated from
+          those entries.
+        </p>
       </section>
 
       {history.length ? (
@@ -2547,7 +2744,10 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
               <article className="history-row">
                 <div className="history-date">
                   <strong>
-                    {new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" })
+                    {new Intl.DateTimeFormat("en", {
+                      day: "2-digit",
+                      month: "short",
+                    })
                       .format(new Date(entry.completedAt))
                       .toUpperCase()}
                   </strong>
@@ -2559,9 +2759,11 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
                     {entry.workoutId.startsWith("custom:")
                       ? "Custom workout"
                       : `Week ${entry.weekNumber}`}{" "}
-                    · {entry.completedSets} completed ·{" "}
-                    {entry.modifiedSets} modified · {entry.skippedSets} skipped · quality{" "}
-                    {entry.quality === null ? "not recorded" : `${entry.quality}/5`}
+                    · {entry.completedSets} completed · {entry.modifiedSets}{" "}
+                    modified · {entry.skippedSets} skipped · quality{" "}
+                    {entry.quality === null
+                      ? "not recorded"
+                      : `${entry.quality}/5`}
                   </p>
                 </div>
                 <div className="history-volume">
@@ -2576,13 +2778,18 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
                       : "Recorded timed work"}
                   </span>
                 </div>
-                <strong className="history-duration">{formatDuration(entry.durationSeconds)}</strong>
+                <strong className="history-duration">
+                  {formatDuration(entry.durationSeconds)}
+                </strong>
               </article>
               {entry.detailsAvailable ? (
                 <details className="history-details">
                   <summary>
                     View every set, segment and gap
-                    <span>{formatTimedWork(entry.totalActualRestSeconds)} actual rest</span>
+                    <span>
+                      {formatTimedWork(entry.totalActualRestSeconds)} actual
+                      rest
+                    </span>
                   </summary>
                   <ExecutionLedger executions={entry.executions} />
                 </details>
@@ -2600,7 +2807,10 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
           <div className="empty-mark">0</div>
           <div>
             <h2>No recorded workouts yet.</h2>
-            <p>Complete any scheduled session and save the summary. Your first device-local entry will appear here.</p>
+            <p>
+              Complete any scheduled session and save the summary. Your first
+              device-local entry will appear here.
+            </p>
           </div>
         </section>
       )}
@@ -2617,7 +2827,11 @@ function HistoryView({ history }: { history: HistoryEntry[] }) {
           <Metric label="Start" value="27 Jul" provenance="Programme" />
           <Metric label="Finish" value="18 Oct" provenance="Programme" />
           <Metric label="Strength" value="4 / week" provenance="Programme" />
-          <Metric label="Mobility" value="3 full / week" provenance="Programme" />
+          <Metric
+            label="Mobility"
+            value="3 full / week"
+            provenance="Programme"
+          />
         </div>
       </section>
     </div>
@@ -2663,9 +2877,7 @@ function formatExercisePoint(
 ) {
   if (exercise.trendMetric === "weight") {
     return `${point.bestWeight ?? 0} kg${
-      point.repetitionsAtBestWeight
-        ? ` × ${point.repetitionsAtBestWeight}`
-        : ""
+      point.repetitionsAtBestWeight ? ` × ${point.repetitionsAtBestWeight}` : ""
     }`;
   }
   if (exercise.trendMetric === "duration") {
@@ -2746,9 +2958,9 @@ function ProgressView({ history }: { history: HistoryEntry[] }) {
         </span>
         <h1>The record, measured plainly.</h1>
         <p>
-          Exercise results, workout totals, and represented programme weeks
-          come only from saved history. Missing records are never treated as
-          missed training.
+          Exercise results, workout totals, and represented programme weeks come
+          only from saved history. Missing records are never treated as missed
+          training.
         </p>
       </section>
 
@@ -2980,7 +3192,8 @@ function ProgressView({ history }: { history: HistoryEntry[] }) {
                     <div>
                       <dt>Resolved sets</dt>
                       <dd>
-                        {workout.completedSets} done · {workout.skippedSets} skipped
+                        {workout.completedSets} done · {workout.skippedSets}{" "}
+                        skipped
                       </dd>
                     </div>
                   </dl>
@@ -3015,8 +3228,8 @@ function ProgressView({ history }: { history: HistoryEntry[] }) {
                       </small>
                     </div>
                     <p>
-                      {week.completedSets} completed · {week.modifiedSets} modified
-                      · {week.skippedSets} skipped
+                      {week.completedSets} completed · {week.modifiedSets}{" "}
+                      modified · {week.skippedSets} skipped
                     </p>
                     <b>{week.totalWorkingVolume.toLocaleString()} kg</b>
                   </article>
@@ -3045,8 +3258,8 @@ function ProgressView({ history }: { history: HistoryEntry[] }) {
         <strong>Measurement rule</strong>
         <p>
           Workout results are recorded by you. Totals, averages, bests, and
-          trend bars are calculated from those records. No adherence,
-          readiness, or coaching score is inferred.
+          trend bars are calculated from those records. No adherence, readiness,
+          or coaching score is inferred.
         </p>
       </aside>
     </div>
@@ -3091,12 +3304,12 @@ function ProgressionDecision({
   }, [editing]);
 
   return (
-    <details
-      className="progression-decision"
-    >
+    <details className="progression-decision">
       <summary className="progression-decision-heading">
         <div>
-          <span className="section-code">CALCULATED · PROGRESSION AVAILABLE</span>
+          <span className="section-code">
+            CALCULATED · PROGRESSION AVAILABLE
+          </span>
           <h2>
             {recommendation.suggestedWeight} kg × {recommendation.suggestedReps}
           </h2>
@@ -3192,9 +3405,16 @@ function ProgressionDecision({
           </form>
         ) : (
           <div className="progression-actions">
-            <button className="progression-accept" type="button" onClick={onAccept}>
+            <button
+              className="progression-accept"
+              type="button"
+              onClick={onAccept}
+            >
               <strong>Accept</strong>
-              <span>Use {recommendation.suggestedWeight} kg × {recommendation.suggestedReps}</span>
+              <span>
+                Use {recommendation.suggestedWeight} kg ×{" "}
+                {recommendation.suggestedReps}
+              </span>
             </button>
             <button
               ref={editButtonRef}
@@ -3234,8 +3454,10 @@ function ActualInputs({
   onRemoveSegment: (segmentId: string) => void;
 }) {
   const usesWeight =
-    planned.tracking === "weight-reps" || planned.tracking === "weight-duration";
-  const usesReps = planned.tracking === "weight-reps" || planned.tracking === "reps";
+    planned.tracking === "weight-reps" ||
+    planned.tracking === "weight-duration";
+  const usesReps =
+    planned.tracking === "weight-reps" || planned.tracking === "reps";
   const usesDuration =
     planned.tracking === "duration" || planned.tracking === "weight-duration";
   const editableSegments =
@@ -3244,7 +3466,9 @@ function ActualInputs({
       : record.segments.slice(0, 1);
 
   if (planned.tracking === "completion") {
-    return <p className="field-help">No numeric result is required for this step.</p>;
+    return (
+      <p className="field-help">No numeric result is required for this step.</p>
+    );
   }
 
   return (
@@ -3416,7 +3640,9 @@ function ActualInputs({
             value={record.actualRpe ?? ""}
             onChange={(event) =>
               onChangeRecord({
-                actualRpe: event.target.value ? Number(event.target.value) : null,
+                actualRpe: event.target.value
+                  ? Number(event.target.value)
+                  : null,
               })
             }
           >
@@ -3501,7 +3727,9 @@ function CorrectionPanel({
         <div>
           <span className="section-code">CORRECT RECORDED STEP</span>
           <h2 id="correction-title">{planned.exercise}</h2>
-          <p>{planned.setLabel} · {formatStepTarget(planned)}</p>
+          <p>
+            {planned.setLabel} · {formatStepTarget(planned)}
+          </p>
         </div>
         <button
           aria-label="Close correction"
@@ -3581,7 +3809,13 @@ function RestBoard({
         role="timer"
         aria-label={`Rest timer ${formatClock(restSeconds)}`}
       >
-        <span>{paused ? "REST PAUSED" : restSeconds === 0 ? "REST COMPLETE" : "RESTING"}</span>
+        <span>
+          {paused
+            ? "REST PAUSED"
+            : restSeconds === 0
+              ? "REST COMPLETE"
+              : "RESTING"}
+        </span>
         <strong>{formatClock(restSeconds)}</strong>
         <small>
           Authored {formatClock(session.authoredRestSeconds)}
@@ -3591,7 +3825,12 @@ function RestBoard({
         </small>
       </div>
 
-      <div className={restSeconds <= 10 ? "rest-progress warning" : "rest-progress"} aria-hidden="true">
+      <div
+        className={
+          restSeconds <= 10 ? "rest-progress warning" : "rest-progress"
+        }
+        aria-hidden="true"
+      >
         <span
           style={{
             transform: `scaleX(${Math.min(
@@ -3659,7 +3898,9 @@ function SetRail({
     <aside className="set-rail">
       <div className="rail-heading">
         <span>PLAN + ACTUAL SESSION QUEUE</span>
-        <strong>{session.activeIndex + 1}/{executions.length}</strong>
+        <strong>
+          {session.activeIndex + 1}/{executions.length}
+        </strong>
       </div>
       <ol>
         {executions.map((record, index) => {
@@ -3685,7 +3926,9 @@ function SetRail({
               </span>
               <div>
                 <strong>{set.exercise}</strong>
-                <small>{set.setType} · {formatStepTarget(set)}</small>
+                <small>
+                  {set.setType} · {formatStepTarget(set)}
+                </small>
                 {deviation ? <em>{deviation}</em> : null}
               </div>
               {record.status === "pending" ? (
@@ -3707,13 +3950,12 @@ function SetRail({
   );
 }
 
-function ExecutionLedger({
-  executions,
-}: {
-  executions: ExecutionRecord[];
-}) {
+function ExecutionLedger({ executions }: { executions: ExecutionRecord[] }) {
   return (
-    <section className="execution-ledger" aria-label="Planned and actual execution ledger">
+    <section
+      className="execution-ledger"
+      aria-label="Planned and actual execution ledger"
+    >
       <div className="ledger-heading">
         <div>
           <span className="section-code">PLAN / ACTUAL LEDGER</span>
@@ -3747,7 +3989,9 @@ function ExecutionLedger({
               <div className="ledger-result">
                 <div>
                   <strong>{record.step.exercise}</strong>
-                  <span className={`ledger-status ${status.toLowerCase().replace(" ", "-")}`}>
+                  <span
+                    className={`ledger-status ${status.toLowerCase().replace(" ", "-")}`}
+                  >
                     {status}
                   </span>
                 </div>

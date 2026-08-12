@@ -16,10 +16,13 @@ function json(payload: unknown, status = 200) {
   return Response.json(payload, { status });
 }
 
-export function parseNativeStateEnvelope(value: unknown): NativeStateEnvelope | null {
+export function parseNativeStateEnvelope(
+  value: unknown,
+): NativeStateEnvelope | null {
   if (!value || typeof value !== "object") return null;
   const candidate = value as Record<string, unknown>;
-  if (!candidate.document || typeof candidate.document !== "object") return null;
+  if (!candidate.document || typeof candidate.document !== "object")
+    return null;
   const document = candidate.document as Record<string, unknown>;
   if (document.schemaVersion !== 1) return null;
   const baseRevision = candidate.baseRevision;
@@ -50,7 +53,10 @@ function parseRow(row: NativeStateRow | null) {
   }
 }
 
-export async function handleNativeState(request: Request, env: SetlineBindings) {
+export async function handleNativeState(
+  request: Request,
+  env: SetlineBindings,
+) {
   const userId = await resolveUserId(request, env);
   if (!userId) {
     return json({ code: "UNAUTHORIZED", message: "Sign in to continue." }, 401);
@@ -74,11 +80,17 @@ export async function handleNativeState(request: Request, env: SetlineBindings) 
 
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (Number.isFinite(declaredLength) && declaredLength > MAX_STATE_BYTES) {
-    return json({ code: "STATE_TOO_LARGE", message: "Workout state is too large." }, 413);
+    return json(
+      { code: "STATE_TOO_LARGE", message: "Workout state is too large." },
+      413,
+    );
   }
   const text = await request.text();
   if (new TextEncoder().encode(text).byteLength > MAX_STATE_BYTES) {
-    return json({ code: "STATE_TOO_LARGE", message: "Workout state is too large." }, 413);
+    return json(
+      { code: "STATE_TOO_LARGE", message: "Workout state is too large." },
+      413,
+    );
   }
   const envelope = parseNativeStateEnvelope(
     (() => {
@@ -90,7 +102,10 @@ export async function handleNativeState(request: Request, env: SetlineBindings) 
     })(),
   );
   if (!envelope) {
-    return json({ code: "INVALID_STATE", message: "Native workout state is invalid." }, 400);
+    return json(
+      { code: "INVALID_STATE", message: "Native workout state is invalid." },
+      400,
+    );
   }
 
   const payload = JSON.stringify(envelope.document);

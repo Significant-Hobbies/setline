@@ -213,7 +213,11 @@ export function removeProgrammeWorkoutAssignments(
 export function mondayIsoForLocalDate(date: Date) {
   if (!Number.isFinite(date.getTime())) return "";
   const dayIndex = (date.getDay() + 6) % DAYS_PER_WEEK;
-  const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - dayIndex);
+  const monday = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() - dayIndex,
+  );
   const year = monday.getFullYear();
   const month = String(monday.getMonth() + 1).padStart(2, "0");
   const day = String(monday.getDate()).padStart(2, "0");

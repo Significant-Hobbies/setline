@@ -23,7 +23,9 @@ export async function readCloudState(): Promise<CloudReadResult> {
       cache: "no-store",
     });
     if (response.status === 401) return { status: "unauthorized" };
-    const body = (await response.json().catch(() => null)) as CloudStateResponse | null;
+    const body = (await response
+      .json()
+      .catch(() => null)) as CloudStateResponse | null;
     if (!response.ok) {
       return {
         status: "unavailable",
@@ -36,13 +38,18 @@ export async function readCloudState(): Promise<CloudReadResult> {
     const state = parseStoredState(body.state);
     return state
       ? { status: "ok", state }
-      : { status: "unavailable", message: "Cloud state has an unsupported format." };
+      : {
+          status: "unavailable",
+          message: "Cloud state has an unsupported format.",
+        };
   } catch {
     return { status: "unavailable", message: "Cloud state is unreachable." };
   }
 }
 
-export async function writeCloudState(state: StoredState): Promise<CloudWriteResult> {
+export async function writeCloudState(
+  state: StoredState,
+): Promise<CloudWriteResult> {
   try {
     const response = await fetch("/api/app/state", {
       method: "PUT",
@@ -51,7 +58,9 @@ export async function writeCloudState(state: StoredState): Promise<CloudWriteRes
       body: JSON.stringify(state),
     });
     if (response.status === 401) return { status: "unauthorized" };
-    const body = (await response.json().catch(() => null)) as CloudStateResponse | null;
+    const body = (await response
+      .json()
+      .catch(() => null)) as CloudStateResponse | null;
     const returnedState = parseStoredState(body?.state);
     if (response.status === 409 && returnedState) {
       return { status: "conflict", state: returnedState };

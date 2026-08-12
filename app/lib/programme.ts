@@ -9,11 +9,7 @@ export type CustomWorkoutId = `custom:${string}`;
 export type WorkoutId = BuiltInWorkoutId | CustomWorkoutId;
 
 export type TrackingKind =
-  | "weight-reps"
-  | "reps"
-  | "duration"
-  | "weight-duration"
-  | "completion";
+  "weight-reps" | "reps" | "duration" | "weight-duration" | "completion";
 
 export type StepType =
   | "Preparation"
@@ -67,8 +63,22 @@ export const PROGRAMME = {
 } as const;
 
 export const PROGRAMME_SCHEDULE: ScheduleEntry[] = [
-  { dayIndex: 0, day: "MON", name: "Upper", time: "19:00", workoutId: "upper", required: true },
-  { dayIndex: 1, day: "TUE", name: "Lower", time: "19:00", workoutId: "lower", required: true },
+  {
+    dayIndex: 0,
+    day: "MON",
+    name: "Upper",
+    time: "19:00",
+    workoutId: "upper",
+    required: true,
+  },
+  {
+    dayIndex: 1,
+    day: "TUE",
+    name: "Lower",
+    time: "19:00",
+    workoutId: "lower",
+    required: true,
+  },
   {
     dayIndex: 2,
     day: "WED",
@@ -93,7 +103,14 @@ export const PROGRAMME_SCHEDULE: ScheduleEntry[] = [
     workoutId: "mobility",
     required: true,
   },
-  { dayIndex: 5, day: "SAT", name: "Lower", time: "11:00", workoutId: "lower", required: true },
+  {
+    dayIndex: 5,
+    day: "SAT",
+    name: "Lower",
+    time: "11:00",
+    workoutId: "lower",
+    required: true,
+  },
   {
     dayIndex: 6,
     day: "SUN",
@@ -815,7 +832,8 @@ export function resolveWorkout(
   }
   if (workoutId === "upper" || workoutId === "upper-hard") {
     const pullUpTest =
-      (dayIndex === 0 && (week === 5 || week === 9)) || (dayIndex === 3 && week === 12);
+      (dayIndex === 0 && (week === 5 || week === 9)) ||
+      (dayIndex === 3 && week === 12);
     const steps = upperSteps("upper", pullUpTest);
     const hard = workoutId === "upper-hard" ? hardCardioSteps(week) : [];
     return {
@@ -828,7 +846,9 @@ export function resolveWorkout(
         "Bench begins at 65 kg for 3 × 5–8. Add load only after 3 × 8 is clean.",
         "Weeks 1–2: keep 2–3 reps in reserve. Thereafter use 1–2 on compounds.",
         ...(week >= 5
-          ? ["Optional lateral raises remain excluded unless recovery and shoulders are clearly good."]
+          ? [
+              "Optional lateral raises remain excluded unless recovery and shoulders are clearly good.",
+            ]
           : []),
       ],
     };
@@ -887,8 +907,14 @@ export type ProgrammePosition = {
 export function getProgrammePosition(date: Date): ProgrammePosition {
   const start = new Date(2026, 6, 27);
   start.setHours(0, 0, 0, 0);
-  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const offset = Math.floor((localDate.getTime() - start.getTime()) / 86_400_000);
+  const localDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+  const offset = Math.floor(
+    (localDate.getTime() - start.getTime()) / 86_400_000,
+  );
   const beforeBlock = offset < 0;
   const afterBlock = offset >= 84;
   const boundedOffset = Math.min(83, Math.max(0, offset));

@@ -204,8 +204,12 @@ function dateBoundary(value: string | null, end = false) {
 export function filterHistory(history: HistoryEntry[], url: URL) {
   const start = dateBoundary(url.searchParams.get("start"));
   const end = dateBoundary(url.searchParams.get("end"), true);
-  const workout = boundedText(url.searchParams.get("workout"))?.toLocaleLowerCase();
-  const exercise = boundedText(url.searchParams.get("exercise"))?.toLocaleLowerCase();
+  const workout = boundedText(
+    url.searchParams.get("workout"),
+  )?.toLocaleLowerCase();
+  const exercise = boundedText(
+    url.searchParams.get("exercise"),
+  )?.toLocaleLowerCase();
   return [...history]
     .sort((left, right) => right.completedAt - left.completedAt)
     .filter((entry) => {
@@ -213,7 +217,9 @@ export function filterHistory(history: HistoryEntry[], url: URL) {
       if (end !== null && entry.completedAt >= end) return false;
       if (
         workout &&
-        !`${entry.workoutId} ${entry.workoutName}`.toLocaleLowerCase().includes(workout)
+        !`${entry.workoutId} ${entry.workoutName}`
+          .toLocaleLowerCase()
+          .includes(workout)
       ) {
         return false;
       }
@@ -234,7 +240,8 @@ export async function handleMcpTokenManagement(
   env: SetlineBindings,
 ) {
   const userId = await resolveSessionUserId(request, env);
-  if (!userId) return json({ code: "UNAUTHORIZED", message: "Sign in to continue." }, 401);
+  if (!userId)
+    return json({ code: "UNAUTHORIZED", message: "Sign in to continue." }, 401);
   const url = new URL(request.url);
   if (url.pathname === "/api/app/mcp-tokens" && request.method === "GET") {
     const result = await env.DB.prepare(
@@ -266,9 +273,19 @@ export async function handleMcpTokenManagement(
         (id, user_id, name, token_hash, token_hint, created_at, revoked_at)
        VALUES (?, ?, ?, ?, ?, ?, NULL)`,
     )
-      .bind(id, userId, name, await hashReadToken(token), token.slice(0, 24), createdAt)
+      .bind(
+        id,
+        userId,
+        name,
+        await hashReadToken(token),
+        token.slice(0, 24),
+        createdAt,
+      )
       .run();
-    return json({ id, name, token, tokenHint: token.slice(0, 24), createdAt }, 201);
+    return json(
+      { id, name, token, tokenHint: token.slice(0, 24), createdAt },
+      201,
+    );
   }
   const match = url.pathname.match(/^\/api\/app\/mcp-tokens\/([^/]+)$/);
   if (match && request.method === "DELETE") {
@@ -297,7 +314,10 @@ export async function handleMcpRead(request: Request, env: SetlineBindings) {
   }
   const userId = await resolveReadUserId(request, env);
   if (!userId) {
-    return json({ code: "UNAUTHORIZED", message: "Provide a valid Setline read token." }, 401);
+    return json(
+      { code: "UNAUTHORIZED", message: "Provide a valid Setline read token." },
+      401,
+    );
   }
   const url = new URL(request.url);
   const state = await readState(env, userId);
@@ -343,7 +363,10 @@ export async function handleMcpRead(request: Request, env: SetlineBindings) {
   if (sessionMatch) {
     const id = decodeURIComponent(sessionMatch[1]);
     if (!/^[A-Za-z0-9:_-]{1,120}$/.test(id)) {
-      return json({ code: "NOT_FOUND", message: "Workout session not found." }, 404);
+      return json(
+        { code: "NOT_FOUND", message: "Workout session not found." },
+        404,
+      );
     }
     const entry = state.history.find((candidate) => candidate.id === id);
     return entry
@@ -352,8 +375,12 @@ export async function handleMcpRead(request: Request, env: SetlineBindings) {
   }
 
   if (url.pathname === "/api/mcp/progress") {
-    const exercise = boundedText(url.searchParams.get("exercise"))?.toLocaleLowerCase();
-    const workout = boundedText(url.searchParams.get("workout"))?.toLocaleLowerCase();
+    const exercise = boundedText(
+      url.searchParams.get("exercise"),
+    )?.toLocaleLowerCase();
+    const workout = boundedText(
+      url.searchParams.get("workout"),
+    )?.toLocaleLowerCase();
     const analytics = deriveHistoryAnalytics(state.history);
     return json({
       schemaVersion: "1",
