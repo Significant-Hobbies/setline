@@ -106,7 +106,9 @@ export function CustomProgrammePlanner({
   const beginCreate = () => {
     if (authoringLocked) return;
     if (!customWorkouts.length) {
-      setError("Create at least one custom workout before writing a programme.");
+      setError(
+        "Create at least one custom workout before writing a programme.",
+      );
       return;
     }
     setError("");
@@ -119,7 +121,9 @@ export function CustomProgrammePlanner({
     if (!programme || authoringLocked) return;
     if (
       draft &&
-      !window.confirm("Discard the current unsaved programme draft and reopen the saved copy?")
+      !window.confirm(
+        "Discard the current unsaved programme draft and reopen the saved copy?",
+      )
     ) {
       return;
     }
@@ -247,7 +251,9 @@ export function CustomProgrammePlanner({
     onSave(candidate);
     setDraft(null);
     setError("");
-    setReceipt(`${candidate.name} saved with ${candidate.assignments.length} assignments.`);
+    setReceipt(
+      `${candidate.name} saved with ${candidate.assignments.length} assignments.`,
+    );
   };
 
   const deleteProgramme = () => {
@@ -262,7 +268,9 @@ export function CustomProgrammePlanner({
     }
     onDelete();
     setDraft(null);
-    setReceipt(`${programme.name} deleted. Custom workouts and records were kept.`);
+    setReceipt(
+      `${programme.name} deleted. Custom workouts and records were kept.`,
+    );
     requestAnimationFrame(() => createButtonRef.current?.focus());
   };
 
@@ -274,7 +282,9 @@ export function CustomProgrammePlanner({
       <div className="custom-programme-heading">
         <div>
           <span className="section-code">YOUR PROGRAMME</span>
-          <h2 id="custom-programme-heading">Place each workout on the calendar.</h2>
+          <h2 id="custom-programme-heading">
+            Place each workout on the calendar.
+          </h2>
           <p>
             One explicit Monday-based block. Empty days stay unplanned; Setline
             never generates or progresses the work for you.
@@ -304,7 +314,8 @@ export function CustomProgrammePlanner({
       ) : null}
       {authoringLocked ? (
         <p className="custom-programme-lock" role="status">
-          Finish or discard the custom workout draft before editing the programme.
+          Finish or discard the custom workout draft before editing the
+          programme.
         </p>
       ) : null}
 
@@ -317,7 +328,11 @@ export function CustomProgrammePlanner({
       {programme && !draft ? (
         <article className="custom-programme-summary">
           <div>
-            <span className={programme.enabled ? "status-chip" : "status-chip paused"}>
+            <span
+              className={
+                programme.enabled ? "status-chip" : "status-chip paused"
+              }
+            >
               {programme.enabled ? "Enabled" : "Paused"}
             </span>
             <h3>{programme.name}</h3>
@@ -377,7 +392,9 @@ export function CustomProgrammePlanner({
                 placeholder="e.g. Four-week strength block"
                 onChange={(event) =>
                   setDraft((current) =>
-                    current ? { ...current, name: event.target.value } : current,
+                    current
+                      ? { ...current, name: event.target.value }
+                      : current,
                   )
                 }
               />
@@ -412,21 +429,19 @@ export function CustomProgrammePlanner({
                   {mondayIsoForIsoDate(draft.startsOn) ? (
                     <button
                       type="button"
-                      onClick={() =>
-                        {
-                          setDraft((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  startsOn: mondayIsoForIsoDate(current.startsOn),
-                                }
-                              : current,
-                          );
-                          requestAnimationFrame(() =>
-                            startDateInputRef.current?.focus(),
-                          );
-                        }
-                      }
+                      onClick={() => {
+                        setDraft((current) =>
+                          current
+                            ? {
+                                ...current,
+                                startsOn: mondayIsoForIsoDate(current.startsOn),
+                              }
+                            : current,
+                        );
+                        requestAnimationFrame(() =>
+                          startDateInputRef.current?.focus(),
+                        );
+                      }}
                     >
                       Use {mondayIsoForIsoDate(draft.startsOn)}
                     </button>
@@ -443,7 +458,9 @@ export function CustomProgrammePlanner({
                 max={MAX_CUSTOM_PROGRAMME_WEEKS}
                 inputMode="numeric"
                 value={draft.weekCount}
-                onChange={(event) => updateWeekCount(Number(event.target.value))}
+                onChange={(event) =>
+                  updateWeekCount(Number(event.target.value))
+                }
               />
             </label>
             <label className="custom-programme-toggle">
@@ -475,7 +492,9 @@ export function CustomProgrammePlanner({
                 <span>Editing week</span>
                 <select
                   value={activeWeek}
-                  onChange={(event) => setActiveWeek(Number(event.target.value))}
+                  onChange={(event) =>
+                    setActiveWeek(Number(event.target.value))
+                  }
                 >
                   {Array.from(
                     { length: draft.weekCount },
@@ -486,7 +505,8 @@ export function CustomProgrammePlanner({
                     ).length;
                     return (
                       <option key={weekNumber} value={weekNumber}>
-                        Week {weekNumber} · {assigned} assigned · {7 - assigned} open
+                        Week {weekNumber} · {assigned} assigned · {7 - assigned}{" "}
+                        open
                       </option>
                     );
                   })}

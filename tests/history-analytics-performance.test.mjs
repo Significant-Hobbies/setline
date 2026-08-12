@@ -113,11 +113,14 @@ function buildHistory(size) {
       weekNumber: (historyIndex % 12) + 1,
       completedAt: 2_000_000_000_000 - historyIndex * 86_400_000,
       durationSeconds: 2_400 + (historyIndex % 600),
-      completedSets: executions.filter((record) => record.status === "completed").length,
+      completedSets: executions.filter(
+        (record) => record.status === "completed",
+      ).length,
       modifiedSets: historyIndex % 3,
       extraSets: historyIndex % 2,
       deferredSets: historyIndex % 4,
-      skippedSets: executions.filter((record) => record.status === "skipped").length,
+      skippedSets: executions.filter((record) => record.status === "skipped")
+        .length,
       workingVolume: executions.reduce(
         (total, record) =>
           record.status === "completed" && record.step.setType === "Working"

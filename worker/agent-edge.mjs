@@ -11,58 +11,61 @@
 /** @type {{ name: string, url: string, llmsTxt: string, llmsFullTxt?: string, indexMd: string, catalog: object }} */
 // biome-ignore format: generated payload from apply-agent-surfaces (JSON keys/quotes)
 export const AGENT_SURFACE = {
-  "name": "Setline",
-  "url": "https://setline.significanthobbies.com",
-  "llmsFullTxt": "# Setline — full agent brief\n\nMobile-first execution layer for following a structured workout programme precisely.\n\n## Index\n\n# Setline\n\nBuild the plan once. Follow it precisely every day.\n\n## What it is\n\n- Mobile-first workout execution for a structured programme\n- Exact authored exercise and set order\n- Explicit recorded, calculated, adjusted, and unavailable values\n- Device-first active workouts with optional private sync\n\n## Agent entrypoints\n\n- https://setline.significanthobbies.com/llms.txt\n- https://setline.significanthobbies.com/api/ai\n- https://setline.significanthobbies.com/index.md\n\n## Product links\n\n- Home: https://setline.significanthobbies.com/ — Workout execution app\n- Privacy: https://setline.significanthobbies.com/privacy — Device and private cloud data handling\n- Terms: https://setline.significanthobbies.com/terms — Product terms\n- Changelog: https://setline.significanthobbies.com/changelog — Verified product releases\n\n## Machine surfaces\n\n- https://setline.significanthobbies.com/llms.txt\n- https://setline.significanthobbies.com/llms-full.txt\n- https://setline.significanthobbies.com/api/ai\n- https://setline.significanthobbies.com/index.md\n- https://setline.significanthobbies.com/sitemap.xml\n- https://setline.significanthobbies.com/robots.txt\n\n## Contact\n\n- Owner: https://sarthakagrawal.dev\n- Agent email for directory verification: sarthakagrawal@agentmail.to\n",
-  "llmsTxt": "# Setline\n\n> Mobile-first execution layer for following a structured workout programme precisely.\n\n## Product\n\n- [Home](https://setline.significanthobbies.com/): Workout execution app\n- [Privacy](https://setline.significanthobbies.com/privacy): Device and private cloud data handling\n- [Terms](https://setline.significanthobbies.com/terms): Product terms\n- [Changelog](https://setline.significanthobbies.com/changelog): Verified product releases\n\n## Machine surfaces\n\n- [Agent catalog](https://setline.significanthobbies.com/api/ai): JSON inventory of public surfaces\n- [Homepage markdown](https://setline.significanthobbies.com/index.md): Product brief without JS\n- [This index](https://setline.significanthobbies.com/llms.txt)\n",
-  "indexMd": "# Setline\n\nBuild the plan once. Follow it precisely every day.\n\n## What it is\n\n- Mobile-first workout execution for a structured programme\n- Exact authored exercise and set order\n- Explicit recorded, calculated, adjusted, and unavailable values\n- Device-first active workouts with optional private sync\n\n## Agent entrypoints\n\n- https://setline.significanthobbies.com/llms.txt\n- https://setline.significanthobbies.com/api/ai\n- https://setline.significanthobbies.com/index.md\n",
-  "catalog": {
-    "name": "Setline",
-    "version": "1",
-    "url": "https://setline.significanthobbies.com",
-    "llms": "https://setline.significanthobbies.com/llms.txt",
-    "llmsFull": "https://setline.significanthobbies.com/llms-full.txt",
-    "sitemap": "https://setline.significanthobbies.com/sitemap.xml",
-    "robots": "https://setline.significanthobbies.com/robots.txt",
-    "markdown": {
-      "suffix": ".md",
-      "negotiation": true
+  name: "Setline",
+  url: "https://setline.significanthobbies.com",
+  llmsFullTxt:
+    "# Setline — full agent brief\n\nMobile-first execution layer for following a structured workout programme precisely.\n\n## Index\n\n# Setline\n\nBuild the plan once. Follow it precisely every day.\n\n## What it is\n\n- Mobile-first workout execution for a structured programme\n- Exact authored exercise and set order\n- Explicit recorded, calculated, adjusted, and unavailable values\n- Device-first active workouts with optional private sync\n\n## Agent entrypoints\n\n- https://setline.significanthobbies.com/llms.txt\n- https://setline.significanthobbies.com/api/ai\n- https://setline.significanthobbies.com/index.md\n\n## Product links\n\n- Home: https://setline.significanthobbies.com/ — Workout execution app\n- Privacy: https://setline.significanthobbies.com/privacy — Device and private cloud data handling\n- Terms: https://setline.significanthobbies.com/terms — Product terms\n- Changelog: https://setline.significanthobbies.com/changelog — Verified product releases\n\n## Machine surfaces\n\n- https://setline.significanthobbies.com/llms.txt\n- https://setline.significanthobbies.com/llms-full.txt\n- https://setline.significanthobbies.com/api/ai\n- https://setline.significanthobbies.com/index.md\n- https://setline.significanthobbies.com/sitemap.xml\n- https://setline.significanthobbies.com/robots.txt\n\n## Contact\n\n- Owner: https://sarthakagrawal.dev\n- Agent email for directory verification: sarthakagrawal@agentmail.to\n",
+  llmsTxt:
+    "# Setline\n\n> Mobile-first execution layer for following a structured workout programme precisely.\n\n## Product\n\n- [Home](https://setline.significanthobbies.com/): Workout execution app\n- [Privacy](https://setline.significanthobbies.com/privacy): Device and private cloud data handling\n- [Terms](https://setline.significanthobbies.com/terms): Product terms\n- [Changelog](https://setline.significanthobbies.com/changelog): Verified product releases\n\n## Machine surfaces\n\n- [Agent catalog](https://setline.significanthobbies.com/api/ai): JSON inventory of public surfaces\n- [Homepage markdown](https://setline.significanthobbies.com/index.md): Product brief without JS\n- [This index](https://setline.significanthobbies.com/llms.txt)\n",
+  indexMd:
+    "# Setline\n\nBuild the plan once. Follow it precisely every day.\n\n## What it is\n\n- Mobile-first workout execution for a structured programme\n- Exact authored exercise and set order\n- Explicit recorded, calculated, adjusted, and unavailable values\n- Device-first active workouts with optional private sync\n\n## Agent entrypoints\n\n- https://setline.significanthobbies.com/llms.txt\n- https://setline.significanthobbies.com/api/ai\n- https://setline.significanthobbies.com/index.md\n",
+  catalog: {
+    name: "Setline",
+    version: "1",
+    url: "https://setline.significanthobbies.com",
+    llms: "https://setline.significanthobbies.com/llms.txt",
+    llmsFull: "https://setline.significanthobbies.com/llms-full.txt",
+    sitemap: "https://setline.significanthobbies.com/sitemap.xml",
+    robots: "https://setline.significanthobbies.com/robots.txt",
+    markdown: {
+      suffix: ".md",
+      negotiation: true,
     },
-    "surfaces": [
+    surfaces: [
       {
-        "id": "home",
-        "url": "https://setline.significanthobbies.com/",
-        "md": "https://setline.significanthobbies.com/index.md",
-        "kind": "static",
-        "description": "Product home"
+        id: "home",
+        url: "https://setline.significanthobbies.com/",
+        md: "https://setline.significanthobbies.com/index.md",
+        kind: "static",
+        description: "Product home",
       },
       {
-        "id": "privacy",
-        "url": "https://setline.significanthobbies.com/privacy",
-        "md": "https://setline.significanthobbies.com/privacy.md",
-        "kind": "static",
-        "description": "Device and private cloud data handling"
+        id: "privacy",
+        url: "https://setline.significanthobbies.com/privacy",
+        md: "https://setline.significanthobbies.com/privacy.md",
+        kind: "static",
+        description: "Device and private cloud data handling",
       },
       {
-        "id": "terms",
-        "url": "https://setline.significanthobbies.com/terms",
-        "md": "https://setline.significanthobbies.com/terms.md",
-        "kind": "static",
-        "description": "Product terms"
+        id: "terms",
+        url: "https://setline.significanthobbies.com/terms",
+        md: "https://setline.significanthobbies.com/terms.md",
+        kind: "static",
+        description: "Product terms",
       },
       {
-        "id": "changelog",
-        "url": "https://setline.significanthobbies.com/changelog",
-        "md": "https://setline.significanthobbies.com/changelog.md",
-        "kind": "static",
-        "description": "Verified product releases"
-      }
+        id: "changelog",
+        url: "https://setline.significanthobbies.com/changelog",
+        md: "https://setline.significanthobbies.com/changelog.md",
+        kind: "static",
+        description: "Verified product releases",
+      },
     ],
-    "auth": {
-      "public": true,
-      "notes": "Auth-walled app routes are not agent-indexed unless listed here."
-    }
-  }
+    auth: {
+      public: true,
+      notes: "Auth-walled app routes are not agent-indexed unless listed here.",
+    },
+  },
 };
 
 /**
@@ -70,34 +73,37 @@ export const AGENT_SURFACE = {
  * @returns {Response | null}
  */
 export function handleAgentEdge(request) {
-  if (request.method !== 'GET' && request.method !== 'HEAD') return null;
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
   const url = new URL(request.url);
-  const path = url.pathname === '' ? '/' : url.pathname;
+  const path = url.pathname === "" ? "/" : url.pathname;
 
-  if (path === '/llms.txt') {
-    return text(AGENT_SURFACE.llmsTxt, 'text/plain; charset=utf-8');
+  if (path === "/llms.txt") {
+    return text(AGENT_SURFACE.llmsTxt, "text/plain; charset=utf-8");
   }
-  if (path === '/llms-full.txt' && AGENT_SURFACE.llmsFullTxt) {
-    return text(AGENT_SURFACE.llmsFullTxt, 'text/plain; charset=utf-8');
+  if (path === "/llms-full.txt" && AGENT_SURFACE.llmsFullTxt) {
+    return text(AGENT_SURFACE.llmsFullTxt, "text/plain; charset=utf-8");
   }
-  if (path === '/index.md') {
-    return text(AGENT_SURFACE.indexMd, 'text/markdown; charset=utf-8');
+  if (path === "/index.md") {
+    return text(AGENT_SURFACE.indexMd, "text/markdown; charset=utf-8");
   }
-  if (path === '/sitemap.xml') {
-    return text(sitemapForCatalog(catalogForOrigin(url.origin)), 'application/xml; charset=utf-8');
+  if (path === "/sitemap.xml") {
+    return text(
+      sitemapForCatalog(catalogForOrigin(url.origin)),
+      "application/xml; charset=utf-8",
+    );
   }
-  if (path === '/robots.txt') {
-    return text(robotsForOrigin(url.origin), 'text/plain; charset=utf-8');
+  if (path === "/robots.txt") {
+    return text(robotsForOrigin(url.origin), "text/plain; charset=utf-8");
   }
-  if (path === '/api/ai') {
+  if (path === "/api/ai") {
     return json(catalogForOrigin(url.origin));
   }
 
   // Homepage markdown negotiation
-  if ((path === '/' || path === '') && wantsMarkdown(request)) {
-    return text(AGENT_SURFACE.indexMd, 'text/markdown; charset=utf-8', {
+  if ((path === "/" || path === "") && wantsMarkdown(request)) {
+    return text(AGENT_SURFACE.indexMd, "text/markdown; charset=utf-8", {
       Link: '</index.md>; rel="alternate"; type="text/markdown"',
-      Vary: 'Accept',
+      Vary: "Accept",
     });
   }
 
@@ -127,7 +133,7 @@ function forOrigin(value, origin) {
 function sitemapForCatalog(catalog) {
   const routes = catalog.surfaces
     .map((surface) => `  <url><loc>${escapeXml(surface.url)}</loc></url>`)
-    .join('\n');
+    .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${routes}\n</urlset>\n`;
 }
 
@@ -146,26 +152,26 @@ Allow: /api/ai
 
 function escapeXml(value) {
   return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
 function wantsMarkdown(request) {
-  const accept = (request.headers.get('accept') || '').toLowerCase();
-  if (!accept.includes('text/markdown')) return false;
-  if (!accept.includes('text/html')) return true;
-  return accept.indexOf('text/markdown') < accept.indexOf('text/html');
+  const accept = (request.headers.get("accept") || "").toLowerCase();
+  if (!accept.includes("text/markdown")) return false;
+  if (!accept.includes("text/html")) return true;
+  return accept.indexOf("text/markdown") < accept.indexOf("text/html");
 }
 
 function text(body, type, extra = {}) {
   return new Response(body, {
     status: 200,
     headers: {
-      'Content-Type': type,
-      'Cache-Control': 'public, max-age=300',
+      "Content-Type": type,
+      "Cache-Control": "public, max-age=300",
       ...extra,
     },
   });
@@ -175,8 +181,8 @@ function json(data) {
   return new Response(`${JSON.stringify(data, null, 2)}\n`, {
     status: 200,
     headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=300',
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=300",
     },
   });
 }

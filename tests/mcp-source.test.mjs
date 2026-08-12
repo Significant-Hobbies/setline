@@ -4,7 +4,10 @@ import test from "node:test";
 
 const [source, migration] = await Promise.all([
   readFile(new URL("../worker/mcp.ts", import.meta.url), "utf8"),
-  readFile(new URL("../migrations/0002_mcp_read_tokens.sql", import.meta.url), "utf8"),
+  readFile(
+    new URL("../migrations/0002_mcp_read_tokens.sql", import.meta.url),
+    "utf8",
+  ),
 ]);
 
 test("Setline stores read-token hashes and owner-scopes revocation", () => {
@@ -15,10 +18,18 @@ test("Setline stores read-token hashes and owner-scopes revocation", () => {
 });
 
 test("Setline MCP exposes projections without execution or whole-state writes", () => {
-  const readHandler = source.slice(source.indexOf("export async function handleMcpRead"));
+  const readHandler = source.slice(
+    source.indexOf("export async function handleMcpRead"),
+  );
   assert.match(readHandler, /request\.method !== "GET"/);
-  assert.doesNotMatch(readHandler, /INSERT INTO workout_state|UPDATE workout_state/);
-  assert.doesNotMatch(readHandler, /acceptRecommendation|startWorkout|completeSet|syncState/);
+  assert.doesNotMatch(
+    readHandler,
+    /INSERT INTO workout_state|UPDATE workout_state/,
+  );
+  assert.doesNotMatch(
+    readHandler,
+    /acceptRecommendation|startWorkout|completeSet|syncState/,
+  );
   assert.match(readHandler, /historySummary/);
   assert.match(readHandler, /provenance: "calculated-from-recorded-history"/);
 });
@@ -26,5 +37,8 @@ test("Setline MCP exposes projections without execution or whole-state writes", 
 test("Setline pages remain bounded and state parsing fails closed", () => {
   assert.match(source, /const MAX_LIMIT = 100/);
   assert.match(source, /parseStoredState/);
-  assert.match(source, /Treat corrupt or unsupported cloud state as unavailable/);
+  assert.match(
+    source,
+    /Treat corrupt or unsupported cloud state as unavailable/,
+  );
 });

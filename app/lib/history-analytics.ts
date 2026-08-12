@@ -1,10 +1,7 @@
 import type { HistoryEntry } from "./workout-state";
 
-export type ExerciseTrendMetric =
-  | "weight"
-  | "duration"
-  | "repetitions"
-  | "completions";
+type ExerciseTrendMetric =
+  "weight" | "duration" | "repetitions" | "completions";
 
 export type ExerciseTrendPoint = {
   historyId: string;
@@ -37,7 +34,7 @@ export type ExerciseAnalytics = {
   trend: ExerciseTrendPoint[];
 };
 
-export type WorkoutAnalytics = {
+type WorkoutAnalytics = {
   workoutId: HistoryEntry["workoutId"];
   workoutName: string;
   recordedSessions: number;
@@ -51,7 +48,7 @@ export type WorkoutAnalytics = {
   skippedSets: number;
 };
 
-export type ProgrammeWeekAnalytics = {
+type ProgrammeWeekAnalytics = {
   weekNumber: number;
   recordedSessions: number;
   latestCompletedAt: number;
@@ -88,7 +85,7 @@ type MutableExercise = {
 
 type MutableWorkout = Omit<WorkoutAnalytics, "averageDurationSeconds">;
 
-export function normalizeExerciseName(name: string) {
+function normalizeExerciseName(name: string) {
   return name.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
@@ -290,10 +287,7 @@ export function deriveHistoryAnalytics(
           );
         }
         if (positive(segment.weight)) {
-          if (
-            point.bestWeight === null ||
-            segment.weight > point.bestWeight
-          ) {
+          if (point.bestWeight === null || segment.weight > point.bestWeight) {
             point.bestWeight = segment.weight;
             point.repetitionsAtBestWeight = positive(segment.reps)
               ? segment.reps
@@ -382,7 +376,8 @@ export function deriveHistoryAnalytics(
   return {
     overview: {
       recordedSessions: ordered.length,
-      detailedSessions: ordered.filter((entry) => entry.detailsAvailable).length,
+      detailedSessions: ordered.filter((entry) => entry.detailsAvailable)
+        .length,
       customSessions: ordered.filter((entry) =>
         entry.workoutId.startsWith("custom:"),
       ).length,

@@ -27,8 +27,8 @@ function isLocalOrigin(origin: string) {
 export function isGoogleConfigured(env: SetlineBindings) {
   return Boolean(
     env.BETTER_AUTH_SECRET?.trim() &&
-      env.GOOGLE_CLIENT_ID?.trim() &&
-      env.GOOGLE_CLIENT_SECRET?.trim(),
+    env.GOOGLE_CLIENT_ID?.trim() &&
+    env.GOOGLE_CLIENT_SECRET?.trim(),
   );
 }
 
@@ -38,7 +38,9 @@ export function isAppleConfigured(env: SetlineBindings) {
 
 export function createAuth(env: SetlineBindings, requestUrl: string) {
   const requestOrigin = new URL(requestUrl).origin;
-  const baseURL = isLocalOrigin(requestOrigin) ? requestOrigin : PRODUCTION_ORIGIN;
+  const baseURL = isLocalOrigin(requestOrigin)
+    ? requestOrigin
+    : PRODUCTION_ORIGIN;
   const secret =
     env.BETTER_AUTH_SECRET?.trim() ??
     (isLocalOrigin(requestOrigin)
@@ -85,7 +87,12 @@ export function createAuth(env: SetlineBindings, requestUrl: string) {
     },
     plugins: [bearer()],
     trustedOrigins: [
-      ...new Set([baseURL, ...LOCAL_ORIGINS, "https://appleid.apple.com", "setline://auth"]),
+      ...new Set([
+        baseURL,
+        ...LOCAL_ORIGINS,
+        "https://appleid.apple.com",
+        "setline://auth",
+      ]),
     ],
     rateLimit: {
       enabled: false,

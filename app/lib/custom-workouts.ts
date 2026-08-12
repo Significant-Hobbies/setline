@@ -13,7 +13,7 @@ export type CustomWorkoutTemplate = WorkoutTemplate & {
 
 export const MAX_CUSTOM_WORKOUTS = 50;
 export const MAX_CUSTOM_WORKOUT_STEPS = 100;
-export const MAX_CUSTOM_WORKOUT_NAME_LENGTH = 80;
+const MAX_CUSTOM_WORKOUT_NAME_LENGTH = 80;
 
 const MAX_STEP_TEXT_LENGTH = 240;
 const MAX_NOTE_LENGTH = 500;
@@ -42,7 +42,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function boundedText(value: unknown, maximum: number, allowEmpty = false): value is string {
+function boundedText(
+  value: unknown,
+  maximum: number,
+  allowEmpty = false,
+): value is string {
   return (
     typeof value === "string" &&
     value.length <= maximum &&
@@ -51,38 +55,73 @@ function boundedText(value: unknown, maximum: number, allowEmpty = false): value
 }
 
 function nullableBoundedNumber(value: unknown): value is number | null {
-  return value === null || (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= MAX_TARGET_VALUE);
+  return (
+    value === null ||
+    (typeof value === "number" &&
+      Number.isFinite(value) &&
+      value >= 0 &&
+      value <= MAX_TARGET_VALUE)
+  );
 }
 
-function positiveInteger(value: unknown, maximum = MAX_TARGET_VALUE): value is number {
-  return Number.isInteger(value) && Number(value) > 0 && Number(value) <= maximum;
+function positiveInteger(
+  value: unknown,
+  maximum = MAX_TARGET_VALUE,
+): value is number {
+  return (
+    Number.isInteger(value) && Number(value) > 0 && Number(value) <= maximum
+  );
 }
 
-function targetShapeIsValid(step: Record<string, unknown>, tracking: TrackingKind) {
+function targetShapeIsValid(
+  step: Record<string, unknown>,
+  tracking: TrackingKind,
+) {
   const weight = step.targetWeight;
   const reps = step.targetReps;
   const repsMax = step.targetRepsMax;
   const duration = step.targetDurationSeconds;
-  if (!nullableBoundedNumber(weight) || !nullableBoundedNumber(reps) || !nullableBoundedNumber(repsMax) || !nullableBoundedNumber(duration)) {
+  if (
+    !nullableBoundedNumber(weight) ||
+    !nullableBoundedNumber(reps) ||
+    !nullableBoundedNumber(repsMax) ||
+    !nullableBoundedNumber(duration)
+  ) {
     return false;
   }
   if (repsMax !== null && (reps === null || repsMax < reps)) return false;
   if (tracking === "completion") {
-    return weight === null && reps === null && repsMax === null && duration === null;
+    return (
+      weight === null && reps === null && repsMax === null && duration === null
+    );
   }
   if (tracking === "reps") {
-    return weight === null && positiveInteger(reps) && (repsMax === null || positiveInteger(repsMax)) && duration === null;
+    return (
+      weight === null &&
+      positiveInteger(reps) &&
+      (repsMax === null || positiveInteger(repsMax)) &&
+      duration === null
+    );
   }
   if (tracking === "duration") {
-    return weight === null && reps === null && repsMax === null && positiveInteger(duration);
+    return (
+      weight === null &&
+      reps === null &&
+      repsMax === null &&
+      positiveInteger(duration)
+    );
   }
   if (tracking === "weight-duration") {
     return reps === null && repsMax === null && positiveInteger(duration);
   }
-  return positiveInteger(reps) && (repsMax === null || positiveInteger(repsMax)) && duration === null;
+  return (
+    positiveInteger(reps) &&
+    (repsMax === null || positiveInteger(repsMax)) &&
+    duration === null
+  );
 }
 
-export function isCustomWorkoutStep(value: unknown): value is PlannedStep {
+function isCustomWorkoutStep(value: unknown): value is PlannedStep {
   if (!isRecord(value)) return false;
   const tracking = value.tracking;
   return (
@@ -105,7 +144,9 @@ export function isCustomWorkoutStep(value: unknown): value is PlannedStep {
   );
 }
 
-export function isCustomWorkoutTemplate(value: unknown): value is CustomWorkoutTemplate {
+export function isCustomWorkoutTemplate(
+  value: unknown,
+): value is CustomWorkoutTemplate {
   if (!isRecord(value)) return false;
   if (
     typeof value.id !== "string" ||
@@ -155,7 +196,10 @@ export function duplicateWorkoutTemplate(
   };
 }
 
-export function customWorkoutId(now = Date.now(), suffix = crypto.randomUUID()): CustomWorkoutId {
+export function customWorkoutId(
+  now = Date.now(),
+  suffix = crypto.randomUUID(),
+): CustomWorkoutId {
   return `custom:${now}:${suffix}`;
 }
 

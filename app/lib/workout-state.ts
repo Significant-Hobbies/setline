@@ -243,7 +243,8 @@ function isExecutionRecord(value: unknown): value is ExecutionRecord {
     record.segments.length <= 20 &&
     record.segments.every(isSegment) &&
     isNullableNumber(record.actualRpe) &&
-    (record.actualRpe === null || (record.actualRpe >= 0 && record.actualRpe <= 10)) &&
+    (record.actualRpe === null ||
+      (record.actualRpe >= 0 && record.actualRpe <= 10)) &&
     isNullableNonNegativeNumber(record.startedAt) &&
     isNullableNonNegativeNumber(record.completedAt) &&
     isNonNegativeNumber(record.authoredRestSeconds) &&
@@ -317,7 +318,9 @@ function isWorkoutSession(value: unknown): value is WorkoutSession {
     return false;
   }
 
-  const planned = session.records.filter((record) => record.source === "planned");
+  const planned = session.records.filter(
+    (record) => record.source === "planned",
+  );
   if (String(session.workoutId).startsWith("custom:")) {
     return (
       planned.length >= 1 &&
@@ -405,7 +408,7 @@ export function makeInitialSegment(step: StepSnapshot, id: string): SetSegment {
     id,
     weight:
       step.tracking === "weight-reps" || step.tracking === "weight-duration"
-        ? step.targetWeight ?? 0
+        ? (step.targetWeight ?? 0)
         : null,
     reps:
       step.tracking === "weight-reps" || step.tracking === "reps"
@@ -479,7 +482,7 @@ export function getExecution(
   executionId: string | null | undefined,
 ) {
   return executionId
-    ? session.records.find((record) => record.id === executionId) ?? null
+    ? (session.records.find((record) => record.id === executionId) ?? null)
     : null;
 }
 
@@ -594,7 +597,10 @@ export function segmentVolume(segment: SetSegment) {
 }
 
 export function executionVolume(record: ExecutionRecord) {
-  return record.segments.reduce((total, segment) => total + segmentVolume(segment), 0);
+  return record.segments.reduce(
+    (total, segment) => total + segmentVolume(segment),
+    0,
+  );
 }
 
 export function executionDuration(record: ExecutionRecord) {
@@ -620,7 +626,11 @@ export function executionIsValid(record: ExecutionRecord | null | undefined) {
 }
 
 export function executionIsModified(record: ExecutionRecord) {
-  if (record.source === "extra" || record.deferred || record.segments.length !== 1) {
+  if (
+    record.source === "extra" ||
+    record.deferred ||
+    record.segments.length !== 1
+  ) {
     return true;
   }
   const segment = record.segments[0];
@@ -648,12 +658,17 @@ export function getSessionMetrics(session: WorkoutSession): SessionMetrics {
   let completedDurationSeconds = 0;
   let totalActualRestSeconds = 0;
   const rpes: number[] = [];
-  const resolved = session.records.filter((record) => record.status !== "pending");
+  const resolved = session.records.filter(
+    (record) => record.status !== "pending",
+  );
 
   for (const record of resolved) {
     if (record.status !== "completed") continue;
     const volume = executionVolume(record);
-    if (record.step.setType === "Warm-up" || record.step.setType === "Preparation") {
+    if (
+      record.step.setType === "Warm-up" ||
+      record.step.setType === "Preparation"
+    ) {
       warmupVolume += volume;
     } else if (record.step.setType === "Working") {
       workingVolume += volume;
@@ -664,13 +679,15 @@ export function getSessionMetrics(session: WorkoutSession): SessionMetrics {
   }
 
   return {
-    completedSets: resolved.filter((record) => record.status === "completed").length,
+    completedSets: resolved.filter((record) => record.status === "completed")
+      .length,
     modifiedSets: resolved.filter(
       (record) => record.status === "completed" && executionIsModified(record),
     ).length,
     extraSets: resolved.filter((record) => record.source === "extra").length,
     deferredSets: resolved.filter((record) => record.deferred).length,
-    skippedSets: resolved.filter((record) => record.status === "skipped").length,
+    skippedSets: resolved.filter((record) => record.status === "skipped")
+      .length,
     workingVolume,
     warmupVolume,
     completedDurationSeconds,
@@ -743,12 +760,15 @@ function migrateV3Record(
   ) {
     return null;
   }
-  const record = makeExecutionRecord(planned, index, index === 0 ? sessionStartedAt : null);
+  const record = makeExecutionRecord(
+    planned,
+    index,
+    index === 0 ? sessionStartedAt : null,
+  );
   record.status = legacy.status as ExecutionStatus;
   record.actualRpe = legacy.actualRpe;
   record.completedAt = legacy.completedAt;
-  record.performedPosition =
-    record.status === "pending" ? null : index + 1;
+  record.performedPosition = record.status === "pending" ? null : index + 1;
   record.segments = [
     {
       id: `${record.id}:segment:1`,
@@ -789,7 +809,12 @@ function migrateV3Session(value: unknown): WorkoutSession | null | undefined {
   );
   if (legacy.records.length !== template.steps.length) return undefined;
   const records = legacy.records.map((record, index) =>
-    migrateV3Record(record, template.steps[index], index, legacy.startedAt as number),
+    migrateV3Record(
+      record,
+      template.steps[index],
+      index,
+      legacy.startedAt as number,
+    ),
   );
   if (records.some((record) => record === null)) return undefined;
   const typedRecords = records as ExecutionRecord[];
@@ -866,7 +891,9 @@ function migrateSummaryHistory(
       skippedSets: legacy.skippedSets,
       workingVolume: legacy.workingVolume,
       warmupVolume: legacy.warmupVolume,
-      completedDurationSeconds: isNonNegativeNumber(legacy.completedDurationSeconds)
+      completedDurationSeconds: isNonNegativeNumber(
+        legacy.completedDurationSeconds,
+      )
         ? legacy.completedDurationSeconds
         : 0,
       totalActualRestSeconds: 0,
@@ -881,7 +908,9 @@ function migrateSummaryHistory(
     : (entries as HistoryEntry[]);
 }
 
-function migrateV1OrV2Session(value: unknown): WorkoutSession | null | undefined {
+function migrateV1OrV2Session(
+  value: unknown,
+): WorkoutSession | null | undefined {
   if (value === null) return null;
   if (!value || typeof value !== "object") return undefined;
   const legacy = value as V3Session;
@@ -892,7 +921,8 @@ function migrateV1OrV2Session(value: unknown): WorkoutSession | null | undefined
     weekNumber: 1,
     dayIndex: 0,
     records:
-      Array.isArray(legacy.records) && legacy.records.length === LEGACY_UPPER_STEPS.length
+      Array.isArray(legacy.records) &&
+      legacy.records.length === LEGACY_UPPER_STEPS.length
         ? legacy.records.map((record) =>
             record && typeof record === "object"
               ? { actualDurationSeconds: null, ...record }
@@ -950,9 +980,7 @@ export function parseStoredState(
       candidate.customProgramme === null ||
       isCustomProgramme(
         candidate.customProgramme,
-        new Set(
-          customWorkouts?.map((workout) => workout.id) ?? [],
-        ),
+        new Set(customWorkouts?.map((workout) => workout.id) ?? []),
       )
         ? candidate.customProgramme
         : undefined;
@@ -1027,8 +1055,7 @@ export function parseStoredState(
     return {
       version: 6,
       updatedAt:
-        candidate.version === 2 &&
-        isNonNegativeNumber(candidate.updatedAt)
+        candidate.version === 2 && isNonNegativeNumber(candidate.updatedAt)
           ? candidate.updatedAt
           : migrationTime,
       session,

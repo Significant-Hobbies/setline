@@ -70,15 +70,33 @@ const worker = {
       });
     }
 
-    if (url.pathname === "/api/native/auth/google/start" && request.method === "GET") {
+    if (
+      url.pathname === "/api/native/auth/google/start" &&
+      request.method === "GET"
+    ) {
       if (!isGoogleConfigured(env)) {
-        return json({ code: "OAUTH_NOT_CONFIGURED", message: "Google sign-in is unavailable." }, 503);
+        return json(
+          {
+            code: "OAUTH_NOT_CONFIGURED",
+            message: "Google sign-in is unavailable.",
+          },
+          503,
+        );
       }
       const callback = url.searchParams.get("callback") ?? NATIVE_AUTH_CALLBACK;
       if (!isAllowedNativeCallback(callback)) {
-        return json({ code: "INVALID_CALLBACK", message: "The native callback is not allowed." }, 400);
+        return json(
+          {
+            code: "INVALID_CALLBACK",
+            message: "The native callback is not allowed.",
+          },
+          400,
+        );
       }
-      const completeURL = new URL("/api/native/auth/google/complete", request.url);
+      const completeURL = new URL(
+        "/api/native/auth/google/complete",
+        request.url,
+      );
       completeURL.searchParams.set("callback", callback);
       const result = await createAuth(env, request.url).api.signInSocial({
         body: {
@@ -89,17 +107,34 @@ const worker = {
         headers: request.headers,
       });
       if (!result.url) {
-        return json({ code: "OAUTH_START_FAILED", message: "Google sign-in could not start." }, 502);
+        return json(
+          {
+            code: "OAUTH_START_FAILED",
+            message: "Google sign-in could not start.",
+          },
+          502,
+        );
       }
       return Response.redirect(result.url);
     }
 
-    if (url.pathname === "/api/native/auth/google/complete" && request.method === "GET") {
+    if (
+      url.pathname === "/api/native/auth/google/complete" &&
+      request.method === "GET"
+    ) {
       const callback = url.searchParams.get("callback") ?? NATIVE_AUTH_CALLBACK;
       if (!isAllowedNativeCallback(callback)) {
-        return json({ code: "INVALID_CALLBACK", message: "The native callback is not allowed." }, 400);
+        return json(
+          {
+            code: "INVALID_CALLBACK",
+            message: "The native callback is not allowed.",
+          },
+          400,
+        );
       }
-      const session = await createAuth(env, request.url).api.getSession({ headers: request.headers });
+      const session = await createAuth(env, request.url).api.getSession({
+        headers: request.headers,
+      });
       const redirect = new URL(callback);
       if (!session?.session.token) {
         redirect.searchParams.set("error", "google_auth_failed");
@@ -111,15 +146,32 @@ const worker = {
       return Response.redirect(redirect.toString());
     }
 
-    if (url.pathname === "/api/native/auth/exchange" && request.method === "POST") {
-      const body = (await request.json().catch(() => null)) as { code?: unknown } | null;
+    if (
+      url.pathname === "/api/native/auth/exchange" &&
+      request.method === "POST"
+    ) {
+      const body = (await request.json().catch(() => null)) as {
+        code?: unknown;
+      } | null;
       const code = typeof body?.code === "string" ? body.code.trim() : "";
       if (code.length < 32 || code.length > 128) {
-        return json({ code: "INVALID_HANDOFF", message: "The sign-in handoff is invalid." }, 400);
+        return json(
+          {
+            code: "INVALID_HANDOFF",
+            message: "The sign-in handoff is invalid.",
+          },
+          400,
+        );
       }
       const token = await consumeNativeHandoff(env.DB, code);
       if (!token) {
-        return json({ code: "EXPIRED_HANDOFF", message: "The sign-in handoff expired or was already used." }, 401);
+        return json(
+          {
+            code: "EXPIRED_HANDOFF",
+            message: "The sign-in handoff expired or was already used.",
+          },
+          401,
+        );
       }
       return json({ token });
     }
@@ -129,7 +181,10 @@ const worker = {
         url.pathname.endsWith("/sign-in/social") &&
         request.method === "POST"
       ) {
-        const body = (await request.clone().json().catch(() => null)) as {
+        const body = (await request
+          .clone()
+          .json()
+          .catch(() => null)) as {
           provider?: unknown;
         } | null;
         if (body?.provider === "google" && !isGoogleConfigured(env)) {
@@ -167,7 +222,13 @@ const worker = {
             message: error instanceof Error ? error.message : "Unknown error",
           }),
         );
-        return json({ code: "TOKEN_UNAVAILABLE", message: "Read-token access is unavailable." }, 503);
+        return json(
+          {
+            code: "TOKEN_UNAVAILABLE",
+            message: "Read-token access is unavailable.",
+          },
+          503,
+        );
       }
     }
 
@@ -183,7 +244,13 @@ const worker = {
             message: error instanceof Error ? error.message : "Unknown error",
           }),
         );
-        return json({ code: "READ_UNAVAILABLE", message: "Workout reads are unavailable." }, 503);
+        return json(
+          {
+            code: "READ_UNAVAILABLE",
+            message: "Workout reads are unavailable.",
+          },
+          503,
+        );
       }
     }
 
@@ -213,12 +280,20 @@ const worker = {
       try {
         return withApiHeaders(await handleNativeState(request, env));
       } catch (error) {
-        console.error(JSON.stringify({
-          event: "setline_native_state_error",
-          method: request.method,
-          message: error instanceof Error ? error.message : "Unknown error",
-        }));
-        return json({ code: "STATE_UNAVAILABLE", message: "Native sync is temporarily unavailable." }, 503);
+        console.error(
+          JSON.stringify({
+            event: "setline_native_state_error",
+            method: request.method,
+            message: error instanceof Error ? error.message : "Unknown error",
+          }),
+        );
+        return json(
+          {
+            code: "STATE_UNAVAILABLE",
+            message: "Native sync is temporarily unavailable.",
+          },
+          503,
+        );
       }
     }
 

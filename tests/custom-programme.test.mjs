@@ -130,9 +130,7 @@ test("uses calendar days across a daylight-saving transition", () => {
     ...baseProgramme,
     startsOn: "2026-10-26",
     weekCount: 2,
-    assignments: [
-      { weekNumber: 2, dayIndex: 0, workoutId: "custom:upper" },
-    ],
+    assignments: [{ weekNumber: 2, dayIndex: 0, workoutId: "custom:upper" }],
   };
   assert.deepEqual(
     customProgramme.resolveCustomProgrammeDay(
@@ -183,9 +181,7 @@ test("removes every future assignment for a deleted template", () => {
     ),
     {
       ...baseProgramme,
-      assignments: [
-        { weekNumber: 1, dayIndex: 3, workoutId: "custom:lower" },
-      ],
+      assignments: [{ weekNumber: 1, dayIndex: 3, workoutId: "custom:lower" }],
       updatedAt: 2_000,
     },
   );
@@ -198,10 +194,7 @@ test("returns the local week's Monday as an ISO date", () => {
   );
   assert.equal(customProgramme.isMondayIsoDate("2026-07-27"), true);
   assert.equal(customProgramme.isMondayIsoDate("2026-07-31"), false);
-  assert.equal(
-    customProgramme.mondayIsoForIsoDate("2026-07-31"),
-    "2026-07-27",
-  );
+  assert.equal(customProgramme.mondayIsoForIsoDate("2026-07-31"), "2026-07-27");
 });
 
 test("migrates version 5 state and validates programme references in version 6", () => {
@@ -252,9 +245,7 @@ test("migrates version 5 state and validates programme references in version 6",
     customWorkouts: [custom],
     customProgramme: {
       ...baseProgramme,
-      assignments: [
-        { weekNumber: 1, dayIndex: 0, workoutId: "custom:upper" },
-      ],
+      assignments: [{ weekNumber: 1, dayIndex: 0, workoutId: "custom:upper" }],
     },
   };
   assert.deepEqual(workoutState.parseStoredState(valid), valid);
@@ -302,9 +293,7 @@ test("round-trips a scheduled Week 16 custom session with its programme context"
     customProgramme: {
       ...baseProgramme,
       weekCount: 16,
-      assignments: [
-        { weekNumber: 16, dayIndex: 6, workoutId: custom.id },
-      ],
+      assignments: [{ weekNumber: 16, dayIndex: 6, workoutId: custom.id }],
     },
   };
   const parsed = workoutState.parseStoredState(state);

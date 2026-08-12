@@ -34,8 +34,15 @@ test("duplicates a bundled workout as an independent custom template", () => {
   assert.equal(customWorkouts.isCustomWorkoutTemplate(duplicate), true);
   assert.equal(duplicate.name, "Upper copy");
   assert.equal(duplicate.steps.length, source.steps.length);
-  assert.equal(new Set(duplicate.steps.map((step) => step.id)).size, duplicate.steps.length);
-  assert.ok(duplicate.steps.every((step) => step.id.startsWith("custom:upper-copy:step:")));
+  assert.equal(
+    new Set(duplicate.steps.map((step) => step.id)).size,
+    duplicate.steps.length,
+  );
+  assert.ok(
+    duplicate.steps.every((step) =>
+      step.id.startsWith("custom:upper-copy:step:"),
+    ),
+  );
 
   duplicate.steps[0].exercise = "Changed only in the copy";
   assert.deepEqual(source, sourceBefore);
@@ -120,7 +127,9 @@ test("custom sessions retain snapshots after their template changes or disappear
     4_000,
   );
   const session = workoutState.makeWorkoutSession(custom, 1, 0, 5_000);
-  const authoredExercises = session.records.map((record) => record.step.exercise);
+  const authoredExercises = session.records.map(
+    (record) => record.step.exercise,
+  );
 
   custom.steps[0].exercise = "Edited after start";
   assert.deepEqual(
@@ -135,7 +144,9 @@ test("custom sessions retain snapshots after their template changes or disappear
     customWorkouts: [],
   });
   assert.deepEqual(
-    parsedWithoutTemplate?.session?.records.map((record) => record.step.exercise),
+    parsedWithoutTemplate?.session?.records.map(
+      (record) => record.step.exercise,
+    ),
     authoredExercises,
   );
 });

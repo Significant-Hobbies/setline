@@ -42,19 +42,28 @@ test("resolves the dated block and all seven scheduled days", () => {
 
 test("keeps the authored Upper exercise order", () => {
   const steps = resolveWorkout("upper", 1, 0).steps;
-  const firstIndex = (name) => steps.findIndex((planned) => planned.exercise === name);
+  const firstIndex = (name) =>
+    steps.findIndex((planned) => planned.exercise === name);
 
-  assert.ok(firstIndex("Easy treadmill, bike or rower") < firstIndex("Bench press"));
+  assert.ok(
+    firstIndex("Easy treadmill, bike or rower") < firstIndex("Bench press"),
+  );
   assert.ok(firstIndex("Bench press") < firstIndex("Lat pulldown"));
-  assert.ok(firstIndex("Lat pulldown") < firstIndex("Machine or DB shoulder press"));
+  assert.ok(
+    firstIndex("Lat pulldown") < firstIndex("Machine or DB shoulder press"),
+  );
   assert.ok(
     firstIndex("Machine or DB shoulder press") <
       firstIndex("Chest-supported or cable row"),
   );
-  assert.ok(firstIndex("Chest-supported or cable row") < firstIndex("Ab wheel from knees"));
+  assert.ok(
+    firstIndex("Chest-supported or cable row") <
+      firstIndex("Ab wheel from knees"),
+  );
   assert.ok(firstIndex("Ab wheel from knees") < firstIndex("Farmer carry"));
   assert.equal(
-    steps.filter((planned) => planned.id.startsWith("upper-bench-working-")).length,
+    steps.filter((planned) => planned.id.startsWith("upper-bench-working-"))
+      .length,
     3,
   );
   assert.deepEqual(
@@ -69,10 +78,22 @@ test("keeps the authored Lower order and week-aware RDL sets", () => {
   const firstIndex = (steps, name) =>
     steps.findIndex((planned) => planned.exercise === name);
 
-  assert.ok(firstIndex(weekOne, "Hack squat or leg press") < firstIndex(weekOne, "Romanian deadlift"));
-  assert.ok(firstIndex(weekOne, "Romanian deadlift") < firstIndex(weekOne, "Supported Bulgarian split squat"));
-  assert.ok(firstIndex(weekOne, "Supported Bulgarian split squat") < firstIndex(weekOne, "Lying leg curl"));
-  assert.ok(firstIndex(weekOne, "Lying leg curl") < firstIndex(weekOne, "Standing calf raise"));
+  assert.ok(
+    firstIndex(weekOne, "Hack squat or leg press") <
+      firstIndex(weekOne, "Romanian deadlift"),
+  );
+  assert.ok(
+    firstIndex(weekOne, "Romanian deadlift") <
+      firstIndex(weekOne, "Supported Bulgarian split squat"),
+  );
+  assert.ok(
+    firstIndex(weekOne, "Supported Bulgarian split squat") <
+      firstIndex(weekOne, "Lying leg curl"),
+  );
+  assert.ok(
+    firstIndex(weekOne, "Lying leg curl") <
+      firstIndex(weekOne, "Standing calf raise"),
+  );
 
   const rdlWorking = (steps) =>
     steps.filter((planned) => planned.id.startsWith("lower-rdl-working-"));
@@ -99,16 +120,26 @@ test("all startable templates have stable unique ordered ids", () => {
   const trackingKinds = new Set();
   for (const schedule of PROGRAMME_SCHEDULE) {
     for (const week of [1, 3, 5, 9, 12]) {
-      const workout = resolveWorkout(schedule.workoutId, week, schedule.dayIndex);
+      const workout = resolveWorkout(
+        schedule.workoutId,
+        week,
+        schedule.dayIndex,
+      );
       const ids = workout.steps.map((planned) => planned.id);
-      assert.equal(new Set(ids).size, ids.length, `${schedule.workoutId} week ${week}`);
+      assert.equal(
+        new Set(ids).size,
+        ids.length,
+        `${schedule.workoutId} week ${week}`,
+      );
       workout.steps.forEach((planned) => trackingKinds.add(planned.tracking));
     }
   }
-  assert.deepEqual(
-    [...trackingKinds].sort(),
-    ["duration", "reps", "weight-duration", "weight-reps"],
-  );
+  assert.deepEqual([...trackingKinds].sort(), [
+    "duration",
+    "reps",
+    "weight-duration",
+    "weight-reps",
+  ]);
   assert.deepEqual(
     LEGACY_UPPER_STEPS.map((planned) => planned.id),
     [
@@ -279,10 +310,7 @@ test("records flexible execution without mutating the authored workout", async (
     const deferred = deferActiveExecution(session, 1_500);
     assert.equal(deferred.queue.at(-1), session.queue[0]);
     assert.equal(getExecution(deferred, session.queue[0]).deferred, true);
-    assert.equal(
-      getExecution(deferred, deferred.queue[0]).startedAt,
-      1_500,
-    );
+    assert.equal(getExecution(deferred, deferred.queue[0]).startedAt, 1_500);
     assert.deepEqual(
       session.records.map((record) => record.step.plannedStepId),
       authoredIds,
@@ -361,10 +389,7 @@ test("records flexible execution without mutating the authored workout", async (
       history: [historyEntry],
     });
     assert.equal(persisted?.history[0].executions[0].segments.length, 2);
-    assert.equal(
-      executionVolume(persisted?.history[0].executions[0]),
-      450,
-    );
+    assert.equal(executionVolume(persisted?.history[0].executions[0]), 450);
 
     const legacyHistory = parseStoredState({
       version: 3,

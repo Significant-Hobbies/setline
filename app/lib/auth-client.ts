@@ -153,7 +153,9 @@ export async function deleteSetlineAccount() {
     );
   }
 
-  const body = (await response.json().catch(() => null)) as DeleteAccountResponse;
+  const body = (await response
+    .json()
+    .catch(() => null)) as DeleteAccountResponse;
   if (!response.ok || body?.success !== true) {
     throw new Error(
       body?.code === "SESSION_EXPIRED"
@@ -163,7 +165,9 @@ export async function deleteSetlineAccount() {
   }
 }
 
-export function clearDeletedAccountBrowserStorage(additionalKeys: string[] = []) {
+export function clearDeletedAccountBrowserStorage(
+  additionalKeys: string[] = [],
+) {
   let cleared = true;
   for (const key of [
     CACHED_ACCOUNT_KEY,
