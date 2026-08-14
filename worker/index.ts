@@ -1,5 +1,4 @@
 /** Cloudflare Worker entry point for Setline. */
-import handler from "vinext/server/app-router-entry";
 import { handleAgentEdge } from "./agent-edge.mjs";
 import {
   createAuth,
@@ -301,7 +300,14 @@ const worker = {
       return json({ code: "NOT_FOUND", message: "API route not found." }, 404);
     }
 
-    return handler.fetch(request, env, ctx);
+    // Serve static assets (public/ files) for non-API routes.
+    if (env.ASSETS) {
+      const assetResponse = await env.ASSETS.fetch(request);
+      if (assetResponse.status !== 404) return assetResponse;
+    }
+
+    // Fallback: return 404 for unknown routes.
+    return new Response("Not found", { status: 404 });
   },
 };
 

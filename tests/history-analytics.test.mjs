@@ -11,7 +11,7 @@ test.before(async () => {
     configFile: false,
     server: { middlewareMode: true },
   });
-  analytics = await vite.ssrLoadModule("/app/lib/history-analytics.ts");
+  analytics = await vite.ssrLoadModule("/src/lib/history-analytics.ts");
 });
 
 test.after(async () => {

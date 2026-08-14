@@ -22,7 +22,7 @@ test.before(async () => {
     server: { middlewareMode: true },
   });
   ({ deriveHistoryAnalytics } = await vite.ssrLoadModule(
-    "/app/lib/history-analytics.ts",
+    "/src/lib/history-analytics.ts",
   ));
 });
 

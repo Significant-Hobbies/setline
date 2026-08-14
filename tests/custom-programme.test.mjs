@@ -27,9 +27,9 @@ test.before(async () => {
     configFile: false,
     server: { middlewareMode: true },
   });
-  customProgramme = await vite.ssrLoadModule("/app/lib/custom-programme.ts");
-  customWorkouts = await vite.ssrLoadModule("/app/lib/custom-workouts.ts");
-  workoutState = await vite.ssrLoadModule("/app/lib/workout-state.ts");
+  customProgramme = await vite.ssrLoadModule("/src/lib/custom-programme.ts");
+  customWorkouts = await vite.ssrLoadModule("/src/lib/custom-workouts.ts");
+  workoutState = await vite.ssrLoadModule("/src/lib/workout-state.ts");
 });
 
 test.after(async () => {

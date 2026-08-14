@@ -2,17 +2,19 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "tests/*.test.mjs",
-    "app/lib/workout-data-transfer.ts",
+    "src/lib/workout-data-transfer.ts",
+    "src/lib/progression.ts",
+    "src/lib/custom-programme.ts",
+    "src/lib/custom-workouts.ts",
+    "src/lib/history-analytics.ts",
     "worker/native-handoff.ts",
     "worker/native-state.ts"
   ],
   "project": [
-    "app/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}",
     "worker/**/*.{ts,mjs,mts}",
-    "tests/**/*.mjs",
-    "next.config.ts",
-    "vite.config.ts"
+    "tests/**/*.mjs"
   ],
-  "ignore": ["worker/agent-edge.mjs", "worker/agent-edge.d.mts"],
+  "ignore": ["worker/agent-edge.mjs"],
   "ignoreDependencies": ["jscpd"]
 }
