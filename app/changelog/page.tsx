@@ -65,6 +65,7 @@ export const metadata: Metadata = {
   title: "Changelog — Setline",
   description:
     "Meaningful improvements to Setline workout execution and history.",
+  alternates: { canonical: "/changelog" },
 };
 
 export default function ChangelogPage() {
