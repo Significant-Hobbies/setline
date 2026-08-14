@@ -192,11 +192,7 @@ final class AppModel {
             self.importPreview = nil
             isImportConfirmationPresented = false
             message = "Setline data replaced."
-            if account != nil, deferredConflict == nil, cloudConflict == nil {
-                document.syncState = .pending
-                try await store.save(document)
-                Task { await self.queueSync() }
-            }
+            try await markPendingAndSync()
         } catch {
             message = error.localizedDescription
         }
@@ -207,11 +203,7 @@ final class AppModel {
             try await store.reset()
             document = .sample
             message = "Local data reset."
-            if account != nil, deferredConflict == nil, cloudConflict == nil {
-                document.syncState = .pending
-                try await store.save(document)
-                Task { await self.queueSync() }
-            }
+            try await markPendingAndSync()
         } catch {
             message = error.localizedDescription
         }
@@ -395,17 +387,20 @@ final class AppModel {
         return "Setline could not complete that account action. Try again."
     }
 
+    private func markPendingAndSync() async throws {
+        guard account != nil, deferredConflict == nil, cloudConflict == nil else { return }
+        document.syncState = .pending
+        try await store.save(document)
+        Task { await self.queueSync() }
+    }
+
     private func mutate(_ operation: (inout SetlineDocument) throws -> Void) async {
         do {
             var next = document
             try operation(&next)
             try await store.save(next)
             document = next
-            if account != nil, deferredConflict == nil, cloudConflict == nil {
-                document.syncState = .pending
-                try await store.save(document)
-                Task { await self.queueSync() }
-            }
+            try await markPendingAndSync()
         } catch {
             message = error.localizedDescription
         }

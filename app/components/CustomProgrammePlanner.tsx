@@ -12,6 +12,7 @@ import {
   mondayIsoForIsoDate,
   type CustomProgramme,
 } from "../lib/custom-programme";
+import { usePreventUnload } from "../lib/use-prevent-unload";
 import type { CustomWorkoutTemplate } from "../lib/custom-workouts";
 import type { CustomWorkoutId } from "../lib/programme";
 
@@ -87,15 +88,7 @@ export function CustomProgrammePlanner({
     requestAnimationFrame(() => editButtonRef.current?.focus());
   }, [programme]);
 
-  useEffect(() => {
-    if (!draft) return;
-    const preventUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", preventUnload);
-    return () => window.removeEventListener("beforeunload", preventUnload);
-  }, [draft]);
+  usePreventUnload(draft);
 
   const closeEditor = () => {
     const returnTarget = programme ? editButtonRef : createButtonRef;
