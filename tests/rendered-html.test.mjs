@@ -37,14 +37,34 @@ test("server-renders the Setline restoration shell and public legal pages", asyn
     /Your site is taking shape|codex-preview|react-loading-skeleton/i,
   );
 
-  const [privacy, terms] = await Promise.all([
+  const [privacy, terms, changelog] = await Promise.all([
     render("/privacy"),
     render("/terms"),
+    render("/changelog"),
   ]);
   assert.equal(privacy.status, 200);
   assert.equal(terms.status, 200);
-  assert.match(await privacy.text(), /Privacy notice/);
-  assert.match(await terms.text(), /Terms of use/);
+  assert.equal(changelog.status, 200);
+  const [privacyHtml, termsHtml, changelogHtml] = await Promise.all([
+    privacy.text(),
+    terms.text(),
+    changelog.text(),
+  ]);
+  assert.match(privacyHtml, /Privacy notice/);
+  assert.match(termsHtml, /Terms of use/);
+  assert.match(changelogHtml, /Changelog/);
+  assert.match(
+    privacyHtml,
+    /<link rel="canonical" href="http:\/\/localhost:3000\/privacy"/,
+  );
+  assert.match(
+    termsHtml,
+    /<link rel="canonical" href="http:\/\/localhost:3000\/terms"/,
+  );
+  assert.match(
+    changelogHtml,
+    /<link rel="canonical" href="http:\/\/localhost:3000\/changelog"/,
+  );
 });
 
 test("serves public agent discovery before the private application routes", async () => {
