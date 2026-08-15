@@ -8,6 +8,7 @@ struct ExercisesView: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
     @State private var isCatalogueShown = false
+    @State private var openedExercise: String?
 
     /// Movements you have actually trained, most recently trained first.
     private var trainedExercises: [String] {
@@ -102,6 +103,10 @@ struct ExercisesView: View {
         .sheet(isPresented: $isCatalogueShown) {
             CataloguePickerView()
         }
+        .navigationDestination(item: $openedExercise) { name in
+            ExerciseDetailView(exerciseName: name)
+        }
+        .onAppear { openedExercise = model.demoExerciseName }
     }
 
     private var goalSummary: some View {
@@ -203,6 +208,7 @@ struct ExerciseDetailView: View {
                 if let definition { detailsBlock(definition) }
             }
             .padding(20)
+            .padding(.bottom, 28)
         }
         .setlineBackground()
         .navigationTitle(exerciseName)

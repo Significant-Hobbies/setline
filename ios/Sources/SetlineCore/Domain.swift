@@ -131,6 +131,35 @@ public struct SetSegment: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+/// Version 1 wrote `target` as free text and `rest` as a scalar `restSeconds`.
+/// Both planned sets and recorded steps carried those fields, so the fallbacks
+/// live in one place rather than being repeated in each decoder.
+enum LegacyDecoding {
+    private struct Key: CodingKey {
+        var stringValue: String
+        var intValue: Int? { nil }
+        init(_ stringValue: String) { self.stringValue = stringValue }
+        init?(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { nil }
+    }
+
+    static func target(from decoder: any Decoder) throws -> SetTarget {
+        let container = try decoder.container(keyedBy: Key.self)
+        if let structured = try? container.decodeIfPresent(SetTarget.self, forKey: Key("target")) {
+            return structured
+        }
+        return SetTarget(legacy: try container.decodeIfPresent(String.self, forKey: Key("target")) ?? "")
+    }
+
+    static func rest(from decoder: any Decoder) throws -> RestRange {
+        let container = try decoder.container(keyedBy: Key.self)
+        if let range = try? container.decodeIfPresent(RestRange.self, forKey: Key("rest")) {
+            return range
+        }
+        return RestRange(try container.decodeIfPresent(Int.self, forKey: Key("restSeconds")) ?? 0)
+    }
+}
+
 public struct PlannedSet: Codable, Equatable, Identifiable, Sendable {
     public var id: UUID
     public var label: String
@@ -171,23 +200,10 @@ public struct PlannedSet: Codable, Equatable, Identifiable, Sendable {
         label = try container.decodeIfPresent(String.self, forKey: .label) ?? ""
         kind = try container.decodeIfPresent(ActivityKind.self, forKey: .kind) ?? .strength
         stepType = try container.decodeIfPresent(StepType.self, forKey: .stepType) ?? .working
-        if let structured = try? container.decodeIfPresent(SetTarget.self, forKey: .target) {
-            target = structured
-        } else {
-            target = SetTarget(legacy: try container.decodeIfPresent(String.self, forKey: .target) ?? "")
-        }
-        if let range = try? container.decodeIfPresent(RestRange.self, forKey: .rest) {
-            rest = range
-        } else {
-            let legacy = try decoder.container(keyedBy: LegacyRestKey.self)
-            rest = RestRange(try legacy.decodeIfPresent(Int.self, forKey: .restSeconds) ?? 0)
-        }
+        target = try LegacyDecoding.target(from: decoder)
+        rest = try LegacyDecoding.rest(from: decoder)
         isOptional = try container.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
         cue = try container.decodeIfPresent(String.self, forKey: .cue)
-    }
-
-    enum LegacyRestKey: String, CodingKey {
-        case restSeconds
     }
 }
 
@@ -350,19 +366,10 @@ public struct WorkoutStep: Codable, Equatable, Identifiable, Sendable {
         label = try container.decodeIfPresent(String.self, forKey: .label) ?? ""
         kind = try container.decodeIfPresent(ActivityKind.self, forKey: .kind) ?? .strength
         stepType = try container.decodeIfPresent(StepType.self, forKey: .stepType) ?? .working
-        if let structured = try? container.decodeIfPresent(SetTarget.self, forKey: .target) {
-            target = structured
-        } else {
-            target = SetTarget(legacy: try container.decodeIfPresent(String.self, forKey: .target) ?? "")
-        }
+        target = try LegacyDecoding.target(from: decoder)
         pillars = try container.decodeIfPresent(Set<Pillar>.self, forKey: .pillars) ?? [.strength]
         authoredPosition = try container.decodeIfPresent(Int.self, forKey: .authoredPosition) ?? 0
-        if let range = try? container.decodeIfPresent(RestRange.self, forKey: .rest) {
-            rest = range
-        } else {
-            let legacy = try decoder.container(keyedBy: LegacyRestKey.self)
-            rest = RestRange(try legacy.decodeIfPresent(Int.self, forKey: .restSeconds) ?? 0)
-        }
+        rest = try LegacyDecoding.rest(from: decoder)
         isOptional = try container.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
         status = try container.decodeIfPresent(StepStatus.self, forKey: .status) ?? .planned
         segments = try container.decodeIfPresent([SetSegment].self, forKey: .segments) ?? []
@@ -370,10 +377,6 @@ public struct WorkoutStep: Codable, Equatable, Identifiable, Sendable {
         performedPosition = try container.decodeIfPresent(Int.self, forKey: .performedPosition)
         completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt)
         workSeconds = try container.decodeIfPresent(Int.self, forKey: .workSeconds)
-    }
-
-    enum LegacyRestKey: String, CodingKey {
-        case restSeconds
     }
 
     /// The cue shown to the lifter: the set's own instruction when it has one.
@@ -602,6 +605,105 @@ public extension SetlineDocument {
     /// What a fresh install opens on: the authored twelve-week block, enabled.
     static var initial: SetlineDocument {
         SetlineDocument(programme: .bundled(.twelveWeekStrengthCardioMobility))
+    }
+
+    /// A document carrying four weeks of recorded bench and pulldown work plus
+    /// authored targets, so the measurement surfaces can be exercised and captured
+    /// without waiting a month for real evidence to accumulate.
+    static var demoWithEvidence: SetlineDocument {
+        let week: TimeInterval = 604_800
+        let benchProgression: [(load: Double, reps: [Int])] = [
+            (65, [8, 8, 8]),
+            (67.5, [7, 7, 6]),
+            (70, [6, 6, 6]),
+            (72.5, [8, 7, 7]),
+        ]
+        let pulldownProgression: [(load: Double, reps: [Int])] = [
+            (50, [10, 10, 9]),
+            (52.5, [9, 9, 8]),
+            (55, [8, 8, 8]),
+            (55, [10, 10, 10]),
+        ]
+
+        func session(weeksAgo: Int, index: Int) -> WorkoutSession {
+            let date = Date.now.addingTimeInterval(-Double(weeksAgo) * week)
+            var position = 0
+            func steps(
+                name: String,
+                slug: String,
+                repsHigh: Int,
+                progression: [(load: Double, reps: [Int])]
+            ) -> [WorkoutStep] {
+                let entry = progression[index]
+                return entry.reps.map { reps in
+                    defer { position += 1 }
+                    return WorkoutStep(
+                        plannedSetID: UUID(),
+                        exerciseName: name,
+                        exerciseSlug: slug,
+                        cue: "",
+                        label: "Working set \(position % 3 + 1) of 3",
+                        kind: .strength,
+                        stepType: .working,
+                        target: SetTarget(
+                            repsLow: repsHigh - 3,
+                            repsHigh: repsHigh,
+                            load: .absolute(kilograms: entry.load),
+                            repsInReserve: 1
+                        ),
+                        authoredPosition: position,
+                        rest: RestRange(lowSeconds: 150, highSeconds: 180),
+                        status: .complete,
+                        segments: [SetSegment(weight: entry.load, repetitions: reps)],
+                        completedAt: date
+                    )
+                }
+            }
+            return WorkoutSession(
+                templateID: ProgrammeSessionKind.upper.templateID,
+                templateName: "Upper",
+                startedAt: date,
+                completedAt: date.addingTimeInterval(3_900),
+                steps: steps(
+                    name: "Bench press",
+                    slug: "bench-press",
+                    repsHigh: 8,
+                    progression: benchProgression
+                ) + steps(
+                    name: "Lat pulldown",
+                    slug: "lat-pulldown",
+                    repsHigh: 10,
+                    progression: pulldownProgression
+                ),
+                programmeWeek: index + 1,
+                programmeDayIndex: 0
+            )
+        }
+
+        // Newest first, matching how completed sessions are stored.
+        let history = (0..<4).map { offset in
+            session(weeksAgo: offset, index: 3 - offset)
+        }
+        return SetlineDocument(
+            programme: .bundled(.twelveWeekStrengthCardioMobility),
+            history: history,
+            goals: [
+                ExerciseGoal(
+                    exerciseName: "Bench press",
+                    metric: .topSetLoad,
+                    targetValue: 90,
+                    referenceRepetitions: 5,
+                    createdAt: Date.now.addingTimeInterval(-4 * week),
+                    note: "Bodyweight-relative strength target for the block after this one."
+                ),
+                ExerciseGoal(
+                    exerciseName: "Lat pulldown",
+                    metric: .estimatedOneRepMax,
+                    targetValue: 80,
+                    createdAt: Date.now.addingTimeInterval(-4 * week)
+                ),
+            ]
+        )
     }
 
     static var sample: SetlineDocument {

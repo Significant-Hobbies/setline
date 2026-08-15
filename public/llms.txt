@@ -1,10 +1,10 @@
 # Setline
 
-> Mobile-first execution layer for following a structured workout programme precisely.
+> iPhone app that runs a written strength, cardio and mobility programme one set at a time, records what was actually lifted, and measures each exercise against an authored target.
 
 ## Product
 
-- [Home](https://setline.significanthobbies.com/): Workout execution app
+- [Home](https://setline.significanthobbies.com/): What Setline does, how one set is recorded, and what it refuses to do
 - [Privacy](https://setline.significanthobbies.com/privacy): Device and private cloud data handling
 - [Terms](https://setline.significanthobbies.com/terms): Product terms
 - [Changelog](https://setline.significanthobbies.com/changelog): Verified product releases

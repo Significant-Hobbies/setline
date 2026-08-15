@@ -846,6 +846,64 @@ final class ProgressionEngineTests: XCTestCase {
 
 // MARK: - Catalogue
 
+final class FormattingTests: XCTestCase {
+    /// An estimated 1RM of 72.5 x (1 + 8/30) is 91.8333... — binary floating-point
+    /// precision must never reach the interface.
+    func testTrimmedStringNeverLeaksFloatingPointPrecision() {
+        XCTAssertEqual((72.5 * (1 + 8.0 / 30)).trimmedString, "91.83")
+        XCTAssertEqual(2.5000000000000007.trimmedString, "2.5")
+        XCTAssertEqual(65.0.trimmedString, "65")
+        XCTAssertEqual(72.5.trimmedString, "72.5")
+        XCTAssertEqual(0.trimmedString, "0")
+        XCTAssertEqual(Double.infinity.trimmedString, "—")
+    }
+
+    func testKilogramValuesRoundToOneDecimal() {
+        XCTAssertEqual((72.5 * (1 + 8.0 / 30)).kilogramString, "91.8")
+        XCTAssertEqual(72.5.kilogramString, "72.5")
+        XCTAssertEqual(65.0.kilogramString, "65")
+        XCTAssertEqual(MetricKind.estimatedOneRepMax.format(72.5 * (1 + 8.0 / 30)), "91.8 kg")
+        XCTAssertEqual(MetricKind.topSetLoad.format(72.5), "72.5 kg")
+    }
+
+    func testDurationAndRestLabels() {
+        XCTAssertEqual(45.durationLabel, "45 sec")
+        XCTAssertEqual(120.durationLabel, "2 min")
+        XCTAssertEqual(150.durationLabel, "2 min 30 sec")
+        XCTAssertEqual(RestRange(lowSeconds: 150, highSeconds: 180).displayString, "2.5–3 min")
+        XCTAssertEqual(RestRange(90).displayString, "1.5 min")
+        XCTAssertEqual(RestRange.none.displayString, "No rest")
+    }
+
+    func testTargetDisplayCombinesLoadAndRepetitionRange() {
+        let target = SetTarget(
+            repsLow: 5,
+            repsHigh: 8,
+            load: .absolute(kilograms: 65),
+            repsInReserve: 2
+        )
+
+        XCTAssertEqual(target.displayString, "65 kg · 5–8 reps")
+        XCTAssertEqual(target.qualifiers, ["2 RIR"])
+    }
+
+    func testPerSideAndRelativeLoadTargetsReadCorrectly() {
+        XCTAssertEqual(
+            SetTarget(repsLow: 8, repsHigh: 12, load: .chooseLoad, perSide: true).displayString,
+            "Choose load · 8–12 reps per side"
+        )
+        XCTAssertEqual(
+            SetTarget(repsLow: 3, load: .percentOfOneRepMax(70)).displayString,
+            "70% 1RM · 3 reps"
+        )
+        XCTAssertEqual(
+            SetTarget(repsLow: 8, load: .bodyweight(plusKilograms: 10)).displayString,
+            "Bodyweight + 10 kg · 8 reps"
+        )
+        XCTAssertEqual(SetTarget().displayString, "Complete")
+    }
+}
+
 final class ExerciseCatalogueTests: XCTestCase {
     func testEverySlugIsUnique() {
         let slugs = ExerciseCatalogue.all.map(\.slug)

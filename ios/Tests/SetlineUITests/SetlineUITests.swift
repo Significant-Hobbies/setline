@@ -15,20 +15,36 @@ final class SetlineUITests: XCTestCase {
         return app
     }
 
-    /// The decimal keypad has no return key and can cover the record button, so
-    /// focus is dropped by tapping a non-interactive label before acting.
+    /// The decimal keypad has no return key, so the player supplies a Done button
+    /// above it. Entry is unusable without one, which is why this taps the real
+    /// control rather than working around its absence.
     private func dismissKeyboard(_ app: XCUIApplication) {
-        if app.keyboards.count > 0 {
-            app.staticTexts["TARGET"].tap()
+        guard app.keyboards.count > 0 else { return }
+        let done = app.buttons["Done"]
+        if done.waitForExistence(timeout: 2) {
+            done.tap()
         }
     }
 
-    private func tapRecord(_ app: XCUIApplication) {
-        dismissKeyboard(app)
-        let record = app.buttons["Record set · start rest"]
-        XCTAssertTrue(record.waitForExistence(timeout: 2))
-        if !record.isHittable { app.swipeUp() }
-        record.tap()
+    /// Records the current set and waits for the authored rest to start.
+    ///
+    /// The record button sits below a set timer and a variable number of segment
+    /// rows, so it may need scrolling into reach. Retrying around the observable
+    /// outcome — the rest board appearing — keeps this from depending on where the
+    /// button happens to land.
+    private func recordSetAndWaitForRest(_ app: XCUIApplication) {
+        let rest = app.staticTexts["REST · WALL CLOCK"]
+        for _ in 0..<3 {
+            dismissKeyboard(app)
+            let record = app.buttons["Record set · start rest"]
+            guard record.waitForExistence(timeout: 3), record.isHittable else {
+                app.swipeUp()
+                continue
+            }
+            record.tap()
+            if rest.waitForExistence(timeout: 5) { return }
+        }
+        XCTFail("Recording the set did not start the authored rest period")
     }
 
     private func text(_ app: XCUIApplication, containing fragment: String) -> XCUIElement {
@@ -50,9 +66,8 @@ final class SetlineUITests: XCTestCase {
         let weight = app.textFields["Weight"]
         weight.tap()
         weight.typeText("40")
-        tapRecord(app)
+        recordSetAndWaitForRest(app)
 
-        XCTAssertTrue(app.staticTexts["REST · WALL CLOCK"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Start next early"].exists)
     }
 
@@ -94,8 +109,7 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["SEGMENT 2"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["All 2 segments record as one set."].exists)
 
-        tapRecord(app)
-        XCTAssertTrue(app.staticTexts["REST · WALL CLOCK"].waitForExistence(timeout: 5))
+        recordSetAndWaitForRest(app)
 
         app.buttons["Finish"].tap()
         app.buttons["Finish and save"].tap()
@@ -154,6 +168,43 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(setTarget.exists)
         setTarget.tap()
         XCTAssertTrue(app.navigationBars["Movement library"].waitForExistence(timeout: 3))
+    }
+
+    /// With four weeks of recorded evidence, an exercise shows its measured
+    /// current value, the authored target, and a trend that is actually drawn.
+    func testExerciseDetailShowsCurrentTargetAndTrend() {
+        let app = launch(["--evidence-demo", "--exercises-demo"])
+
+        let bench = text(app, containing: "Bench press")
+        XCTAssertTrue(bench.waitForExistence(timeout: 5))
+        bench.tap()
+
+        XCTAssertTrue(text(app, containing: "Current · measured").waitForExistence(timeout: 5))
+        // 72.5 kg is the heaviest recorded top set in the seeded evidence.
+        XCTAssertTrue(text(app, containing: "72.5 kg").exists)
+        XCTAssertTrue(text(app, containing: "Ideal · authored").exists)
+        XCTAssertTrue(text(app, containing: "90 kg").exists)
+
+        // Every measured value must name the session that produced it.
+        XCTAssertTrue(text(app, containing: "Upper ·").exists)
+
+        // The trend is only drawn from two comparable sessions upward.
+        let chart = app.descendants(matching: .any).matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "trend across")
+        ).firstMatch
+        XCTAssertTrue(chart.waitForExistence(timeout: 5), "The trend chart should render from four sessions")
+    }
+
+    func testProgressionSuggestionCitesItsEvidence() {
+        let app = launch(["--evidence-demo", "--history-demo"])
+
+        XCTAssertTrue(text(app, containing: "Next-session suggestions").waitForExistence(timeout: 5))
+        // The most recent bench session was 8, 7, 7 at 72.5 kg — mid-range, so the
+        // load holds and repetitions go up.
+        XCTAssertTrue(text(app, containing: "8, 7, 7 at 72.5 kg").exists)
+        XCTAssertTrue(text(app, containing: "ADD REPS").exists)
+        // The pulldown hit 10, 10, 10 at the top of its range, so load advances.
+        XCTAssertTrue(text(app, containing: "ADD LOAD").exists)
     }
 
     func testPlanOffersNativeTemplateAuthoring() {

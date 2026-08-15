@@ -3,40 +3,694 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Setline — Workout execution tracker</title>
-  <meta name="description" content="Build the plan once. Follow it precisely every day with guided sets, rest timing, and device-local workout history.">
+  <title>Setline — Follow your training plan. Record the truth.</title>
+  <meta name="description" content="Setline runs your written strength, cardio and mobility programme one set at a time, records what you actually lifted, and shows how far each lift is from the number you want.">
   <link rel="canonical" href="https://setline.significanthobbies.com/">
-  <meta property="og:title" content="Setline — Workout execution tracker">
-  <meta property="og:description" content="Build the plan once. Follow it precisely every day with guided sets, rest timing, and device-local workout history.">
+  <meta property="og:title" content="Setline — Follow your training plan. Record the truth.">
+  <meta property="og:description" content="Runs your written programme one set at a time. Records what you actually lifted. Shows how far each lift is from the number you want.">
   <meta property="og:url" content="https://setline.significanthobbies.com/">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="https://setline.significanthobbies.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Setline">
   <link rel="icon" href="/favicon.png">
   <link rel="apple-touch-icon" href="/icon-1024.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
-    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #fbbf24; }
-    p { font-size: 1.125rem; max-width: 32rem; text-align: center; line-height: 1.6; color: #94a3b8; }
-    .links { margin-top: 2rem; display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; }
-    a { color: #38bdf8; text-decoration: none; font-size: 0.95rem; }
-    a:hover { text-decoration: underline; }
+    /* Tokens are the tracked Setline identity from DESIGN.md. Lime is an
+       execution signal reserved for the primary action, not atmosphere. */
+    :root {
+      --chalk: #f7f6f0;
+      --paper: #ffffff;
+      --ink: #18262e;
+      --steel: #dde1dc;
+      --lime: #b9e83f;
+      --coral: #ff614d;
+      --blue: #b9d8e8;
+      --ink-62: rgba(24, 38, 46, 0.62);
+      --ink-72: rgba(24, 38, 46, 0.72);
+      --ink-12: rgba(24, 38, 46, 0.12);
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--chalk);
+      color: var(--ink);
+      line-height: 1.55;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+    /* Two-layer focus treatment; never the browser default alone. */
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 5px var(--lime);
+      border-radius: 2px;
+    }
+
+    /* ---------- header ---------- */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(247, 246, 240, 0.94);
+      backdrop-filter: saturate(140%) blur(8px);
+      border-bottom: 1px solid var(--ink-12);
+    }
+    .bar { display: flex; align-items: center; gap: 20px; min-height: 60px; }
+    .wordmark {
+      font-size: 0.8rem;
+      font-weight: 900;
+      letter-spacing: 0.22em;
+      text-decoration: none;
+      color: var(--ink);
+      flex: 0 0 auto;
+    }
+    nav.top { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+    nav.top a {
+      color: var(--ink-72);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 11px 10px;
+      border-radius: 2px;
+    }
+    nav.top a:hover { color: var(--ink); background: var(--steel); }
+    @media (max-width: 720px) { nav.top a.hide-sm { display: none; } }
+
+    /* ---------- type scale ---------- */
+    h1 {
+      font-size: clamp(2.1rem, 7.2vw, 3.9rem);
+      line-height: 1.03;
+      letter-spacing: -0.028em;
+      font-weight: 900;
+      max-width: 20ch;
+    }
+    h2 {
+      font-size: clamp(1.5rem, 4vw, 2.3rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      font-weight: 900;
+      max-width: 26ch;
+    }
+    h3 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+    .lede { font-size: clamp(1.05rem, 2.3vw, 1.3rem); color: var(--ink-72); max-width: 54ch; }
+    .eyebrow {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-62);
+    }
+    .rule { height: 1px; background: var(--ink-12); border: 0; }
+
+    /* Compact status tags are the one place a capsule shape is allowed. */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--blue);
+      border-radius: 999px;
+      padding: 6px 13px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .tag .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--ink); }
+
+    section { padding: clamp(56px, 9vw, 104px) 0; }
+    section + section { border-top: 1px solid var(--ink-12); }
+
+    /* ---------- hero ---------- */
+    .hero { padding-top: clamp(40px, 6vw, 72px); }
+    .hero-grid { display: grid; gap: clamp(32px, 5vw, 64px); align-items: center; }
+    @media (min-width: 900px) { .hero-grid { grid-template-columns: 1.05fr 0.95fr; } }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 56px;
+      padding: 0 30px;
+      background: var(--lime);
+      color: var(--ink);
+      font-weight: 900;
+      font-size: 1.03rem;
+      text-decoration: none;
+      border-radius: 3px;
+      /* The action slab's restrained dark offset edge. */
+      box-shadow: 0 4px 0 rgba(24, 38, 46, 0.82);
+    }
+    .cta:hover { transform: translateY(1px); box-shadow: 0 3px 0 rgba(24, 38, 46, 0.82); }
+    .cta:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(24, 38, 46, 0.82); }
+    .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 22px; }
+    .cta-note { font-size: 0.86rem; color: var(--ink-62); max-width: 30ch; }
+    .cta-note a { color: var(--ink); }
+
+    /* Numerals carry the hierarchy. */
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .stat { background: var(--paper); border: 1px solid var(--ink-12); border-radius: 2px; padding: 16px 14px; }
+    .stat b {
+      display: block;
+      font-size: clamp(1.5rem, 3.6vw, 2rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .stat span {
+      display: block;
+      margin-top: 5px;
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-62);
+    }
+
+    /* ---------- device shot ---------- */
+    figure.shot { margin: 0; }
+    .frame {
+      position: relative;
+      max-width: 320px;
+      margin: 0 auto;
+      border: 1px solid var(--ink-12);
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--chalk);
+      box-shadow: 0 18px 44px -22px rgba(24, 38, 46, 0.4);
+    }
+    .frame img { display: block; width: 100%; height: auto; }
+    /* These are captures of a scrolling screen. A deliberate fade at the bottom
+       reads as "the screen continues" instead of as a truncated image. */
+    .frame::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 64px;
+      background: linear-gradient(to bottom, rgba(247, 246, 240, 0), var(--chalk));
+      pointer-events: none;
+    }
+    figure.shot figcaption {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--ink-62);
+    }
+
+    /* ---------- generic layout helpers ---------- */
+    .split { display: grid; gap: clamp(28px, 4vw, 56px); align-items: center; }
+    @media (min-width: 900px) { .split { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 900px) { .split.reverse figure.shot { order: 2; } }
+
+    .cards { display: grid; gap: 14px; margin-top: 30px; }
+    @media (min-width: 700px) { .cards.two { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 700px) { .cards.four { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1000px) { .cards.four { grid-template-columns: repeat(4, 1fr); } }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--ink-12);
+      border-radius: 2px;
+      padding: 20px;
+    }
+    .card p { margin-top: 8px; color: var(--ink-72); font-size: 0.95rem; }
+    .card .metric {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--ink-12);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--ink-62);
+      font-variant-numeric: tabular-nums;
+    }
+
+    ul.marks { list-style: none; margin-top: 26px; display: grid; gap: 18px; }
+    ul.marks li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; }
+    ul.marks .mk { font-weight: 900; color: var(--ink); line-height: 1.5; }
+    ul.marks b { display: block; }
+    ul.marks p { color: var(--ink-72); font-size: 0.95rem; margin-top: 3px; }
+
+    /* ---------- refusals ---------- */
+    .refusals { background: var(--ink); color: var(--chalk); }
+    .refusals h2 { color: var(--chalk); }
+    .refusals .eyebrow { color: rgba(247, 246, 240, 0.66); }
+    .refusals .lede { color: rgba(247, 246, 240, 0.76); }
+    .refusals .card {
+      background: rgba(247, 246, 240, 0.06);
+      border-color: rgba(247, 246, 240, 0.18);
+    }
+    .refusals .card p { color: rgba(247, 246, 240, 0.76); }
+    .refusals .no { color: var(--lime); font-weight: 900; }
+
+    /* ---------- fit ---------- */
+    .fit-yes { border-left: 3px solid var(--lime); }
+    .fit-no { border-left: 3px solid var(--coral); }
+    .fit ul { list-style: none; margin-top: 12px; display: grid; gap: 9px; }
+    .fit li { color: var(--ink-72); font-size: 0.95rem; padding-left: 18px; position: relative; }
+    .fit li::before { content: "·"; position: absolute; left: 4px; font-weight: 900; color: var(--ink); }
+
+    /* ---------- faq ---------- */
+    details {
+      background: var(--paper);
+      border: 1px solid var(--ink-12);
+      border-radius: 2px;
+      padding: 0 18px;
+      margin-top: 10px;
+    }
+    details summary {
+      cursor: pointer;
+      list-style: none;
+      font-weight: 800;
+      padding: 17px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 44px;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::after { content: "+"; font-weight: 900; color: var(--ink-62); }
+    details[open] summary::after { content: "–"; }
+    details > p { padding-bottom: 18px; color: var(--ink-72); font-size: 0.95rem; max-width: 68ch; }
+
+    /* ---------- footer ---------- */
+    footer { background: var(--ink); color: var(--chalk); padding: clamp(48px, 7vw, 88px) 0 40px; }
+    footer .punch {
+      font-size: clamp(1.3rem, 3.4vw, 2rem);
+      font-weight: 900;
+      line-height: 1.16;
+      letter-spacing: -0.02em;
+      max-width: 30ch;
+    }
+    footer .signed { margin-top: 26px; color: rgba(247, 246, 240, 0.72); font-size: 0.94rem; max-width: 56ch; }
+    footer .signed a { color: var(--lime); }
+    footer nav {
+      margin-top: 34px;
+      padding-top: 22px;
+      border-top: 1px solid rgba(247, 246, 240, 0.2);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 4px;
+    }
+    footer nav a {
+      color: rgba(247, 246, 240, 0.82);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 10px 12px;
+      border-radius: 2px;
+    }
+    footer nav a:hover { color: var(--ink); background: var(--lime); }
+    footer .fine { margin-top: 18px; font-size: 0.8rem; color: rgba(247, 246, 240, 0.5); }
+
+    .skip {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--lime);
+      color: var(--ink);
+      padding: 12px 18px;
+      font-weight: 800;
+      z-index: 20;
+    }
+    .skip:focus { left: 12px; top: 12px; }
   </style>
   <script>
     !function(t,e){var o,n,a,r,i;function s(e){(o=t._phq=t._phq||[]).push([].slice.call(e))}o=t.posthog=function(e,n){s([e,n])},o.__loaded||(a=e.createElement("script"),a.type="text/javascript",a.async=!0,a.crossOrigin="anonymous",a.src="https://us.i.posthog.com/array.js",r=e.getElementsByTagName("script")[0],r.parentNode.insertBefore(a,r),o.__loaded=!0),t.posthog.init("phc_qgiAarw4Co4pw9fz3Fxj4UJaHmqzFetqs4JrXhGc35Nd",{api_host:"https://us.i.posthog.com",person_profiles:"always",capture_pageview:!1,autocapture:!1,loaded:function(){t.posthog.capture("page_view",{project_id:"setline"})}})}(window,document);
   </script>
 </head>
 <body>
-  <h1>Setline</h1>
-  <p>Build the plan once. Follow it precisely every day with guided sets, rest timing, and device-local workout history.</p>
-  <div class="links">
-    <a href="/privacy">Privacy</a>
-    <a href="/terms">Terms</a>
-    <a href="/changelog">Changelog</a>
-    <a href="/llms.txt">Agent Index</a>
-  </div>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header>
+    <div class="wrap bar">
+      <a class="wordmark" href="/">SETLINE</a>
+      <nav class="top">
+        <a class="hide-sm" href="#one-set">One set</a>
+        <a class="hide-sm" href="#numbers">Your numbers</a>
+        <a class="hide-sm" href="#pillars">Four pillars</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/Significant-Hobbies/setline">Source</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero: audience, job, and the single next action without scrolling. -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="tag"><span class="dot"></span>iPhone · in development</span>
+          <h1 style="margin-top:20px">Stop reading your plan off a PDF between sets.</h1>
+          <p class="lede" style="margin-top:20px">
+            Setline runs your written programme one set at a time — every rep range,
+            rest band and coaching cue — then records what you actually lifted.
+            It tells you the load your last three sets earned, not the load you
+            half-remember.
+          </p>
+
+          <div class="stats" style="margin-top:32px">
+            <div class="stat"><b>84</b><span>dated days</span></div>
+            <div class="stat"><b>4</b><span>pillars measured</span></div>
+            <div class="stat"><b>0</b><span>invented numbers</span></div>
+          </div>
+
+          <div class="cta-row" style="margin-top:32px">
+            <a class="cta" href="#one-set">See a set recorded &rarr;</a>
+            <p class="cta-note">
+              Not on the App Store yet. The
+              <a href="https://github.com/Significant-Hobbies/setline">source is public</a>
+              while it is built.
+            </p>
+          </div>
+        </div>
+
+        <figure class="shot">
+          <div class="frame"><img src="/shot-today.png" width="294" height="640" alt="Setline's Today screen showing week 3 of 12, an easy cardio and mobility session, its exercise and step counts, the four pillars it trains, and the authored rules for the day." loading="eager" decoding="async"></div>
+          <figcaption>Today, resolved from a dated 12-week block — not a list you re-pick every morning.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Problem: describe it more precisely than the reader would. -->
+    <section>
+      <div class="wrap">
+        <span class="eyebrow">Why another one</span>
+        <h2 style="margin-top:14px">Your plan is precise. Your tracker isn't.</h2>
+        <p class="lede" style="margin-top:16px">
+          A written programme carries rep ranges, reps in reserve, rest bands,
+          per-side work, tempo and progression rules. Most trackers give you two
+          boxes and forget the rest.
+        </p>
+        <ul class="marks">
+          <li>
+            <span class="mk">01</span>
+            <div>
+              <b>“3 × 6–10, 1–2 reps in reserve, rest 2.5–3 min.”</b>
+              <p>Typed into a box for weight and a box for reps, that instruction is gone. Nothing can check whether you earned the next load.</p>
+            </div>
+          </li>
+          <li>
+            <span class="mk">02</span>
+            <div>
+              <b>Five at 40 kg, then two at 30 kg. That is one set.</b>
+              <p>Split it into two rows and your set count lies. Drop the second half and your volume does.</p>
+            </div>
+          </li>
+          <li>
+            <span class="mk">03</span>
+            <div>
+              <b>A warm-up is not a working set.</b>
+              <p>Count a 20 kg bar ramp toward your volume and every trend you look at is wrong.</p>
+            </div>
+          </li>
+          <li>
+            <span class="mk">04</span>
+            <div>
+              <b>Your rest timer dies when you put the phone down.</b>
+              <p>Which is exactly when you need it.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Show before tell. -->
+    <section id="one-set">
+      <div class="wrap split">
+        <figure class="shot">
+          <div class="frame"><img src="/shot-workout-player.png" width="294" height="640" alt="Setline's workout player showing a 40 kg by 8 reps warm-up target, the authored rest of one minute, a coaching cue, a set timer at zero with a Start set button, and reps and weight fields with an Add segment control." loading="lazy" decoding="async"></div>
+          <figcaption>One set. Target above, timer beside it, segments below.</figcaption>
+        </figure>
+        <div>
+          <span class="eyebrow">One set at a time</span>
+          <h2 style="margin-top:14px">Everything the set needs, and nothing else.</h2>
+          <ul class="marks">
+            <li>
+              <span class="mk">→</span>
+              <div>
+                <b>The target, as written</b>
+                <p>Rep range, load or percentage, reps in reserve, tempo, per-side, and rest as a band — because “2.5–3 min” is not the same instruction as “150 seconds”.</p>
+              </div>
+            </li>
+            <li>
+              <span class="mk">→</span>
+              <div>
+                <b>A timer for the set, separate from the rest timer</b>
+                <p>Time under load gets recorded instead of guessed. Holds and carries count down; sets count up.</p>
+              </div>
+            </li>
+            <li>
+              <span class="mk">→</span>
+              <div>
+                <b>Segments, so one set stays one set</b>
+                <p>Add as many as the set had. Or type <code>5x40, 2x30</code> and Setline shows you how it read that <em>before</em> anything is recorded.</p>
+              </div>
+            </li>
+            <li>
+              <span class="mk">→</span>
+              <div>
+                <b>Rest that survives your pocket</b>
+                <p>Anchored to a wall-clock end time and it notifies you when it's up. Authored, adjusted and actual rest are all kept apart.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- The core job the owner asked for. -->
+    <section id="numbers">
+      <div class="wrap split reverse">
+        <figure class="shot">
+          <div class="frame"><img src="/shot-exercise-detail.png" width="294" height="640" alt="Setline's bench press screen showing measured current values of 91.8 kg estimated one-rep max, 72.5 kg top set load and 8 max repetitions, each citing the session that produced it, above an authored 90 kg target with 17.5 kg to go at 2.5 kg per week." loading="lazy" decoding="async"></div>
+          <figcaption>Bench press: measured, authored, and the distance between them.</figcaption>
+        </figure>
+        <div>
+          <span class="eyebrow">Current vs ideal</span>
+          <h2 style="margin-top:14px">The number you have. The number you want.</h2>
+          <p class="lede" style="margin-top:16px">
+            Set a target per exercise — estimated 1RM, top set at a rep count, max
+            reps, best hold, distance, pace, or measured range. Setline works out
+            where you are and how fast you're closing the gap.
+          </p>
+          <ul class="marks">
+            <li>
+              <span class="mk">→</span>
+              <div>
+                <b>Measured from working sets only</b>
+                <p>A 200 kg leg-press warm-up can never become your record.</p>
+              </div>
+            </li>
+            <li>
+              <span class="mk">→</span>
+              <div>
+                <b>Every value names the session that produced it</b>
+                <p>“72.5 kg · Upper · 16 Aug”. You can always go and check.</p>
+              </div>
+            </li>
+            <li>
+              <span class="mk">→</span>
+              <div>
+                <b>Rate and arrival, from your own data</b>
+                <p>2.5 kg a week and 17.5 kg to go. If the trend points the wrong way, Setline says nothing rather than promising a date.</p>
+              </div>
+            </li>
+            <li>
+              <span class="mk">→</span>
+              <div>
+                <b>Progression that follows your rules</b>
+                <p>Hit the top of the range on every working set and it says add load — by your programme's increment, with the three sets that earned it printed underneath.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- One idea: four pillars, each measured in its own units. -->
+    <section id="pillars">
+      <div class="wrap">
+        <span class="eyebrow">Four pillars</span>
+        <h2 style="margin-top:14px">Strength isn't the only thing worth a number.</h2>
+        <p class="lede" style="margin-top:16px">
+          A hold is not a rep and a pace is not a load. Each pillar is measured in
+          the units that pillar actually improves in.
+        </p>
+        <div class="cards four">
+          <div class="card">
+            <h3>Strength</h3>
+            <p>Working sets, load, reps in reserve, tonnage per muscle group.</p>
+            <div class="metric">Estimated 1RM · top set at reps</div>
+          </div>
+          <div class="card">
+            <h3>Stamina</h3>
+            <p>Intervals, easy aerobic work, and controlled hard efforts kept apart.</p>
+            <div class="metric">Distance · duration · pace</div>
+          </div>
+          <div class="card">
+            <h3>Mobility</h3>
+            <p>Active range and control, per side, with the doses your routine prescribes.</p>
+            <div class="metric">Reps per side · measured range</div>
+          </div>
+          <div class="card">
+            <h3>Flexibility</h3>
+            <p>Passive range and how long you can actually hold it.</p>
+            <div class="metric">Hold length · measured range</div>
+          </div>
+        </div>
+        <p style="margin-top:26px;color:var(--ink-62);font-size:0.92rem;max-width:64ch">
+          A bundled library of movements across all four pillars — plus the CrossFit
+          movement vocabulary — carries the muscles, equipment and measurable
+          metrics for each one. Apple Health heart-rate zones, range-of-motion
+          assessments and AMRAP/EMOM scoring are being built next; they are not
+          claimed as shipped.
+        </p>
+      </div>
+    </section>
+
+    <!-- The distinctive section: character stated as refusals. -->
+    <section class="refusals">
+      <div class="wrap">
+        <span class="eyebrow">Character</span>
+        <h2 style="margin-top:14px">What Setline refuses to do.</h2>
+        <p class="lede" style="margin-top:16px">
+          A training log is only worth keeping if you trust every number in it.
+        </p>
+        <div class="cards two">
+          <div class="card">
+            <h3><span class="no">No</span> invented numbers</h3>
+            <p>If nothing comparable has been recorded, the value reads “unavailable”. It is never estimated, interpolated, or filled in from an average.</p>
+          </div>
+          <div class="card">
+            <h3><span class="no">No</span> chart before there is data</h3>
+            <p>A trend needs at least two comparable sessions. Until then you get a sentence explaining why, not a flat line pretending to be progress.</p>
+          </div>
+          <div class="card">
+            <h3><span class="no">No</span> rewriting your plan</h3>
+            <p>Skip a set, defer it, or add one, and the authored position is kept. A deviation is recorded as a deviation — never as a plan you never wrote.</p>
+          </div>
+          <div class="card">
+            <h3><span class="no">No</span> account required</h3>
+            <p>Every workout action works with no signal and no sign-in. Your training stays on your iPhone unless you choose otherwise.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Make self-qualification easy, including the poor fits. -->
+    <section>
+      <div class="wrap">
+        <span class="eyebrow">Fit</span>
+        <h2 style="margin-top:14px">Who this is for.</h2>
+        <div class="cards two fit">
+          <div class="card fit-yes">
+            <h3>A good fit if</h3>
+            <ul>
+              <li>You already follow a written programme — yours, a coach's, or a book's.</li>
+              <li>You want the number in the app to be the number you actually lifted.</li>
+              <li>You care about mobility and conditioning, not only the barbell.</li>
+              <li>You'd rather see “unavailable” than a plausible guess.</li>
+            </ul>
+          </div>
+          <div class="card fit-no">
+            <h3>A poor fit if</h3>
+            <ul>
+              <li>You want an app to invent your training for you.</li>
+              <li>You want a social feed, streaks, or badges.</li>
+              <li>You're on Android — Setline is iPhone only.</li>
+              <li>You want it today. It is still in development.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="wrap">
+        <span class="eyebrow">Questions</span>
+        <h2 style="margin-top:14px">Straight answers.</h2>
+        <div style="margin-top:24px">
+          <details>
+            <summary>Can I download it?</summary>
+            <p>Not yet. Setline is an iPhone app in active development and is not on the App Store. The source is public if you want to read it or build it yourself.</p>
+          </details>
+          <details>
+            <summary>Does it work without signal?</summary>
+            <p>Yes — entirely. Starting a workout, recording sets, resting, and finishing all happen on the device. There is no request in the middle of your set.</p>
+          </details>
+          <details>
+            <summary>Do I need an account?</summary>
+            <p>No. Sign-in exists only to keep a private copy of your own data across devices. Skip it and nothing is lost except that copy.</p>
+          </details>
+          <details>
+            <summary>Can I use my own programme?</summary>
+            <p>Yes. Build templates with structured targets and schedule them across a 1–16 week block. A dated 12-week strength, cardio and mobility programme ships bundled as an example of what the format can carry.</p>
+          </details>
+          <details>
+            <summary>How do I record a drop set or a rest-pause set?</summary>
+            <p>As one set with several segments. Add a segment per piece, or type shorthand like <code>5x40, 2x30</code> or <code>bw+10x8</code>. Setline shows its reading of the shorthand before it applies anything, so entry is never a guess.</p>
+          </details>
+          <details>
+            <summary>Does it do CrossFit?</summary>
+            <p>Partly, today. The movement vocabulary — thrusters, wall balls, toes-to-bar, double-unders, muscle-ups and the rest — is in the bundled library. AMRAP, EMOM, For Time and benchmark-WOD scoring are being built and are not claimed as working yet.</p>
+          </details>
+          <details>
+            <summary>Does it read Apple Health?</summary>
+            <p>Not yet. Heart-rate zones, VO2 max and writing completed sessions back to Health are the next block of work.</p>
+          </details>
+          <details>
+            <summary>What does it cost?</summary>
+            <p>Nothing. It is a personal project built for one person's training block, published because the approach might be useful to someone else.</p>
+          </details>
+          <details>
+            <summary>Where does my data live, and can I get it out?</summary>
+            <p>On your iPhone. There is a versioned JSON export of everything, and an import that previews what it will replace before it replaces it. See the <a href="/privacy">privacy notice</a>.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p class="punch">
+        The goal is not twelve perfect weeks. It's twelve weeks where one
+        imperfect day never becomes an abandoned programme.
+      </p>
+      <p class="signed">
+        I built Setline because I was carrying a 12-week plan into the gym as a PDF
+        and guessing at loads I'd already earned. It does what I needed it to do,
+        and it says “unavailable” whenever it doesn't know.
+        — <a href="https://sarthakagrawal.dev">Sarthak Agrawal</a>
+      </p>
+      <nav>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/Significant-Hobbies/setline">Source</a>
+        <a href="https://github.com/Significant-Hobbies/setline/issues">Roadmap</a>
+        <a href="/llms.txt">Agent index</a>
+      </nav>
+      <p class="fine">Setline · iPhone app in development · Not on the App Store yet</p>
+    </div>
+  </footer>
+
   <script src="https://sassmaker.com/project-strip.js" data-project="setline" defer></script>
 </body>
 </html>

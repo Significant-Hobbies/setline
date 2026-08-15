@@ -29,6 +29,14 @@ assessments, and on-device workout generation are planned rather than shipped.
 
 ## Timeline
 
+- 2026-08-16 — replaced the placeholder landing page with a real one built to the
+  fleet landing standard on the app's own tracked palette: hero, product
+  screenshots, four-pillar breakdown, a refusals section, fit guidance and a FAQ,
+  with honest pre-release status and no store link. Agent-indexing surfaces were
+  rewritten to match and a test now holds the Worker and static copies
+  byte-identical. Removed all six duplicated blocks in the native sources and
+  split the two longest new functions; duplication is now zero.
+
 - 2026-08-16 — replaced free-text set targets with a structured target model and
   ported the dated 12-week programme into the native app, which previously
   shipped only a two-template placeholder. Added a bundled movement catalogue
@@ -104,7 +112,9 @@ assessments, and on-device workout generation are planned rather than shipped.
 
 - `ios/` — native SwiftUI iPhone beta for local-first workout execution;
   App Store Connect/TestFlight transport remains manual.
-- Static public pages (index, privacy, terms, changelog) served from public/ via the Worker ASSETS binding.
+- Static public pages (landing, privacy, terms, changelog) served from public/ via
+  the Worker ASSETS binding, plus the agent surfaces `index.md`, `llms.txt`,
+  `llms-full.txt`, `sitemap.xml`, `robots.txt` and `/api/ai`.
 - [Public GitHub repository](https://github.com/Significant-Hobbies/setline) —
   canonical source, product planning, and issue owner.
 - `https://setline.significanthobbies.com` — live Cloudflare Worker production
@@ -119,6 +129,9 @@ assessments, and on-device workout generation are planned rather than shipped.
   timestamp-derived rest, relaunch recovery, planning, history, progression,
   data transfer, accessibility, simulator tests, and personal-team archiving.
 - Public editorial product changelog at `/changelog`.
+- Landing page stating audience, outcome, the four pillars, what the product
+  refuses to do, poor-fit cases and real FAQs, with product screenshots and no
+  claim of App Store availability.
 - Dated seven-day schedule for the supplied 12-week strength, cardio, and
   mobility programme, resolved natively for every one of its 84 days.
 - Structured set targets carrying rep ranges, absolute/relative/bodyweight/assisted

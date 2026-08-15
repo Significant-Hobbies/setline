@@ -226,9 +226,23 @@ public struct SetTarget: Codable, Equatable, Sendable {
 // MARK: - Formatting helpers
 
 public extension Double {
-    /// Formats without a trailing ".0" so "65 kg" never renders as "65.0 kg".
+    /// Formats without a trailing ".0" so "65 kg" never renders as "65.0 kg", and
+    /// without leaking binary floating-point precision — an estimated 1RM must
+    /// read "91.83 kg", never "91.83333333333333 kg".
     var trimmedString: String {
-        self == rounded() ? String(Int(self)) : String(self)
+        guard isFinite else { return "—" }
+        let bounded = (self * 100).rounded() / 100
+        if bounded == bounded.rounded() { return String(Int(bounded)) }
+        var text = String(format: "%.2f", bounded)
+        while text.hasSuffix("0") { text.removeLast() }
+        if text.hasSuffix(".") { text.removeLast() }
+        return text
+    }
+
+    /// Rounded to a single decimal, for kilogram values where two decimals claim
+    /// more precision than a barbell can express.
+    var kilogramString: String {
+        ((self * 10).rounded() / 10).trimmedString
     }
 
     var distanceLabel: String {

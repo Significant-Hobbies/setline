@@ -52,7 +52,7 @@ public enum MetricKind: String, Codable, CaseIterable, Sendable {
 
     public func format(_ value: Double) -> String {
         switch self {
-        case .estimatedOneRepMax, .topSetLoad: "\(value.trimmedString) kg"
+        case .estimatedOneRepMax, .topSetLoad: "\(value.kilogramString) kg"
         case .maxRepetitions: "\(Int(value)) reps"
         case .bestHoldSeconds: Int(value).durationLabel
         case .longestDistanceMetres: value.distanceLabel
@@ -297,79 +297,103 @@ public enum ExerciseMetrics {
         metric.lowerIsBetter ? candidate < existing : candidate > existing
     }
 
+    /// One measurement of a step, or nil when the step cannot express that metric.
+    ///
+    /// Each metric reads the recorded segments in its own way, so the dispatch and
+    /// the per-metric arithmetic are kept apart.
     static func value(
         for metric: MetricKind,
         step: WorkoutStep,
         session: WorkoutSession,
         referenceRepetitions: Int?
     ) -> MeasuredValue? {
-        let achievedAt = step.completedAt ?? session.completedAt ?? session.startedAt
-        func measured(_ value: Double, repetitions: Int? = nil) -> MeasuredValue {
-            MeasuredValue(
-                metric: metric,
-                value: value,
-                repetitions: repetitions,
-                achievedAt: achievedAt,
-                sessionID: session.id,
-                sessionName: session.templateName
-            )
+        guard let reading = reading(for: metric, step: step, referenceRepetitions: referenceRepetitions) else {
+            return nil
         }
+        return MeasuredValue(
+            metric: metric,
+            value: reading.value,
+            repetitions: reading.repetitions,
+            achievedAt: step.completedAt ?? session.completedAt ?? session.startedAt,
+            sessionID: session.id,
+            sessionName: session.templateName
+        )
+    }
 
+    static func reading(
+        for metric: MetricKind,
+        step: WorkoutStep,
+        referenceRepetitions: Int?
+    ) -> (value: Double, repetitions: Int?)? {
         switch metric {
-        case .estimatedOneRepMax:
-            let estimates = step.segments.compactMap { segment -> (Double, Int)? in
-                guard let kilograms = segment.effectiveKilograms,
-                      let reps = segment.repetitions,
-                      let estimate = estimatedOneRepMax(kilograms: kilograms, repetitions: reps)
-                else { return nil }
-                return (estimate, reps)
-            }
-            guard let best = estimates.max(by: { $0.0 < $1.0 }) else { return nil }
-            return measured(best.0, repetitions: best.1)
-
-        case .topSetLoad:
-            let minimumReps = referenceRepetitions ?? 1
-            let loads = step.segments.compactMap { segment -> (Double, Int)? in
-                guard let kilograms = segment.effectiveKilograms,
-                      let reps = segment.repetitions,
-                      reps >= minimumReps
-                else { return nil }
-                return (kilograms, reps)
-            }
-            guard let best = loads.max(by: { $0.0 < $1.0 }) else { return nil }
-            return measured(best.0, repetitions: best.1)
-
-        case .maxRepetitions:
-            // Summed across segments: `5×40 + 2×30` is seven repetitions of work.
-            let reps = step.segments.compactMap(\.repetitions).reduce(0, +)
-            guard reps > 0 else { return nil }
-            return measured(Double(reps), repetitions: reps)
-
-        case .bestHoldSeconds:
-            let seconds = step.segments.compactMap { $0.durationSeconds ?? $0.workSeconds }
-            guard let best = seconds.max(), best > 0 else { return nil }
-            return measured(Double(best))
-
-        case .longestDistanceMetres:
-            let metres = step.segments.compactMap(\.distanceKilometres).map { $0 * 1_000 }
-            guard let best = metres.max(), best > 0 else { return nil }
-            return measured(best)
-
-        case .bestPaceSecondsPerKilometre:
-            let paces = step.segments.compactMap { segment -> Double? in
-                guard let kilometres = segment.distanceKilometres, kilometres > 0,
-                      let seconds = segment.durationSeconds ?? segment.workSeconds, seconds > 0
-                else { return nil }
-                return Double(seconds) / kilometres
-            }
-            guard let best = paces.min() else { return nil }
-            return measured(best)
-
-        case .rangeOfMotion:
-            let values = step.segments.compactMap(\.rangeOfMotionValue)
-            guard let best = values.max(), best > 0 else { return nil }
-            return measured(best)
+        case .estimatedOneRepMax: bestEstimatedOneRepMax(in: step.segments)
+        case .topSetLoad: heaviestLoad(in: step.segments, atLeast: referenceRepetitions ?? 1)
+        case .maxRepetitions: totalRepetitions(in: step.segments)
+        case .bestHoldSeconds: longestHold(in: step.segments)
+        case .longestDistanceMetres: furthestDistance(in: step.segments)
+        case .bestPaceSecondsPerKilometre: quickestPace(in: step.segments)
+        case .rangeOfMotion: deepestRange(in: step.segments)
         }
+    }
+
+    static func bestEstimatedOneRepMax(in segments: [SetSegment]) -> (Double, Int?)? {
+        let estimates = segments.compactMap { segment -> (Double, Int)? in
+            guard let kilograms = segment.effectiveKilograms,
+                  let reps = segment.repetitions,
+                  let estimate = estimatedOneRepMax(kilograms: kilograms, repetitions: reps)
+            else { return nil }
+            return (estimate, reps)
+        }
+        guard let best = estimates.max(by: { $0.0 < $1.0 }) else { return nil }
+        return (best.0, best.1)
+    }
+
+    static func heaviestLoad(in segments: [SetSegment], atLeast minimumReps: Int) -> (Double, Int?)? {
+        let loads = segments.compactMap { segment -> (Double, Int)? in
+            guard let kilograms = segment.effectiveKilograms,
+                  let reps = segment.repetitions,
+                  reps >= minimumReps
+            else { return nil }
+            return (kilograms, reps)
+        }
+        guard let best = loads.max(by: { $0.0 < $1.0 }) else { return nil }
+        return (best.0, best.1)
+    }
+
+    /// Summed across segments: `5×40 + 2×30` is seven repetitions of work.
+    static func totalRepetitions(in segments: [SetSegment]) -> (Double, Int?)? {
+        let reps = segments.compactMap(\.repetitions).reduce(0, +)
+        guard reps > 0 else { return nil }
+        return (Double(reps), reps)
+    }
+
+    static func longestHold(in segments: [SetSegment]) -> (Double, Int?)? {
+        let seconds = segments.compactMap { $0.durationSeconds ?? $0.workSeconds }
+        guard let best = seconds.max(), best > 0 else { return nil }
+        return (Double(best), nil)
+    }
+
+    static func furthestDistance(in segments: [SetSegment]) -> (Double, Int?)? {
+        let metres = segments.compactMap(\.distanceKilometres).map { $0 * 1_000 }
+        guard let best = metres.max(), best > 0 else { return nil }
+        return (best, nil)
+    }
+
+    static func quickestPace(in segments: [SetSegment]) -> (Double, Int?)? {
+        let paces = segments.compactMap { segment -> Double? in
+            guard let kilometres = segment.distanceKilometres, kilometres > 0,
+                  let seconds = segment.durationSeconds ?? segment.workSeconds, seconds > 0
+            else { return nil }
+            return Double(seconds) / kilometres
+        }
+        guard let best = paces.min() else { return nil }
+        return (best, nil)
+    }
+
+    static func deepestRange(in segments: [SetSegment]) -> (Double, Int?)? {
+        let values = segments.compactMap(\.rangeOfMotionValue)
+        guard let best = values.max(), best > 0 else { return nil }
+        return (best, nil)
     }
 
     /// Least-squares slope over time, expressed per week. Nil below two points or

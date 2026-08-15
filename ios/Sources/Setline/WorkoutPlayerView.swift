@@ -131,6 +131,8 @@ private struct AttemptBoard: View {
     @State private var isQuickEntryShown = false
     @State private var workStartedAt: Date?
     @State private var accumulatedWorkSeconds = 0
+    /// The decimal keypad has no return key, so entry needs an explicit way out.
+    @FocusState private var isEnteringNumbers: Bool
 
     var body: some View {
         ScrollView {
@@ -166,6 +168,14 @@ private struct AttemptBoard: View {
             .padding(20)
         }
         .background(SetlinePalette.paper)
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { isEnteringNumbers = false }
+                    .font(.subheadline.weight(.bold))
+            }
+        }
         .onAppear(perform: seedDrafts)
     }
 
@@ -482,6 +492,7 @@ private struct AttemptBoard: View {
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 TextField("0", text: value)
                     .keyboardType(.decimalPad)
+                    .focused($isEnteringNumbers)
                     .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
                     .accessibilityLabel(title)
                 Text(unit)

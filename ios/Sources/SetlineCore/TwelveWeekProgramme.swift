@@ -457,87 +457,48 @@ public enum TwelveWeekProgramme {
     )
 
     static func latPulldownExercise(week: Int) -> Exercise {
-        var sets = [
-            set(
+        exercise("lat-pulldown", sets: [
+            warmUpSet(
                 "1 light set",
-                .strength,
-                .warmUp,
                 SetTarget(repsLow: 8, load: .chooseLoad),
-                rest: RestRange(60),
                 cue: "Use a comfortable neutral or shoulder-width grip."
             ),
-        ]
-        sets += (1...3).map { number in
-            set(
-                "Working set \(number) of 3",
-                .strength,
-                .working,
-                SetTarget(
-                    repsLow: 6,
-                    repsHigh: 10,
-                    load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week)
-                ),
-                rest: RestRange(lowSeconds: 90, highSeconds: 150)
-            )
-        }
-        return exercise("lat-pulldown", sets: sets)
+        ] + workingSets(
+            count: 3,
+            repsLow: 6,
+            repsHigh: 10,
+            week: week,
+            rest: RestRange(lowSeconds: 90, highSeconds: 150)
+        ))
     }
 
     static func shoulderPressExercise(week: Int) -> Exercise {
-        var sets = [
-            set(
-                "1 light set",
-                .strength,
-                .warmUp,
-                SetTarget(repsLow: 6, repsHigh: 8, load: .chooseLoad),
-                rest: RestRange(60)
-            ),
-        ]
-        sets += (1...2).map { number in
-            set(
-                "Working set \(number) of 2",
-                .strength,
-                .working,
-                SetTarget(
-                    repsLow: 6,
-                    repsHigh: 10,
-                    load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week)
-                ),
-                rest: RestRange(lowSeconds: 90, highSeconds: 150)
-            )
-        }
-        return exercise("machine-or-db-shoulder-press", sets: sets)
+        exercise("machine-or-db-shoulder-press", sets: [
+            warmUpSet("1 light set", SetTarget(repsLow: 6, repsHigh: 8, load: .chooseLoad)),
+        ] + workingSets(
+            count: 2,
+            repsLow: 6,
+            repsHigh: 10,
+            week: week,
+            rest: RestRange(lowSeconds: 90, highSeconds: 150)
+        ))
     }
 
     static func rowExercise(week: Int) -> Exercise {
-        var sets = [
-            set(
+        exercise("chest-supported-or-cable-row", sets: [
+            warmUpSet(
                 "Optional light set",
-                .strength,
-                .warmUp,
                 SetTarget(repsLow: 8, load: .chooseLoad),
-                rest: RestRange(60),
                 optional: true,
                 cue: "Use this familiarisation set only if needed."
             ),
-        ]
-        sets += (1...3).map { number in
-            set(
-                "Working set \(number) of 3",
-                .strength,
-                .working,
-                SetTarget(
-                    repsLow: 8,
-                    repsHigh: 12,
-                    load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week)
-                ),
-                rest: RestRange(lowSeconds: 90, highSeconds: 150)
-            )
-        }
-        return exercise("chest-supported-or-cable-row", sets: sets)
+        ] + workingSets(
+            count: 3,
+            repsLow: 8,
+            repsHigh: 12,
+            week: week,
+            rest: RestRange(lowSeconds: 90, highSeconds: 150)
+        ))
     }
 
     static let lateralRaiseExercise = exercise(
@@ -679,46 +640,26 @@ public enum TwelveWeekProgramme {
     ]
 
     static func hackSquatExercise(week: Int) -> Exercise {
-        var sets = [
-            set(
-                "Light × 10 · ramp 1 of 3",
-                .strength,
-                .warmUp,
-                SetTarget(repsLow: 10, load: .chooseLoad),
-                rest: RestRange(60)
-            ),
-            set(
+        exercise("hack-squat-or-leg-press", sets: [
+            warmUpSet("Light × 10 · ramp 1 of 3", SetTarget(repsLow: 10, load: .chooseLoad)),
+            warmUpSet(
                 "About 50% × 5 · ramp 2 of 3",
-                .strength,
-                .warmUp,
-                SetTarget(repsLow: 5, load: .percentOfOneRepMax(50)),
-                rest: RestRange(60)
+                SetTarget(repsLow: 5, load: .percentOfOneRepMax(50))
             ),
-            set(
+            warmUpSet(
                 "About 70% × 3 · ramp 3 of 3",
-                .strength,
-                .warmUp,
                 SetTarget(repsLow: 3, load: .percentOfOneRepMax(70)),
                 rest: RestRange(90),
                 cue: "Repeat the working-set stance and depth."
             ),
-        ]
-        sets += (1...3).map { number in
-            set(
-                "Working set \(number) of 3",
-                .strength,
-                .working,
-                SetTarget(
-                    repsLow: 6,
-                    repsHigh: 10,
-                    load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week)
-                ),
-                rest: RestRange(lowSeconds: 150, highSeconds: 180),
-                cue: "Do not train to failure; keep depth repeatable."
-            )
-        }
-        return exercise("hack-squat-or-leg-press", sets: sets)
+        ] + workingSets(
+            count: 3,
+            repsLow: 6,
+            repsHigh: 10,
+            week: week,
+            rest: RestRange(lowSeconds: 150, highSeconds: 180),
+            cue: "Do not train to failure; keep depth repeatable."
+        ))
     }
 
     static func romanianDeadliftExercise(week: Int, workingSets: Int) -> Exercise {
@@ -762,63 +703,36 @@ public enum TwelveWeekProgramme {
     }
 
     static func bulgarianExercise(week: Int) -> Exercise {
-        var sets = [
-            set(
+        exercise("supported-bulgarian-split-squat", sets: [
+            warmUpSet(
                 "Bodyweight or light × 5 per leg",
-                .strength,
-                .warmUp,
-                SetTarget(repsLow: 5, load: .chooseLoad, perSide: true),
-                rest: RestRange(60)
+                SetTarget(repsLow: 5, load: .chooseLoad, perSide: true)
             ),
-        ]
-        sets += (1...2).map { number in
-            set(
-                "Working set \(number) of 2 · per leg",
-                .strength,
-                .working,
-                SetTarget(
-                    repsLow: 8,
-                    repsHigh: 12,
-                    load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week),
-                    perSide: true
-                ),
-                rest: RestRange(lowSeconds: 90, highSeconds: 150),
-                cue: "Let the legs, not balance, limit the set."
-            )
-        }
-        return exercise("supported-bulgarian-split-squat", sets: sets)
+        ] + workingSets(
+            count: 2,
+            repsLow: 8,
+            repsHigh: 12,
+            week: week,
+            rest: RestRange(lowSeconds: 90, highSeconds: 150),
+            perSide: true,
+            cue: "Let the legs, not balance, limit the set."
+        ))
     }
 
     static func legCurlExercise(week: Int) -> Exercise {
-        var sets = [
-            set(
-                "1 light set",
-                .strength,
-                .warmUp,
-                SetTarget(repsLow: 8, repsHigh: 10, load: .chooseLoad),
-                rest: RestRange(60)
-            ),
-        ]
-        sets += (1...2).map { number in
-            set(
-                "Working set \(number) of 2",
-                .strength,
-                .working,
-                SetTarget(
-                    repsLow: 10,
-                    repsHigh: 15,
-                    load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week)
-                ),
-                rest: RestRange(lowSeconds: 60, highSeconds: 90)
-            )
-        }
-        return exercise("lying-leg-curl", sets: sets)
+        exercise("lying-leg-curl", sets: [
+            warmUpSet("1 light set", SetTarget(repsLow: 8, repsHigh: 10, load: .chooseLoad)),
+        ] + workingSets(
+            count: 2,
+            repsLow: 10,
+            repsHigh: 15,
+            week: week,
+            rest: RestRange(lowSeconds: 60, highSeconds: 90)
+        ))
     }
 
     static func calfRaiseExercise(week: Int) -> Exercise {
-        var sets = [
+        exercise("standing-calf-raise", sets: [
             set(
                 "Bodyweight × 10",
                 .repetitions,
@@ -827,22 +741,13 @@ public enum TwelveWeekProgramme {
                 rest: RestRange(60),
                 cue: "Use a Smith machine, single-leg dumbbell raise, or straight-knee leg-press calf press."
             ),
-        ]
-        sets += (1...3).map { number in
-            set(
-                "Working set \(number) of 3",
-                .strength,
-                .working,
-                SetTarget(
-                    repsLow: 10,
-                    repsHigh: 20,
-                    load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week)
-                ),
-                rest: RestRange(lowSeconds: 60, highSeconds: 90)
-            )
-        }
-        return exercise("standing-calf-raise", sets: sets)
+        ] + workingSets(
+            count: 3,
+            repsLow: 10,
+            repsHigh: 20,
+            week: week,
+            rest: RestRange(lowSeconds: 60, highSeconds: 90)
+        ))
     }
 
     static let lowerCooldownExercises: [Exercise] = [
@@ -1024,6 +929,49 @@ public enum TwelveWeekProgramme {
             definitionSlug: slug,
             pillars: definition.pillars
         )
+    }
+
+    /// A single light preparation set before the working sets, as most of the
+    /// block's accessories prescribe.
+    static func warmUpSet(
+        _ label: String,
+        _ target: SetTarget,
+        rest: RestRange = RestRange(60),
+        optional: Bool = false,
+        cue: String? = nil
+    ) -> PlannedSet {
+        set(label, .strength, .warmUp, target, rest: rest, optional: optional, cue: cue)
+    }
+
+    /// The block's working sets for one movement: the same range, rest and
+    /// reps-in-reserve repeated, labelled "Working set n of N".
+    static func workingSets(
+        count: Int,
+        repsLow: Int,
+        repsHigh: Int,
+        week: Int,
+        rest: RestRange,
+        perSide: Bool = false,
+        cue: String? = nil
+    ) -> [PlannedSet] {
+        (1...count).map { number in
+            set(
+                perSide
+                    ? "Working set \(number) of \(count) · per leg"
+                    : "Working set \(number) of \(count)",
+                .strength,
+                .working,
+                SetTarget(
+                    repsLow: repsLow,
+                    repsHigh: repsHigh,
+                    load: .chooseLoad,
+                    repsInReserve: repsInReserve(week: week),
+                    perSide: perSide
+                ),
+                rest: rest,
+                cue: cue
+            )
+        }
     }
 
     static func set(

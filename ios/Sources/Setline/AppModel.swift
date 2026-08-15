@@ -17,6 +17,9 @@ final class AppModel {
     var isAccountBusy = false
     var cloudConflict: SetlineCloudSnapshot?
     var accountMessage: String?
+    /// Set only by a launch argument, so a specific exercise can be opened for
+    /// screenshot capture without a person tapping through the interface.
+    private(set) var demoExerciseName: String?
 
     private let store: SetlineStore
     private let restNotifier: RestNotifier
@@ -40,6 +43,11 @@ final class AppModel {
         if ProcessInfo.processInfo.arguments.contains("--plan-demo") { selectedTab = 1 }
         if ProcessInfo.processInfo.arguments.contains("--history-demo") { selectedTab = 2 }
         if ProcessInfo.processInfo.arguments.contains("--exercises-demo") { selectedTab = 4 }
+        if let index = ProcessInfo.processInfo.arguments.firstIndex(of: "--exercise-detail-demo"),
+           ProcessInfo.processInfo.arguments.indices.contains(index + 1) {
+            selectedTab = 4
+            demoExerciseName = ProcessInfo.processInfo.arguments[index + 1]
+        }
         if ProcessInfo.processInfo.arguments.contains("--account-demo") ||
             ProcessInfo.processInfo.arguments.contains("--account-conflict-demo") {
             selectedTab = 3
@@ -49,7 +57,9 @@ final class AppModel {
     func load() async {
         defer { isLoading = false }
         do {
-            if ProcessInfo.processInfo.arguments.contains("--ui-demo") {
+            if ProcessInfo.processInfo.arguments.contains("--evidence-demo") {
+                document = .demoWithEvidence
+            } else if ProcessInfo.processInfo.arguments.contains("--ui-demo") {
                 // A fixed, date-independent fixture so interface tests do not
                 // depend on which day of the authored block today happens to be.
                 var demo = SetlineDocument.sample
@@ -107,7 +117,8 @@ final class AppModel {
                     revision: 3
                 )
             } else if !ProcessInfo.processInfo.arguments.contains("--fresh-demo"),
-                      !ProcessInfo.processInfo.arguments.contains("--ui-demo") {
+                      !ProcessInfo.processInfo.arguments.contains("--ui-demo"),
+                      !ProcessInfo.processInfo.arguments.contains("--evidence-demo") {
                 await restoreAccount()
             }
         } catch {

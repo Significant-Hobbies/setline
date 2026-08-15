@@ -742,30 +742,44 @@ public enum ExerciseCatalogue {
 
     // MARK: - Stamina
 
-    static let stamina: [ExerciseDefinition] = [
+    /// Cardio machines differ only by identity and equipment, so they share one
+    /// builder rather than repeating the same eight fields each time.
+    static func cardioMachine(
+        slug: String,
+        name: String,
+        equipment: [Equipment],
+        aliases: [String] = [],
+        pillars: Set<Pillar> = [.stamina],
+        cue: String = ""
+    ) -> ExerciseDefinition {
         ExerciseDefinition(
+            slug: slug,
+            name: name,
+            aliases: aliases,
+            pillars: pillars,
+            kind: .cardio,
+            primaryMuscles: [.fullBody],
+            equipment: equipment,
+            defaultRest: RestRange(0),
+            cue: cue,
+            goalMetrics: [.longestDistanceMetres, .bestPaceSecondsPerKilometre]
+        )
+    }
+
+    static let stamina: [ExerciseDefinition] = [
+        cardioMachine(
             slug: "easy-cardio",
             name: "Easy cardio",
-            aliases: ["conversational cardio", "easy cardio cooldown"],
-            pillars: [.stamina],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
             equipment: [.treadmill, .bike, .elliptical, .rower],
-            defaultRest: RestRange(0),
-            cue: "Stay around 3–4/10; full sentences should remain possible.",
-            goalMetrics: [.longestDistanceMetres, .bestPaceSecondsPerKilometre]
+            aliases: ["conversational cardio", "easy cardio cooldown"],
+            cue: "Stay around 3\u{2013}4/10; full sentences should remain possible."
         ),
-        ExerciseDefinition(
+        cardioMachine(
             slug: "easy-treadmill-bike-or-rower",
             name: "Easy treadmill, bike or rower",
-            aliases: ["easy bike or treadmill"],
-            pillars: [.stamina],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
             equipment: [.treadmill, .bike, .rower],
-            defaultRest: RestRange(0),
-            cue: "Use an easy pace as general preparation.",
-            goalMetrics: [.longestDistanceMetres]
+            aliases: ["easy bike or treadmill"],
+            cue: "Use an easy pace as general preparation."
         ),
         ExerciseDefinition(
             slug: "controlled-hard-interval",
@@ -778,79 +792,33 @@ public enum ExerciseCatalogue {
             cue: "Use 8/10 effort: demanding and controlled, never all-out.",
             goalMetrics: [.longestDistanceMetres, .bestPaceSecondsPerKilometre]
         ),
-        ExerciseDefinition(
+        cardioMachine(
             slug: "easy-interval-recovery",
             name: "Easy interval recovery",
-            pillars: [.stamina],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
             equipment: [.bike, .elliptical, .rower, .treadmill],
-            defaultRest: RestRange(0),
-            cue: "Recover at an easy pace.",
-            goalMetrics: [.longestDistanceMetres]
+            cue: "Recover at an easy pace."
         ),
-        ExerciseDefinition(
+        cardioMachine(
             slug: "bike-or-elliptical",
             name: "Bike or elliptical",
-            aliases: ["bike or elliptical cooldown", "bike intervals"],
-            pillars: [.stamina],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
             equipment: [.bike, .elliptical],
-            defaultRest: RestRange(0),
-            goalMetrics: [.longestDistanceMetres, .bestPaceSecondsPerKilometre]
+            aliases: ["bike or elliptical cooldown", "bike intervals"]
         ),
-        ExerciseDefinition(
-            slug: "run",
-            name: "Run",
-            pillars: [.stamina],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
-            equipment: [.treadmill, .none],
-            defaultRest: RestRange(0),
-            goalMetrics: [.longestDistanceMetres, .bestPaceSecondsPerKilometre]
-        ),
-        ExerciseDefinition(
+        cardioMachine(slug: "run", name: "Run", equipment: [.treadmill, .none]),
+        cardioMachine(
             slug: "row",
             name: "Row",
-            pillars: [.stamina, .strength],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
             equipment: [.rower],
-            defaultRest: RestRange(0),
-            goalMetrics: [.longestDistanceMetres, .bestPaceSecondsPerKilometre]
+            pillars: [.stamina, .strength]
         ),
-        ExerciseDefinition(
-            slug: "ski-erg",
-            name: "Ski erg",
-            pillars: [.stamina],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
-            equipment: [.skiErg],
-            defaultRest: RestRange(0),
-            goalMetrics: [.longestDistanceMetres, .bestPaceSecondsPerKilometre]
-        ),
-        ExerciseDefinition(
+        cardioMachine(slug: "ski-erg", name: "Ski erg", equipment: [.skiErg]),
+        cardioMachine(
             slug: "incline-walk",
             name: "Incline walk",
-            aliases: ["recovery walk", "walk"],
-            pillars: [.stamina],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
             equipment: [.treadmill, .none],
-            defaultRest: RestRange(0),
-            goalMetrics: [.longestDistanceMetres, .bestPaceSecondsPerKilometre]
+            aliases: ["recovery walk", "walk"]
         ),
-        ExerciseDefinition(
-            slug: "assault-bike",
-            name: "Assault bike",
-            pillars: [.stamina],
-            kind: .cardio,
-            primaryMuscles: [.fullBody],
-            equipment: [.bike],
-            defaultRest: RestRange(0),
-            goalMetrics: [.longestDistanceMetres]
-        ),
+        cardioMachine(slug: "assault-bike", name: "Assault bike", equipment: [.bike]),
         ExerciseDefinition(
             slug: "jump-rope",
             name: "Jump rope",

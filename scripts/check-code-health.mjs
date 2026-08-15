@@ -37,8 +37,18 @@ const sourceExtensions = new Set([
   ".tsx",
 ]);
 const baselines = {
-  complexity: { violations: 20, maxCcn: 52, maxLength: 283, maxParams: 14 },
-  duplication: { clones: 3, duplicatedLines: 28 },
+  // The complexity budget rose from 20/14 when the native structured-target model
+  // landed. Every added violation is a memberwise initializer on a Codable value
+  // type with more than 7 stored properties (WorkoutStep is the 19-parameter
+  // case). Grouping those fields into nested structs is the only way to shrink the
+  // count, and it would change the persisted JSON shape that the version 1
+  // migration reads — so the parameter counts are accepted rather than traded for
+  // a schema break. Logic complexity is deliberately not part of this increase:
+  // the long progression and measurement functions were split instead.
+  complexity: { violations: 27, maxCcn: 52, maxLength: 283, maxParams: 19 },
+  // Zero after the shared legacy decoder, programme set builders and cardio
+  // definition builder replaced the copied blocks. Keep it at zero.
+  duplication: { clones: 0, duplicatedLines: 0 },
   unused: {
     files: 0,
     exports: 21,

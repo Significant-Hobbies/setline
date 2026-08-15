@@ -60,6 +60,39 @@ public struct ProgressionRecommendation: Equatable, Sendable {
 /// default, so bench moves in 2.5 kg only after `3 × 8` is clean while a machine
 /// moves by one increment.
 public enum ProgressionEngine {
+    /// What the most recent session that trained this movement actually produced.
+    struct LatestEvidence: Equatable, Sendable {
+        var repetitions: [Int]
+        /// Nil when the movement was unloaded or the working sets used different
+        /// loads, in which case no single load can be recommended.
+        var currentLoad: Double?
+        var date: Date?
+    }
+
+    static func latestEvidence(for exerciseName: String, history: [WorkoutSession]) -> LatestEvidence? {
+        // Only completed working sets from the most recent session that trained
+        // this movement. Warm-ups and preparation never inform progression.
+        let steps = ExerciseMetrics.workingSteps(for: exerciseName, history: history)
+        guard let latestSessionID = steps.first?.session.id else { return nil }
+        let sorted = steps
+            .filter { $0.session.id == latestSessionID }
+            .sorted { $0.step.authoredPosition < $1.step.authoredPosition }
+        guard !sorted.isEmpty else { return nil }
+
+        let repetitions = sorted
+            .map { $0.step.segments.compactMap(\.repetitions).reduce(0, +) }
+            .filter { $0 > 0 }
+        guard !repetitions.isEmpty else { return nil }
+
+        let loads = sorted.compactMap { $0.step.segments.first?.effectiveKilograms }
+        let distinctLoads = Set(loads.map { ($0 * 100).rounded() })
+        return LatestEvidence(
+            repetitions: repetitions,
+            currentLoad: distinctLoads.count == 1 ? loads.first : nil,
+            date: sorted.compactMap(\.step.completedAt).max() ?? sorted.first?.session.completedAt
+        )
+    }
+
     /// Recommends the next load for an exercise using its authored rule.
     public static func recommendation(
         for exerciseName: String,
@@ -69,102 +102,59 @@ public enum ProgressionEngine {
     ) -> ProgressionRecommendation? {
         let resolvedSlug = slug ?? ExerciseCatalogue.match(name: exerciseName)?.slug
         let resolvedRule = rule ?? resolvedSlug.flatMap { TwelveWeekProgramme.rule(forSlug: $0) }
+        guard let evidence = latestEvidence(for: exerciseName, history: history) else { return nil }
 
-        // Only completed working sets from the most recent session that trained
-        // this movement. Warm-ups and preparation never inform progression.
-        let steps = ExerciseMetrics.workingSteps(for: exerciseName, history: history)
-        guard let latestSessionID = steps.first?.session.id else { return nil }
-        let latest = steps.filter { $0.session.id == latestSessionID }
-        guard !latest.isEmpty else { return nil }
-
-        let sorted = latest.sorted { $0.step.authoredPosition < $1.step.authoredPosition }
-        let repetitions = sorted.compactMap { entry in
-            entry.step.segments.compactMap(\.repetitions).reduce(0, +)
-        }.filter { $0 > 0 }
-        let loads = sorted.compactMap { $0.step.segments.first?.effectiveKilograms }
-        let date = sorted.compactMap(\.step.completedAt).max() ?? sorted.first?.session.completedAt
-
-        guard !repetitions.isEmpty else { return nil }
-
-        // A load recommendation only makes sense when the movement was loaded and
-        // every working set used the same load.
-        let uniqueLoads = Set(loads.map { ($0 * 100).rounded() })
-        let currentLoad = uniqueLoads.count == 1 ? loads.first : nil
-
-        guard let resolvedRule, resolvedRule.repsHigh > 0 else {
-            return ProgressionRecommendation(
+        func recommend(
+            _ action: ProgressionAction,
+            recommendedLoad: Double? = nil,
+            rationale: String
+        ) -> ProgressionRecommendation {
+            ProgressionRecommendation(
                 exerciseName: exerciseName,
                 exerciseSlug: resolvedSlug,
-                action: .insufficientEvidence,
-                currentLoad: currentLoad,
-                lastSessionRepetitions: repetitions,
-                lastSessionDate: date,
+                action: action,
+                currentLoad: evidence.currentLoad,
+                recommendedLoad: recommendedLoad,
+                lastSessionRepetitions: evidence.repetitions,
+                lastSessionDate: evidence.date,
+                rationale: rationale
+            )
+        }
+
+        guard let resolvedRule, resolvedRule.repsHigh > 0 else {
+            return recommend(
+                .insufficientEvidence,
                 rationale: "No authored rep range for this movement, so Setline will not suggest a load."
             )
         }
 
-        let allAtTop = repetitions.allSatisfy { $0 >= resolvedRule.repsHigh }
-        let anyBelowFloor = repetitions.contains { $0 < resolvedRule.repsLow }
-        let range = "\(resolvedRule.repsLow)–\(resolvedRule.repsHigh)"
-
-        if anyBelowFloor {
-            let reduced = currentLoad.map { load in
-                max(0, load - (resolvedRule.incrementKilograms ?? 2.5))
-            }
-            return ProgressionRecommendation(
-                exerciseName: exerciseName,
-                exerciseSlug: resolvedSlug,
-                action: .reduceLoad,
-                currentLoad: currentLoad,
-                recommendedLoad: reduced,
-                lastSessionRepetitions: repetitions,
-                lastSessionDate: date,
+        let range = "\(resolvedRule.repsLow)–\(resolvedRule.repsHigh) reps"
+        if evidence.repetitions.contains(where: { $0 < resolvedRule.repsLow }) {
+            let increment = resolvedRule.incrementKilograms ?? 2.5
+            return recommend(
+                .reduceLoad,
+                recommendedLoad: evidence.currentLoad.map { max(0, $0 - increment) },
                 rationale: "At least one working set fell below \(resolvedRule.repsLow) reps. Reduce the load and rebuild inside \(range)."
             )
         }
 
-        if allAtTop {
-            guard let currentLoad else {
-                return ProgressionRecommendation(
-                    exerciseName: exerciseName,
-                    exerciseSlug: resolvedSlug,
-                    action: .addLoad,
-                    lastSessionRepetitions: repetitions,
-                    lastSessionDate: date,
+        if evidence.repetitions.allSatisfy({ $0 >= resolvedRule.repsHigh }) {
+            guard let currentLoad = evidence.currentLoad, let increment = resolvedRule.incrementKilograms else {
+                return recommend(
+                    .addLoad,
                     rationale: "Every working set reached \(resolvedRule.repsHigh) reps. \(resolvedRule.specialRule)"
                 )
             }
-            guard let increment = resolvedRule.incrementKilograms else {
-                return ProgressionRecommendation(
-                    exerciseName: exerciseName,
-                    exerciseSlug: resolvedSlug,
-                    action: .addLoad,
-                    currentLoad: currentLoad,
-                    lastSessionRepetitions: repetitions,
-                    lastSessionDate: date,
-                    rationale: "Every working set reached \(resolvedRule.repsHigh) reps. \(resolvedRule.specialRule)"
-                )
-            }
-            return ProgressionRecommendation(
-                exerciseName: exerciseName,
-                exerciseSlug: resolvedSlug,
-                action: .addLoad,
-                currentLoad: currentLoad,
+            return recommend(
+                .addLoad,
                 recommendedLoad: currentLoad + increment,
-                lastSessionRepetitions: repetitions,
-                lastSessionDate: date,
                 rationale: "Every working set reached \(resolvedRule.repsHigh) reps at \(currentLoad.trimmedString) kg. \(resolvedRule.specialRule)"
             )
         }
 
-        return ProgressionRecommendation(
-            exerciseName: exerciseName,
-            exerciseSlug: resolvedSlug,
-            action: .addRepetitions,
-            currentLoad: currentLoad,
-            recommendedLoad: currentLoad,
-            lastSessionRepetitions: repetitions,
-            lastSessionDate: date,
+        return recommend(
+            .addRepetitions,
+            recommendedLoad: evidence.currentLoad,
             rationale: "Keep the load and add repetitions until every set reaches \(resolvedRule.repsHigh), then increase."
         )
     }
