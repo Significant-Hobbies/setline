@@ -4,7 +4,7 @@
 
 Setline helps people execute a structured workout programme precisely without referring to another document or deciding what to do between sets. The user controls the programme; Setline presents the current action, records explicit results, controls rest, and separates recorded values from calculations.
 
-The first release is a mobile-first web/PWA workout player. It includes
+The first release is an iOS-native workout player with a Cloudflare Worker API backend. It includes
 Sarthak’s dated 12-week strength, cardio, and mobility programme, device-first
 session execution, optional Google sign-in with a private account copy, basic
 history, and progress. It excludes coaching, automatic programme generation,
@@ -12,8 +12,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 ## Dependencies
 
-- React, Next.js, and Vinext for the web application.
-- Vite and the Cloudflare plugin for the Worker build.
+- SwiftUI native iPhone app for workout execution.
+- Cloudflare Workers for the API backend (auth, state sync, MCP, agent surfaces).
+- Vite for test module loading.
 - Better Auth with Google OAuth and native Sign in with Apple for optional
   identity; existing accounts use an explicit linking flow rather than
   email-based implicit linking.
@@ -22,6 +23,8 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 - No email provider, paid service, sensor, or native runtime dependency.
 
 ## Timeline
+
+- 2026-08-15 — removed the Next.js web app and went iOS-first. The Cloudflare Worker API backend (auth, native state, MCP, agent-edge) remains unchanged. Static HTML pages in public/ replace the web UI. Shared business logic moved from app/lib/ to src/lib/.
 
 - 2026-08-12 — shipped the native account connection path on the personal
   Apple and Cloudflare accounts: native Sign in with Apple, explicit existing
@@ -87,7 +90,7 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 
 - `ios/` — native SwiftUI iPhone beta for local-first workout execution;
   App Store Connect/TestFlight transport remains manual.
-- Repository root — installable mobile-first Setline web app.
+- Static public pages (index, privacy, terms, changelog) served from public/ via the Worker ASSETS binding.
 - [Public GitHub repository](https://github.com/Significant-Hobbies/setline) —
   canonical source, product planning, and issue owner.
 - `https://setline.significanthobbies.com` — live Cloudflare Worker production
