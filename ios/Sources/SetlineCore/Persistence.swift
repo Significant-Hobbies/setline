@@ -15,14 +15,58 @@ public actor SetlineStore {
 
     public func load() throws -> SetlineDocument {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            return .sample
+            return .initial
         }
         let data = try Data(contentsOf: fileURL)
-        let document = try Self.decoder.decode(SetlineDocument.self, from: data)
-        guard document.schemaVersion == 1 else {
+        return try Self.migrate(Self.decoder.decode(SetlineDocument.self, from: data))
+    }
+
+    /// Brings a decoded document up to the current schema.
+    ///
+    /// Version 1 stored free-text targets, scalar rest and a bare custom
+    /// programme; the decoders in `Domain` absorb those shapes, so migration only
+    /// has to stamp the version and backfill catalogue links.
+    static func migrate(_ document: SetlineDocument) throws -> SetlineDocument {
+        guard document.schemaVersion <= SetlineDocument.currentSchemaVersion else {
             throw SetlineError.unsupportedSchema(document.schemaVersion)
         }
-        return document
+        guard document.schemaVersion < SetlineDocument.currentSchemaVersion else { return document }
+        var migrated = document
+        migrated.schemaVersion = SetlineDocument.currentSchemaVersion
+        migrated.templates = migrated.templates.map(linkCatalogue(in:))
+        migrated.history = migrated.history.map(linkCatalogue(in:))
+        if let active = migrated.activeSession { migrated.activeSession = linkCatalogue(in: active) }
+        return migrated
+    }
+
+    /// Resolves recorded exercise names to catalogue slugs so historic sessions
+    /// contribute to the same measurements as new ones.
+    static func linkCatalogue(in template: WorkoutTemplate) -> WorkoutTemplate {
+        var result = template
+        result.exercises = result.exercises.map { exercise in
+            guard exercise.definitionSlug == nil,
+                  let definition = ExerciseCatalogue.match(name: exercise.name)
+            else { return exercise }
+            var linked = exercise
+            linked.definitionSlug = definition.slug
+            linked.pillars = definition.pillars
+            return linked
+        }
+        return result
+    }
+
+    static func linkCatalogue(in session: WorkoutSession) -> WorkoutSession {
+        var result = session
+        result.steps = result.steps.map { step in
+            guard step.exerciseSlug == nil,
+                  let definition = ExerciseCatalogue.match(name: step.exerciseName)
+            else { return step }
+            var linked = step
+            linked.exerciseSlug = definition.slug
+            linked.pillars = definition.pillars
+            return linked
+        }
+        return result
     }
 
     public func save(_ document: SetlineDocument) throws {
@@ -37,11 +81,7 @@ public actor SetlineStore {
     }
 
     public func previewImport(_ data: Data) throws -> SetlineDocument {
-        let document = try Self.decoder.decode(SetlineDocument.self, from: data)
-        guard document.schemaVersion == 1 else {
-            throw SetlineError.unsupportedSchema(document.schemaVersion)
-        }
-        return document
+        try Self.migrate(Self.decoder.decode(SetlineDocument.self, from: data))
     }
 
     public func replace(with document: SetlineDocument) throws {

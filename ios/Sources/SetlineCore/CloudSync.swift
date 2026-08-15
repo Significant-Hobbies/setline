@@ -6,7 +6,7 @@ import Foundation
 public struct SetlineCloudDocument: Codable, Equatable, Sendable {
     public var schemaVersion: Int
     public var templates: [WorkoutTemplate]
-    public var programme: CustomProgramme?
+    public var programme: ProgrammeSelection
     public var activeSession: WorkoutSession?
     public var history: [WorkoutSession]
 

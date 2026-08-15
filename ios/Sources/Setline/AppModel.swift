@@ -6,7 +6,7 @@ import SetlineCore
 @MainActor
 @Observable
 final class AppModel {
-    private(set) var document: SetlineDocument = .sample
+    private(set) var document: SetlineDocument = .initial
     var isLoading = true
     var isWorkoutPresented = false
     var selectedTab = 0
@@ -19,6 +19,7 @@ final class AppModel {
     var accountMessage: String?
 
     private let store: SetlineStore
+    private let restNotifier: RestNotifier
     private let accountClient: SetlineNativeAccountClient
     private let webAuthenticator: SetlineWebAuthenticator
     private var remoteRevision: Int?
@@ -28,14 +29,17 @@ final class AppModel {
 
     init(
         store: SetlineStore = SetlineStore(),
+        restNotifier: RestNotifier = RestNotifier(),
         accountClient: SetlineNativeAccountClient = SetlineNativeAccountClient(),
         webAuthenticator: SetlineWebAuthenticator = SetlineWebAuthenticator()
     ) {
         self.store = store
+        self.restNotifier = restNotifier
         self.accountClient = accountClient
         self.webAuthenticator = webAuthenticator
         if ProcessInfo.processInfo.arguments.contains("--plan-demo") { selectedTab = 1 }
         if ProcessInfo.processInfo.arguments.contains("--history-demo") { selectedTab = 2 }
+        if ProcessInfo.processInfo.arguments.contains("--exercises-demo") { selectedTab = 4 }
         if ProcessInfo.processInfo.arguments.contains("--account-demo") ||
             ProcessInfo.processInfo.arguments.contains("--account-conflict-demo") {
             selectedTab = 3
@@ -45,22 +49,38 @@ final class AppModel {
     func load() async {
         defer { isLoading = false }
         do {
-            if ProcessInfo.processInfo.arguments.contains("--fresh-demo") {
-                var sample = SetlineDocument.sample
-                sample.programme = nil
-                document = sample
+            if ProcessInfo.processInfo.arguments.contains("--ui-demo") {
+                // A fixed, date-independent fixture so interface tests do not
+                // depend on which day of the authored block today happens to be.
+                var demo = SetlineDocument.sample
+                demo.programme = .none
+                document = demo
+            } else if ProcessInfo.processInfo.arguments.contains("--fresh-demo") {
+                document = .initial
             } else {
                 document = try await store.load()
             }
             if ProcessInfo.processInfo.arguments.contains("--active-demo"), document.activeSession == nil,
-               let first = document.templates.first {
-                try document.startWorkout(templateID: first.id)
+               let resolved = document.session() {
+                try document.startWorkout(
+                    template: resolved.template,
+                    programmeWeek: resolved.programmeWeek,
+                    programmeDayIndex: resolved.programmeDayIndex
+                )
                 isWorkoutPresented = true
             }
             if ProcessInfo.processInfo.arguments.contains("--rest-demo"), document.activeSession == nil,
-               let first = document.templates.first {
-                try document.startWorkout(templateID: first.id)
-                try document.completeCurrent(with: [SetSegment(weight: 40, repetitions: 8)])
+               let resolved = document.session() {
+                try document.startWorkout(
+                    template: resolved.template,
+                    programmeWeek: resolved.programmeWeek,
+                    programmeDayIndex: resolved.programmeDayIndex
+                )
+                // Advance to the first step that authors a rest period, since
+                // preparation work deliberately flows straight through.
+                while document.activeSession?.rest == nil, document.activeSession?.currentStep != nil {
+                    try document.completeCurrent(with: [SetSegment(weight: 40, repetitions: 8, durationSeconds: 60)])
+                }
                 isWorkoutPresented = true
             }
             if ProcessInfo.processInfo.arguments.contains("--account-demo") {
@@ -71,7 +91,7 @@ final class AppModel {
                 account = SetlineAccount(name: "Sarthak", email: "sarthak@example.com", providers: ["google"])
                 document.syncState = .conflict
                 var accountDocument = document
-                if let template = accountDocument.templates.first {
+                if let template = accountDocument.templates.first ?? document.session()?.template {
                     accountDocument.history = [
                         WorkoutSession(
                             templateID: template.id,
@@ -86,28 +106,40 @@ final class AppModel {
                     document: SetlineCloudDocument(document: accountDocument),
                     revision: 3
                 )
-            } else if !ProcessInfo.processInfo.arguments.contains("--fresh-demo") {
+            } else if !ProcessInfo.processInfo.arguments.contains("--fresh-demo"),
+                      !ProcessInfo.processInfo.arguments.contains("--ui-demo") {
                 await restoreAccount()
             }
         } catch {
-            document = .sample
+            document = .initial
             message = error.localizedDescription
         }
     }
 
-    func startWorkout(_ template: WorkoutTemplate) async {
+    func startWorkout(_ resolved: ResolvedSession) async {
         await mutate {
-            try $0.startWorkout(templateID: template.id)
+            try $0.startWorkout(
+                template: resolved.template,
+                programmeWeek: resolved.programmeWeek,
+                programmeDayIndex: resolved.programmeDayIndex
+            )
         }
         if document.activeSession != nil { isWorkoutPresented = true }
     }
 
-    func completeCurrent(segments: [SetSegment]) async {
-        await mutate { try $0.completeCurrent(with: segments) }
+    func startWorkout(_ template: WorkoutTemplate) async {
+        await mutate { try $0.startWorkout(template: template) }
+        if document.activeSession != nil { isWorkoutPresented = true }
+    }
+
+    func completeCurrent(segments: [SetSegment], workSeconds: Int? = nil) async {
+        await mutate { try $0.completeCurrent(with: segments, workSeconds: workSeconds) }
+        await syncRestAlert()
     }
 
     func skipCurrent() async {
         await mutate { try $0.skipCurrent() }
+        await syncRestAlert()
     }
 
     func deferCurrent() async {
@@ -120,15 +152,26 @@ final class AppModel {
 
     func adjustRest(by seconds: Int) async {
         await mutate { $0.adjustRest(by: seconds) }
+        await syncRestAlert()
     }
 
     func endRest() async {
         await mutate { $0.endRest() }
+        await syncRestAlert()
     }
 
     func finishWorkout() async {
         await mutate { try $0.finishWorkout() }
+        await syncRestAlert()
         if document.activeSession == nil { isWorkoutPresented = false }
+    }
+
+    /// Keeps the queued rest notification matching the session's current rest.
+    private func syncRestAlert() async {
+        await restNotifier.update(
+            for: document.activeSession?.rest,
+            nextStep: document.activeSession?.currentStep
+        )
     }
 
     func duplicateTemplate(_ template: WorkoutTemplate) async {
@@ -151,19 +194,50 @@ final class AppModel {
 
     func assignTemplate(_ templateID: UUID?, to weekday: Int) async {
         await mutate { document in
-            guard let index = document.programme?.days.firstIndex(where: { $0.weekday == weekday }) else { return }
-            document.programme?.days[index].templateID = templateID
+            guard var programme = document.programme.customProgramme,
+                  let index = programme.days.firstIndex(where: { $0.weekday == weekday })
+            else { return }
+            programme.days[index].templateID = templateID
+            document.programme = .custom(programme)
         }
     }
 
     func setProgrammeWeeks(_ weekCount: Int) async {
         await mutate { document in
-            document.programme?.weekCount = min(16, max(1, weekCount))
+            guard var programme = document.programme.customProgramme else { return }
+            programme.weekCount = min(16, max(1, weekCount))
+            document.programme = .custom(programme)
         }
     }
 
     func toggleProgramme() async {
-        await mutate { $0.programme?.enabled.toggle() }
+        await mutate { document in
+            guard var programme = document.programme.customProgramme else { return }
+            programme.enabled.toggle()
+            document.programme = .custom(programme)
+        }
+    }
+
+    /// Switches Today between the authored block and a device-authored programme.
+    func selectProgramme(_ selection: ProgrammeSelection) async {
+        await mutate { $0.programme = selection }
+    }
+
+    func saveGoal(_ goal: ExerciseGoal) async {
+        await mutate { document in
+            if let index = document.goals.firstIndex(where: { $0.id == goal.id }) {
+                document.goals[index] = goal
+            } else {
+                document.goals.append(goal)
+            }
+        }
+        message = "Target saved."
+    }
+
+    func deleteGoal(_ goal: ExerciseGoal) async {
+        await mutate { document in
+            document.goals.removeAll { $0.id == goal.id }
+        }
     }
 
     func exportData() async -> Data? {
@@ -201,7 +275,7 @@ final class AppModel {
     func resetLocalData() async {
         do {
             try await store.reset()
-            document = .sample
+            document = .initial
             message = "Local data reset."
             try await markPendingAndSync()
         } catch {

@@ -4,11 +4,16 @@
 
 Setline helps people execute a structured workout programme precisely without referring to another document or deciding what to do between sets. The user controls the programme; Setline presents the current action, records explicit results, controls rest, and separates recorded values from calculations.
 
-The first release is an iOS-native workout player with a Cloudflare Worker API backend. It includes
-Sarthak’s dated 12-week strength, cardio, and mobility programme, device-first
-session execution, optional Google sign-in with a private account copy, basic
-history, and progress. It excludes coaching, automatic programme generation,
-social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
+The first release is an iOS-native workout player with a Cloudflare Worker API
+backend. It includes Sarthak’s dated 12-week strength, cardio, and mobility
+programme resolved natively on device, structured set targets, multi-segment set
+recording, a set timer alongside the rest timer, a bundled movement catalogue
+spanning strength, stamina, mobility and flexibility, and per-exercise measured
+current values against authored targets. It excludes coaching, automatic
+programme generation, social features, meal/recovery tracking, and sensors.
+
+Apple Health, Apple Watch, CrossFit session formats, range-of-motion
+assessments, and on-device workout generation are planned rather than shipped.
 
 ## Dependencies
 
@@ -23,6 +28,15 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 - No email provider, paid service, sensor, or native runtime dependency.
 
 ## Timeline
+
+- 2026-08-16 — replaced free-text set targets with a structured target model and
+  ported the dated 12-week programme into the native app, which previously
+  shipped only a two-template placeholder. Added a bundled movement catalogue
+  across all four pillars, per-exercise measured current values with authored
+  targets and trend charts, repeatable multi-segment set recording with a
+  shorthand parser, a set timer independent of rest, rest-completion
+  notifications, and authored double-progression rules. Version 2 of the local
+  document reads version 1 without losing recorded work.
 
 - 2026-08-15 — removed the Next.js web app and went iOS-first. The Cloudflare Worker API backend (auth, native state, MCP, agent-edge) remains unchanged. Static HTML pages in public/ replace the web UI. Shared business logic moved from app/lib/ to src/lib/.
 
@@ -106,7 +120,24 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
   data transfer, accessibility, simulator tests, and personal-team archiving.
 - Public editorial product changelog at `/changelog`.
 - Dated seven-day schedule for the supplied 12-week strength, cardio, and
-  mobility programme.
+  mobility programme, resolved natively for every one of its 84 days.
+- Structured set targets carrying rep ranges, absolute/relative/bodyweight/assisted
+  load, reps in reserve, tempo, per-side work, and rest as a band rather than a
+  scalar; warm-up sets are excluded from volume, records, and progression.
+- Bundled movement catalogue with stable identities, muscle groups, equipment,
+  and per-movement measurable metrics across strength, stamina, mobility, and
+  flexibility, plus the CrossFit movement vocabulary.
+- Per-exercise measured current values (estimated 1RM, top set load, max
+  repetitions, best hold, longest distance, best pace, range of motion), each
+  citing the session that produced it, against authored targets with progress,
+  weekly rate, projected arrival, and trend charts.
+- Repeatable multi-segment set recording so `5 reps × 40 kg` followed by
+  `2 reps × 30 kg` records as one set, with a tested shorthand parser that shows
+  its interpretation before anything is recorded.
+- Set timer recording time under load independently of the rest timer.
+- Rest-completion local notification so the timer survives leaving the app.
+- Authored double-progression rules per movement, including the plan's own
+  increments and its below-range regression case.
 - Exact authored exercise and set order across Upper, Lower, easy cardio, hard
   cardio, mobility, preparation, and cooldown work.
 - Week-aware RDL volume, hard-cardio rounds, and pull-up checkpoints.
@@ -127,12 +158,9 @@ social features, meal/recovery tracking, sensors, Apple Health, and Apple Watch.
 - Explicit state validation that preserves authored exercise and set order.
 - Public privacy notice and terms of use.
 - Honest summary with separate warm-up/working volume and calculated provenance.
-- Basic bench target context plus local recorded-volume signal.
 - Deterministic progression recommendations from the latest comparable
   completed session, with calculated provenance and explicit session-only
   Accept, Edit, or Keep current decisions.
-- Responsive phone, tablet, and desktop layouts.
-- PWA manifest, install metadata, service-worker shell, and offline-friendly local operation.
 - Immutable authored plans with a separate session execution queue.
 - Partial and drop-set segments such as `60 kg × 5` followed by `50 kg × 3`.
 - Session-only extra sets, explicit Do later deferral, and preserved planned and
