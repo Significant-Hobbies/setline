@@ -1,4 +1,5 @@
-import { createAuth, type SetlineBindings } from "./auth";
+import { type SetlineBindings } from "./auth";
+import { requireUserId } from "./auth-guard";
 import { parseStoredState, type StoredState } from "../app/lib/workout-state";
 
 const MAX_STATE_BYTES = 512 * 1024;
@@ -86,21 +87,12 @@ function json(payload: unknown, status = 200) {
   return Response.json(payload, { status });
 }
 
-async function resolveUserId(request: Request, env: SetlineBindings) {
-  const authSession = await createAuth(env, request.url).api.getSession({
-    headers: request.headers,
-  });
-  return authSession?.user?.id ?? null;
-}
-
 export async function handlePrivateState(
   request: Request,
   env: SetlineBindings,
 ) {
-  const userId = await resolveUserId(request, env);
-  if (!userId) {
-    return json({ code: "UNAUTHORIZED", message: "Sign in to continue." }, 401);
-  }
+  const { userId, response } = await requireUserId(request, env);
+  if (response) return response;
 
   if (request.method === "GET") {
     const row = await env.DB.prepare(

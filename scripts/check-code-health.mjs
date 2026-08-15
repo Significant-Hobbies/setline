@@ -38,8 +38,8 @@ const sourceExtensions = new Set([
   ".tsx",
 ]);
 const baselines = {
-  complexity: { violations: 24, maxCcn: 52, maxLength: 528, maxParams: 14 },
-  duplication: { clones: 6, duplicatedLines: 56 },
+  complexity: { violations: 24, maxCcn: 52, maxLength: 520, maxParams: 14 },
+  duplication: { clones: 0, duplicatedLines: 0 },
   unused: {
     files: 0,
     exports: 0,

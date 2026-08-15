@@ -109,6 +109,24 @@ function wallClockNow() {
   return Date.now();
 }
 
+type AdvanceContext = {
+  completedAt: number;
+  isFinal: boolean;
+  nextIndex: number;
+  nextId: string | null;
+  performedPosition: number;
+};
+
+function advanceContext(session: WorkoutSession): AdvanceContext {
+  const completedAt = wallClockNow();
+  const isFinal = session.activeIndex === session.queue.length - 1;
+  const nextIndex = Math.min(session.activeIndex + 1, session.queue.length - 1);
+  const nextId = isFinal ? null : session.queue[nextIndex];
+  const performedPosition =
+    session.records.filter((record) => record.status !== "pending").length + 1;
+  return { completedAt, isFinal, nextIndex, nextId, performedPosition };
+}
+
 function formatClock(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const minutes = Math.floor(safeSeconds / 60);
@@ -954,17 +972,9 @@ export default function SetlineApp() {
 
   const completeSet = () => {
     if (!session || !currentSet || !currentRecord) return;
-    const completedAt = wallClockNow();
-    const isFinal = session.activeIndex === session.queue.length - 1;
-    const nextIndex = Math.min(
-      session.activeIndex + 1,
-      session.queue.length - 1,
-    );
+    const { completedAt, isFinal, nextIndex, nextId, performedPosition } =
+      advanceContext(session);
     const needsRest = !isFinal && currentSet.restSeconds > 0;
-    const nextId = isFinal ? null : session.queue[nextIndex];
-    const performedPosition =
-      session.records.filter((record) => record.status !== "pending").length +
-      1;
 
     setSession({
       ...session,
@@ -1008,16 +1018,8 @@ export default function SetlineApp() {
 
   const skipSet = () => {
     if (!session || !currentSet || !currentRecord) return;
-    const completedAt = wallClockNow();
-    const isFinal = session.activeIndex === session.queue.length - 1;
-    const nextIndex = Math.min(
-      session.activeIndex + 1,
-      session.queue.length - 1,
-    );
-    const nextId = isFinal ? null : session.queue[nextIndex];
-    const performedPosition =
-      session.records.filter((record) => record.status !== "pending").length +
-      1;
+    const { completedAt, isFinal, nextIndex, nextId, performedPosition } =
+      advanceContext(session);
     setSession({
       ...session,
       completedAt: isFinal ? completedAt : null,

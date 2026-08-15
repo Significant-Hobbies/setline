@@ -11,6 +11,7 @@ import {
   MAX_CUSTOM_WORKOUT_STEPS,
   type CustomWorkoutTemplate,
 } from "../lib/custom-workouts";
+import { usePreventUnload } from "../lib/use-prevent-unload";
 import {
   formatStepTarget,
   type PlannedStep,
@@ -120,15 +121,7 @@ export function CustomWorkoutManager({
     if (draftId) nameInputRef.current?.focus();
   }, [draftId]);
 
-  useEffect(() => {
-    if (!draft) return;
-    const preventUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", preventUnload);
-    return () => window.removeEventListener("beforeunload", preventUnload);
-  }, [draft]);
+  usePreventUnload(draft);
 
   const finishEditing = () => {
     setDraft(null);

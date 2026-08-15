@@ -1320,7 +1320,9 @@ button:disabled {
   font-weight: 750;
 }
 
-.custom-workout-editor {
+.custom-workout-editor,
+.custom-programme-summary,
+.custom-programme-editor {
   margin-top: 24px;
   padding: clamp(16px, 3vw, 26px);
   border: 1px solid var(--ink);
@@ -1591,15 +1593,6 @@ button:disabled {
 
 .custom-programme-empty {
   background: var(--steel);
-}
-
-.custom-programme-summary,
-.custom-programme-editor {
-  margin-top: 24px;
-  padding: clamp(16px, 3vw, 26px);
-  border: 1px solid var(--ink);
-  background: var(--paper);
-  box-shadow: 5px 5px 0 var(--ink);
 }
 
 .custom-programme-summary h3,

@@ -1,4 +1,5 @@
-import { createAuth, type SetlineBindings } from "./auth";
+import { type SetlineBindings } from "./auth";
+import { requireUserId } from "./auth-guard";
 
 const MAX_STATE_BYTES = 512 * 1024;
 
@@ -35,13 +36,6 @@ export function parseNativeStateEnvelope(
   return { document, baseRevision: baseRevision as number | null };
 }
 
-async function resolveUserId(request: Request, env: SetlineBindings) {
-  const session = await createAuth(env, request.url).api.getSession({
-    headers: request.headers,
-  });
-  return session?.user?.id ?? null;
-}
-
 function parseRow(row: NativeStateRow | null) {
   if (!row) return null;
   try {
@@ -57,10 +51,8 @@ export async function handleNativeState(
   request: Request,
   env: SetlineBindings,
 ) {
-  const userId = await resolveUserId(request, env);
-  if (!userId) {
-    return json({ code: "UNAUTHORIZED", message: "Sign in to continue." }, 401);
-  }
+  const { userId, response } = await requireUserId(request, env);
+  if (response) return response;
 
   if (request.method === "GET") {
     const row = await env.DB.prepare(

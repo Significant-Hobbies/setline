@@ -180,7 +180,7 @@ test("ships the installable offline shell and local workout state", async () => 
     /Repeat Week \{activeWeek\} through Week/,
   );
   assert.match(customProgrammePlanner, /Discard this unsaved programme draft/);
-  assert.match(customProgrammePlanner, /beforeunload/);
+  assert.match(customProgrammePlanner, /usePreventUnload/);
   assert.match(customProgrammePlanner, /Choose a Monday/);
   assert.match(customProgrammePlanner, /Previous week/);
   assert.match(customProgrammePlanner, /authoringLocked/);
