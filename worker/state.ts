@@ -1,6 +1,6 @@
 import { type SetlineBindings } from "./auth";
 import { requireUserId } from "./auth-guard";
-import { parseStoredState, type StoredState } from "../app/lib/workout-state";
+import { parseStoredState, type StoredState } from "../src/lib/workout-state";
 
 const MAX_STATE_BYTES = 512 * 1024;
 const MAX_HISTORY_ENTRIES = 500;

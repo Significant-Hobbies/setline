@@ -8,12 +8,11 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext dev",
-    "build": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
-    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
+    "dev": "wrangler dev",
+    "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "format:check": "prettier --check \"app/**/*.{ts,tsx,css}\" \"worker/**/*.{ts,mjs,mts}\" \"tests/**/*.mjs\" \"*.{json,mjs,ts}\" \".github/workflows/*.{yml,yaml}\"",
-    "test:coverage": "pnpm build && c8 --all --include='app/**/*.{ts,tsx}' --include='worker/**/*.{ts,mjs}' --include='public/sw.js' --exclude='**/*.d.*' --lines=33 --branches=75 --functions=66 --reporter=text --reporter=json-summary node --test --test-concurrency=1 tests/*.test.mjs",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"worker/**/*.{ts,mjs,mts}\" \"tests/**/*.mjs\" \"*.{json,mjs,ts}\" \".github/workflows/*.{yml,yaml}\"",
+    "test:coverage": "c8 --all --include='src/**/*.{ts,tsx}' --include='worker/**/*.{ts,mjs}' --include='public/sw.js' --exclude='**/*.d.*' --lines=33 --branches=75 --functions=66 --reporter=text --reporter=json-summary node --test --test-concurrency=1 tests/*.test.mjs",
     "knip": "knip --no-exit-code --reporter symbols",
     "knip:strict": "knip --reporter symbols",
     "quality:unused": "node scripts/check-code-health.mjs unused",
@@ -29,33 +28,22 @@
     "types:worker": "wrangler types --config wrangler.jsonc --env-interface CloudflareBindings",
     "db:migrate:local": "wrangler d1 migrations apply setline --local",
     "db:migrate:remote": "wrangler d1 migrations apply setline --remote",
-    "deploy": "pnpm run check && wrangler deploy --config dist/server/wrangler.json --tag \"$(git rev-parse HEAD)\"",
-    "test": "pnpm run build && node --test --test-concurrency=1 tests/*.test.mjs",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
+    "deploy": "pnpm run check && wrangler deploy --tag \"$(git rev-parse HEAD)\"",
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "lint": "eslint . --ignore-pattern dist"
   },
   "dependencies": {
     "better-auth": "1.6.25",
-    "drizzle-orm": "0.45.2",
-    "next": "16.2.12",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "drizzle-orm": "0.45.2"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.51.3",
     "@types/node": "22.19.19",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "@vitejs/plugin-react": "6.0.5",
-    "@vitejs/plugin-rsc": "0.5.34",
     "c8": "12.0.0",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
     "jscpd": "5.0.14",
     "knip": "6.32.2",
     "prettier": "3.9.6",
-    "react-server-dom-webpack": "19.2.6",
     "typescript": "5.9.3",
-    "vinext": "0.0.50",
     "vite": "8.2.1",
     "wrangler": "4.121.0"
   },

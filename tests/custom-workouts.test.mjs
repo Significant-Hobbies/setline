@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createServer } from "vite";
 
-import { resolveWorkout } from "../app/lib/programme.ts";
+import { resolveWorkout } from "../src/lib/programme.ts";
 
 let customWorkouts;
 let workoutState;
@@ -14,8 +14,8 @@ test.before(async () => {
     configFile: false,
     server: { middlewareMode: true },
   });
-  customWorkouts = await vite.ssrLoadModule("/app/lib/custom-workouts.ts");
-  workoutState = await vite.ssrLoadModule("/app/lib/workout-state.ts");
+  customWorkouts = await vite.ssrLoadModule("/src/lib/custom-workouts.ts");
+  workoutState = await vite.ssrLoadModule("/src/lib/workout-state.ts");
 });
 
 test.after(async () => {

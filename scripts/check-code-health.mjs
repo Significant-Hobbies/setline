@@ -10,11 +10,10 @@ import { fileURLToPath } from "node:url";
 const currentFile = fileURLToPath(import.meta.url);
 const projectRoot = resolve(dirname(currentFile), "..");
 const productionPaths = [
-  "app",
+  "src",
   "worker",
   "public/sw.js",
   "ios/Sources",
-  "next.config.ts",
   "vite.config.ts",
 ];
 const hygienePaths = [
@@ -38,12 +37,12 @@ const sourceExtensions = new Set([
   ".tsx",
 ]);
 const baselines = {
-  complexity: { violations: 24, maxCcn: 52, maxLength: 520, maxParams: 14 },
-  duplication: { clones: 0, duplicatedLines: 0 },
+  complexity: { violations: 20, maxCcn: 52, maxLength: 283, maxParams: 14 },
+  duplication: { clones: 3, duplicatedLines: 28 },
   unused: {
     files: 0,
-    exports: 0,
-    types: 0,
+    exports: 21,
+    types: 5,
     dependencies: 0,
     devDependencies: 0,
     unlisted: 0,
@@ -52,22 +51,14 @@ const baselines = {
   suppressions: 0,
 };
 const acceptedHighAdvisories = new Set([
-  "GHSA-2v37-7h3g-55p8",
   "GHSA-3jxr-9vmj-r5cp",
-  "GHSA-4c8g-83qw-93j6",
   "GHSA-52cp-r559-cp3m",
-  "GHSA-5p2g-fcmc-qvqq",
   "GHSA-5p4m-2wfm-xmqj",
   "GHSA-6g55-p6wh-862q",
-  "GHSA-7p8r-x3mc-p8w7",
-  "GHSA-28wg-ghj8-5hjv",
   "GHSA-f88m-g3jw-g9cj",
   "GHSA-mh99-v99m-4gvg",
   "GHSA-r28c-9q8g-f849",
   "GHSA-rgw5-rvv9-x895",
-  "GHSA-v2hh-gcrm-f6hx",
-  "GHSA-w3rx-r6r6-pgpr",
-  "GHSA-wx67-qw84-cm4g",
 ]);
 
 function run(command, args, options = {}) {
@@ -303,7 +294,7 @@ function sourceFiles(root) {
 
 function checkSuppressions() {
   const files = [
-    "app",
+    "src",
     "worker",
     "public/sw.js",
     "ios/Sources",

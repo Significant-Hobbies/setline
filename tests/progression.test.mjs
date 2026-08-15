@@ -11,7 +11,7 @@ test.before(async () => {
     configFile: false,
     server: { middlewareMode: true },
   });
-  progression = await vite.ssrLoadModule("/app/lib/progression.ts");
+  progression = await vite.ssrLoadModule("/src/lib/progression.ts");
 });
 
 test.after(async () => {

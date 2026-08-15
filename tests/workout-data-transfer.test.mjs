@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createServer } from "vite";
-import { resolveWorkout } from "../app/lib/programme.ts";
+import { resolveWorkout } from "../src/lib/programme.ts";
 
 let transfer;
 let workoutState;
@@ -14,9 +14,9 @@ test.before(async () => {
     configFile: false,
     server: { middlewareMode: true },
   });
-  transfer = await vite.ssrLoadModule("/app/lib/workout-data-transfer.ts");
-  workoutState = await vite.ssrLoadModule("/app/lib/workout-state.ts");
-  customWorkouts = await vite.ssrLoadModule("/app/lib/custom-workouts.ts");
+  transfer = await vite.ssrLoadModule("/src/lib/workout-data-transfer.ts");
+  workoutState = await vite.ssrLoadModule("/src/lib/workout-state.ts");
+  customWorkouts = await vite.ssrLoadModule("/src/lib/custom-workouts.ts");
 });
 
 test.after(async () => {

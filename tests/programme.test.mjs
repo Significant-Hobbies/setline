@@ -7,7 +7,7 @@ import {
   LEGACY_UPPER_STEPS,
   PROGRAMME_SCHEDULE,
   resolveWorkout,
-} from "../app/lib/programme.ts";
+} from "../src/lib/programme.ts";
 
 test("resolves the dated block and all seven scheduled days", () => {
   assert.equal(PROGRAMME_SCHEDULE.length, 7);
@@ -167,7 +167,7 @@ test("migrates a version 2 session without changing its set order", async () => 
   });
   try {
     const { parseStoredState } = await vite.ssrLoadModule(
-      "/app/lib/workout-state.ts",
+      "/src/lib/workout-state.ts",
     );
     const records = LEGACY_UPPER_STEPS.map((planned) => ({
       setId: planned.id,
@@ -244,7 +244,7 @@ test("records flexible execution without mutating the authored workout", async (
       makeWorkoutSession,
       parseStoredState,
       startQueuedExecution,
-    } = await vite.ssrLoadModule("/app/lib/workout-state.ts");
+    } = await vite.ssrLoadModule("/src/lib/workout-state.ts");
     const template = resolveWorkout("upper", 1, 0);
     const authoredIds = template.steps.map((step) => step.id);
     const session = makeWorkoutSession(template, 1, 0, 1_000);

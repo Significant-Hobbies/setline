@@ -1,15 +1,15 @@
-import { deriveHistoryAnalytics } from "../app/lib/history-analytics";
+import { deriveHistoryAnalytics } from "../src/lib/history-analytics";
 import {
   PROGRAMME,
   PROGRAMME_SCHEDULE,
   resolveWorkout,
   type BuiltInWorkoutId,
-} from "../app/lib/programme";
+} from "../src/lib/programme";
 import {
   parseStoredState,
   type HistoryEntry,
   type StoredState,
-} from "../app/lib/workout-state";
+} from "../src/lib/workout-state";
 import { createAuth, type SetlineBindings } from "./auth";
 
 const TOKEN_PREFIX = "setline_read_";
