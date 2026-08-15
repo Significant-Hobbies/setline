@@ -67,6 +67,38 @@ test("server-renders the Setline restoration shell and public legal pages", asyn
   );
 });
 
+test("every sitemap URL renders 200 with an exact self-canonical", async () => {
+  // Contract: each URL listed in the public sitemap must be a direct 200 whose
+  // <link rel="canonical"> points at its own pathname (self-canonical), so the
+  // sitemap and canonical never drift. Regression for issue #33.
+  const sitemap = await render("/sitemap.xml");
+  assert.equal(sitemap.status, 200);
+  const sitemapBody = await sitemap.text();
+  const locs = [...sitemapBody.matchAll(/<loc>([^<]+)<\/loc>/g)].map(
+    (match) => match[1],
+  );
+  assert.ok(locs.length > 0, "sitemap lists at least one URL");
+
+  for (const loc of locs) {
+    const { pathname } = new URL(loc);
+    const response = await render(pathname);
+    assert.equal(
+      response.status,
+      200,
+      `${pathname} is a direct 200 (sitemap loc ${loc})`,
+    );
+    const html = await response.text();
+    const canonicalMatch = html.match(/<link rel="canonical" href="([^"]+)"/);
+    assert.ok(canonicalMatch, `${pathname} emits a <link rel="canonical">`);
+    const canonicalPath = new URL(canonicalMatch[1]).pathname;
+    assert.equal(
+      canonicalPath,
+      pathname,
+      `${pathname} canonical points at its own pathname, not ${canonicalMatch[1]}`,
+    );
+  }
+});
+
 test("serves public agent discovery before the private application routes", async () => {
   const [llms, catalog, markdown] = await Promise.all([
     render("/llms.txt"),
