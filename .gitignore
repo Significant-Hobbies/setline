@@ -45,3 +45,7 @@ next-env.d.ts
 
 # xcode build output
 /ios/build/
+
+site/node_modules/
+site/dist/
+site/.astro/
