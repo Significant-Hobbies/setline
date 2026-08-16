@@ -42,11 +42,6 @@ targets:
         CFBundleDisplayName: Setline
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        CFBundleURLTypes:
-          - CFBundleTypeRole: Editor
-            CFBundleURLName: com.significanthobbies.setline.auth
-            CFBundleURLSchemes:
-              - setline
         ITSAppUsesNonExemptEncryption: false
         LSApplicationCategoryType: public.app-category.healthcare-fitness
         UIApplicationSupportsIndirectInputEvents: true

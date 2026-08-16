@@ -32,4 +32,15 @@ jobs:
           node-version: 24
       - run: corepack enable && corepack install
       - run: command -v xcodegen >/dev/null || brew install xcodegen
+      # The runner image ships several Xcodes and defaults to an older one than
+      # developer machines use. That skew is what let a Sendable data-race error
+      # reach main-bound code while compiling clean locally, so pick the newest
+      # installed and print it — a native failure should never be a mystery about
+      # which compiler ran.
+      - name: Select and report the Xcode in use
+        run: |
+          latest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Selecting $latest"
+          sudo xcode-select -s "$latest"
+          xcodebuild -version
       - run: pnpm quality:native

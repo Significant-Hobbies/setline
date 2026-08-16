@@ -1,11 +1,11 @@
 {
   "name": "Setline",
   "short_name": "Setline",
-  "description": "Build the plan once. Follow it precisely every day.",
+  "description": "Follow your training plan. Record the truth.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#f7f6f0",
+  "theme_color": "#18262e",
   "icons": [
     {
       "src": "/icon-192.png",

@@ -3,16 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.33.2",
-  "description": "Mobile-first workout execution tracker",
+  "description": "Device-first iPhone workout execution tracker with a static public site",
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "wrangler dev",
-    "build": "tsc --noEmit",
-    "typecheck": "tsc --noEmit",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"worker/**/*.{ts,mjs,mts}\" \"tests/**/*.mjs\" \"*.{json,mjs,ts}\" \".github/workflows/*.{yml,yaml}\"",
-    "test:coverage": "c8 --all --include='src/**/*.{ts,tsx}' --include='worker/**/*.{ts,mjs}' --include='public/sw.js' --exclude='**/*.d.*' --lines=33 --branches=75 --functions=66 --reporter=text --reporter=json-summary node --test --test-concurrency=1 tests/*.test.mjs",
+    "format:check": "prettier --check \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"public/sw.js\" \"public/*.css\" \"*.{json,mjs}\" \".github/workflows/*.{yml,yaml}\"",
+    "lint": "eslint . --ignore-pattern dist",
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
     "knip": "knip --no-exit-code --reporter symbols",
     "knip:strict": "knip --reporter symbols",
     "quality:unused": "node scripts/check-code-health.mjs unused",
@@ -23,37 +21,19 @@
     "quality:suppressions": "node scripts/check-code-health.mjs suppressions",
     "quality:hygiene": "node scripts/check-code-health.mjs hygiene",
     "quality:native": "node scripts/check-native-code-health.mjs",
-    "quality": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm quality:unused && pnpm quality:complexity && pnpm quality:duplication && pnpm quality:cycles && pnpm quality:dependencies && pnpm quality:suppressions && pnpm quality:hygiene",
-    "check": "pnpm quality",
-    "types:worker": "wrangler types --config wrangler.jsonc --env-interface CloudflareBindings",
-    "db:migrate:local": "wrangler d1 migrations apply setline --local",
-    "db:migrate:remote": "wrangler d1 migrations apply setline --remote",
-    "deploy": "pnpm run check && wrangler deploy --tag \"$(git rev-parse HEAD)\"",
-    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
-    "lint": "eslint . --ignore-pattern dist"
-  },
-  "dependencies": {
-    "better-auth": "1.6.25",
-    "drizzle-orm": "0.45.2"
+    "quality": "pnpm format:check && pnpm lint && pnpm test && pnpm quality:unused && pnpm quality:complexity && pnpm quality:duplication && pnpm quality:cycles && pnpm quality:dependencies && pnpm quality:suppressions && pnpm quality:hygiene",
+    "check": "pnpm quality"
   },
   "devDependencies": {
-    "@types/node": "22.19.19",
-    "c8": "12.0.0",
     "eslint": "9.39.4",
     "jscpd": "5.0.14",
     "knip": "6.32.2",
-    "prettier": "3.9.6",
-    "typescript": "5.9.3",
-    "vite": "8.2.1",
-    "wrangler": "4.121.0"
+    "prettier": "3.9.6"
   },
   "type": "module",
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp",
-      "unrs-resolver",
-      "workerd"
+      "esbuild"
     ]
   }
 }

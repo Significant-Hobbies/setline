@@ -1,0 +1,47 @@
+{
+  "name": "Setline",
+  "version": "1",
+  "url": "https://setline.significanthobbies.com",
+  "llms": "https://setline.significanthobbies.com/llms.txt",
+  "llmsFull": "https://setline.significanthobbies.com/llms-full.txt",
+  "sitemap": "https://setline.significanthobbies.com/sitemap.xml",
+  "robots": "https://setline.significanthobbies.com/robots.txt",
+  "markdown": {
+    "suffix": ".md",
+    "negotiation": true
+  },
+  "surfaces": [
+    {
+      "id": "home",
+      "url": "https://setline.significanthobbies.com/",
+      "md": "https://setline.significanthobbies.com/index.md",
+      "kind": "static",
+      "description": "What Setline does, how one set is recorded, and what it refuses to do"
+    },
+    {
+      "id": "privacy",
+      "url": "https://setline.significanthobbies.com/privacy",
+      "md": "https://setline.significanthobbies.com/privacy.md",
+      "kind": "static",
+      "description": "How the app handles data: no account, no server, nothing collected; plus this site's third-party scripts"
+    },
+    {
+      "id": "terms",
+      "url": "https://setline.significanthobbies.com/terms",
+      "md": "https://setline.significanthobbies.com/terms.md",
+      "kind": "static",
+      "description": "Terms of use, the health disclaimer, and what calculated values do and do not mean"
+    },
+    {
+      "id": "changelog",
+      "url": "https://setline.significanthobbies.com/changelog",
+      "md": "https://setline.significanthobbies.com/changelog.md",
+      "kind": "static",
+      "description": "What shipped, newest first, including what was removed"
+    }
+  ],
+  "auth": {
+    "public": true,
+    "notes": "Every surface here is public. Setline has no accounts and no auth-walled routes; recorded training never leaves the device."
+  }
+}

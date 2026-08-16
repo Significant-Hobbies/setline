@@ -8,7 +8,10 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const minimumProductionCoverage = 0.653;
+// Raised from 0.653 once the structured model landed with its own tests and the
+// untested account layer left. Measured 84.1628% on 2026-08-16; the floor sits
+// just under that so the gain cannot quietly erode.
+const minimumProductionCoverage = 0.838;
 
 function capture(command, args) {
   const result = spawnSync(command, args, {
@@ -125,8 +128,10 @@ try {
         `${(minimumProductionCoverage * 100).toFixed(2)}%`,
     );
   }
+  // Deliberately no test counts here: they were hardcoded once and went stale
+  // silently. xcodebuild above already prints the real totals it executed.
   console.log(
-    "Native gate: 10 unit tests, 4 UI tests, release build, and coverage pass.",
+    "Native gate: unit tests, UI tests, release build, and coverage pass.",
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

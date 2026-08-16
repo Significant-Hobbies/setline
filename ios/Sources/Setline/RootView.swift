@@ -20,6 +20,9 @@ struct RootView: View {
             NavigationStack { SettingsView() }
                 .tabItem { Label("You", systemImage: "person.crop.circle") }
                 .tag(3)
+            NavigationStack { ExercisesView() }
+                .tabItem { Label("Exercises", systemImage: "chart.line.uptrend.xyaxis") }
+                .tag(4)
         }
         .setlineBackground()
         .fullScreenCover(isPresented: $model.isWorkoutPresented) {
@@ -40,13 +43,7 @@ struct TodayView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    private var plannedTemplate: WorkoutTemplate? {
-        let weekday = Calendar.current.component(.weekday, from: .now)
-        guard let id = model.document.programme?.days.first(where: { $0.weekday == weekday })?.templateID else {
-            return model.document.templates.first
-        }
-        return model.document.templates.first(where: { $0.id == id }) ?? model.document.templates.first
-    }
+    private var resolved: ResolvedSession? { model.document.session() }
 
     var body: some View {
         ScrollView {
@@ -54,8 +51,14 @@ struct TodayView: View {
                 header
                 if let active = model.document.activeSession {
                     activeReceipt(active)
-                } else if let plannedTemplate {
-                    workoutHero(plannedTemplate)
+                } else if let resolved {
+                    workoutHero(resolved)
+                } else {
+                    ContentUnavailableView(
+                        "No programme selected",
+                        systemImage: "calendar.badge.plus",
+                        description: Text("Choose the authored block or build your own in Plan.")
+                    )
                 }
                 weekStrip
                 recentEvidence
@@ -103,45 +106,70 @@ struct TodayView: View {
             .font(.subheadline.monospacedDigit().weight(.semibold))
     }
 
-    private func workoutHero(_ template: WorkoutTemplate) -> some View {
+    private func workoutHero(_ resolved: ResolvedSession) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                SectionLabel(text: "Today · authored plan")
+                SectionLabel(text: resolved.isRestDay ? "Today · scheduled rest" : "Today · authored plan")
                 Spacer()
                 Image(systemName: "lock.fill")
                     .font(.caption)
             }
             .padding(.bottom, 14)
-            Text(template.name)
+            Text(resolved.template.name)
                 .font(.system(.title, design: .rounded, weight: .black))
                 .tracking(-0.8)
-            Text(template.detail)
+            Text(resolved.subtitle)
                 .font(.title3.weight(.medium))
                 .foregroundStyle(SetlinePalette.ink.opacity(0.66))
                 .padding(.top, 3)
-            Group {
-                if dynamicTypeSize.isAccessibilitySize {
-                    VStack(alignment: .leading, spacing: 12) {
-                        metric("EXERCISES", "\(template.exercises.count)")
-                        metric("SETS", "\(template.exercises.flatMap(\.sets).count)")
-                        metric("MODE", "OFFLINE")
-                    }
-                } else {
-                    HStack(spacing: 0) {
-                        metric("EXERCISES", "\(template.exercises.count)")
-                        metric("SETS", "\(template.exercises.flatMap(\.sets).count)")
-                        metric("MODE", "OFFLINE")
+            if let notice = resolved.outOfBlockNotice {
+                Text(notice)
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(SetlinePalette.blue.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.top, 12)
+            }
+            if !resolved.isRestDay {
+                Group {
+                    if dynamicTypeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: 12) { metrics(resolved.template) }
+                    } else {
+                        HStack(spacing: 0) { metrics(resolved.template) }
                     }
                 }
+                .padding(.vertical, 22)
+                pillarChips(resolved.template.pillars)
+                    .padding(.bottom, 18)
+                Button {
+                    Task { await model.startWorkout(resolved) }
+                } label: {
+                    Label("Start workout", systemImage: "arrow.right")
+                }
+                .buttonStyle(ActionSlabStyle())
+                .accessibilityHint("Starts an offline workout using the authored order")
+                NavigationLink {
+                    SessionPreviewView(resolved: resolved)
+                } label: {
+                    Label("Review the session first", systemImage: "list.bullet")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
             }
-            .padding(.vertical, 22)
-            Button {
-                Task { await model.startWorkout(template) }
-            } label: {
-                Label("Start workout", systemImage: "arrow.right")
+            if !resolved.notes.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    InkRule()
+                    SectionLabel(text: "Authored rules")
+                    ForEach(Array(resolved.notes.enumerated()), id: \.offset) { _, note in
+                        Text("· \(note)")
+                            .font(.footnote)
+                            .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+                    }
+                }
+                .padding(.top, 16)
             }
-            .buttonStyle(ActionSlabStyle())
-            .accessibilityHint("Starts an offline workout using the authored order")
         }
         .padding(20)
         .background(SetlinePalette.paper)
@@ -150,6 +178,27 @@ struct TodayView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(SetlinePalette.ink.opacity(0.12), lineWidth: 1)
         }
+    }
+
+    /// Scrolls rather than wraps: four pillars cannot share one phone-width row
+    /// without hyphenating, and a broken word reads as a rendering fault.
+    private func pillarChips(_ pillars: Set<Pillar>) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(Pillar.allCases.filter { pillars.contains($0) }, id: \.self) { pillar in
+                    Text(pillar.title.uppercased())
+                        .font(.caption2.weight(.black))
+                        .tracking(0.6)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(SetlinePalette.blue.opacity(0.7))
+                        .clipShape(Capsule())
+                }
+            }
+        }
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     private func activeReceipt(_ session: WorkoutSession) -> some View {
@@ -171,6 +220,19 @@ struct TodayView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
+    /// Cardio and mobility days author no working sets, so counting them would
+    /// read as zero effort. Those sessions report their step count instead.
+    @ViewBuilder
+    private func metrics(_ template: WorkoutTemplate) -> some View {
+        metric("EXERCISES", "\(template.exercises.count)")
+        if template.workingSetCount > 0 {
+            metric("WORKING", "\(template.workingSetCount)")
+        } else {
+            metric("STEPS", "\(template.plannedSetCount)")
+        }
+        metric("MINUTES", template.expectedMinutes.map(String.init) ?? "—")
+    }
+
     private func metric(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(value)
@@ -183,25 +245,59 @@ struct TodayView: View {
     }
 
     private var weekStrip: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let week = model.document.week()
+        let todayIndex = todayStripIndex
+        return VStack(alignment: .leading, spacing: 14) {
             SectionLabel(text: "This week")
             HStack(spacing: 7) {
-                ForEach(1...7, id: \.self) { index in
-                    let hasPlan = model.document.programme?.days.first(where: { $0.weekday == index })?.templateID != nil
-                    VStack(spacing: 8) {
-                        Text(Calendar.current.veryShortWeekdaySymbols[index - 1])
+                ForEach(Array(week.enumerated()), id: \.offset) { index, day in
+                    let hasPlan = day != nil && !(day?.isRestDay ?? true)
+                    VStack(spacing: 6) {
+                        Text(stripDayLabel(index))
                             .font(.caption2.weight(.bold))
                         Circle()
                             .fill(hasPlan ? SetlinePalette.ink : SetlinePalette.steel)
                             .frame(width: 9, height: 9)
+                        Text(stripSessionLabel(day))
+                            .font(.system(size: 9, weight: .bold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .foregroundStyle(SetlinePalette.ink.opacity(0.7))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(hasPlan ? SetlinePalette.blue.opacity(0.65) : .clear)
+                    .padding(.vertical, 10)
+                    .background(index == todayIndex ? SetlinePalette.lime : (hasPlan ? SetlinePalette.blue.opacity(0.65) : .clear))
                     .clipShape(RoundedRectangle(cornerRadius: 9))
+                    .accessibilityLabel("\(stripDayLabel(index)): \(day.map { $0.isRestDay ? "rest day" : $0.template.name } ?? "nothing scheduled")")
                 }
             }
         }
+    }
+
+    /// The bundled block runs Monday-first; custom programmes follow the locale week.
+    private var todayStripIndex: Int {
+        switch model.document.programme {
+        case .bundled:
+            TwelveWeekProgramme.position(for: .now).dayIndex
+        case .custom, .none:
+            Calendar.current.component(.weekday, from: .now) - 1
+        }
+    }
+
+    private func stripDayLabel(_ index: Int) -> String {
+        let symbols = Calendar.current.veryShortWeekdaySymbols
+        switch model.document.programme {
+        case .bundled:
+            return symbols[(index + 1) % 7]
+        case .custom, .none:
+            return symbols[index % 7]
+        }
+    }
+
+    private func stripSessionLabel(_ day: ResolvedSession?) -> String {
+        guard let day else { return "—" }
+        if day.isRestDay { return "Rest" }
+        return day.template.name
     }
 
     private var recentEvidence: some View {
@@ -216,8 +312,13 @@ struct TodayView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Text("\(latest.completedCount)")
-                        .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(latest.completedWorkingSetCount)")
+                            .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
+                        Text("WORKING SETS")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                    }
                 }
                 .padding(.vertical, 12)
                 InkRule()
@@ -227,5 +328,57 @@ struct TodayView: View {
                     .foregroundStyle(SetlinePalette.ink.opacity(0.66))
             }
         }
+    }
+}
+
+/// The full authored session, readable before you start it — so the PDF is never
+/// needed in the gym.
+struct SessionPreviewView: View {
+    let resolved: ResolvedSession
+
+    var body: some View {
+        List {
+            if !resolved.notes.isEmpty {
+                Section("Authored rules") {
+                    ForEach(Array(resolved.notes.enumerated()), id: \.offset) { _, note in
+                        Text(note).font(.footnote)
+                    }
+                }
+            }
+            ForEach(resolved.template.exercises) { exercise in
+                Section {
+                    ForEach(exercise.sets) { plannedSet in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(plannedSet.label)
+                                    .font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Text(plannedSet.stepType.title.uppercased())
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+                            }
+                            Text(plannedSet.target.displayString)
+                                .font(.headline.monospacedDigit())
+                            let qualifiers = plannedSet.target.qualifiers
+                                + (plannedSet.rest.isEmpty ? [] : ["Rest \(plannedSet.rest.displayString)"])
+                                + (plannedSet.isOptional ? ["Optional"] : [])
+                            if !qualifiers.isEmpty {
+                                Text(qualifiers.joined(separator: " · "))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            if let cue = plannedSet.cue, !cue.isEmpty {
+                                Text(cue).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                } header: {
+                    Text(exercise.name)
+                }
+            }
+        }
+        .navigationTitle(resolved.template.name)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

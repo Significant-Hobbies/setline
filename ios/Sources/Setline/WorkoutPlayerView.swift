@@ -79,8 +79,13 @@ struct WorkoutPlayerView: View {
                 .foregroundStyle(SetlinePalette.lime)
             Text("The plan is recorded.")
                 .font(.system(.largeTitle, design: .rounded, weight: .black))
-            Text("\(session.completedCount) completed · \(session.steps.count - session.completedCount) skipped")
+            Text("\(session.completedWorkingSetCount) working sets · \(session.completedCount) steps completed · \(session.steps.count - session.completedCount) skipped")
                 .font(.headline.monospacedDigit())
+            if session.tonnage > 0 {
+                Text("\(session.tonnage.trimmedString) kg total load moved")
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+            }
             Button("Save workout") { Task { await model.finishWorkout() } }
                 .buttonStyle(ActionSlabStyle())
         }
@@ -89,59 +94,70 @@ struct WorkoutPlayerView: View {
     }
 }
 
+/// Identifies one numeric field so focus can move between them unambiguously.
+private enum EntryField: Hashable {
+    case reps(UUID)
+    case weight(UUID)
+    case duration(UUID)
+    case distance(UUID)
+}
+
+/// One editable piece of the set being recorded.
+private struct SegmentDraft: Identifiable, Equatable {
+    let id = UUID()
+    var weight = ""
+    var repetitions = ""
+    var duration = ""
+    var distance = ""
+    var rpe = ""
+    var side: BodySide?
+
+    var isBlank: Bool {
+        weight.isEmpty && repetitions.isEmpty && duration.isEmpty && distance.isEmpty
+    }
+
+    func segment(kind: ActivityKind) -> SetSegment? {
+        let seconds = Int(duration).map { kind == .cardio ? $0 * 60 : $0 }
+        let segment = SetSegment(
+            weight: Double(weight),
+            repetitions: Int(repetitions),
+            durationSeconds: seconds,
+            distanceKilometres: Double(distance),
+            rpe: Double(rpe),
+            side: side
+        )
+        return segment.isEmpty ? nil : segment
+    }
+}
+
 private struct AttemptBoard: View {
     @Environment(AppModel.self) private var model
     let step: WorkoutStep
-    @State private var weight = ""
-    @State private var repetitions = ""
-    @State private var duration = ""
-    @State private var distance = ""
-    @State private var hasDropSegment = false
-    @State private var dropWeight = ""
-    @State private var dropRepetitions = ""
+
+    @State private var drafts: [SegmentDraft] = []
+    @State private var quickEntry = ""
+    @State private var isQuickEntryShown = false
+    @State private var workStartedAt: Date?
+    @State private var accumulatedWorkSeconds = 0
+    /// The decimal keypad has no return key, so entry needs an explicit way out.
+    /// Focus is tracked per field rather than as one flag, so moving between Reps
+    /// and Weight actually transfers focus instead of leaving it ambiguous.
+    @FocusState private var focusedField: EntryField?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        SectionLabel(text: step.isExtra ? "Session-only extra" : "\(step.label) · planned")
-                        Text(step.exerciseName)
-                            .font(.system(size: 32, weight: .black, design: .rounded))
-                            .tracking(-0.7)
-                    }
-                    Spacer()
-                    Text("#\(step.authoredPosition + 1)")
-                        .font(.headline.monospacedDigit().weight(.black))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(SetlinePalette.blue)
-                        .clipShape(RoundedRectangle(cornerRadius: 7))
-                }
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("TARGET")
-                        .font(.caption.weight(.bold))
-                        .tracking(1.1)
-                    Text(step.target)
-                        .font(.system(size: 42, weight: .black, design: .rounded).monospacedDigit())
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(1)
-                    Text(step.cue)
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.65))
-                }
-                .padding(.vertical, 4)
+                heading
+                targetBlock
+                InkRule()
+                workTimer
                 InkRule()
                 actualInputs
-                if step.kind == .strength {
-                    Button(hasDropSegment ? "Remove drop segment" : "Add drop segment") {
-                        hasDropSegment.toggle()
-                    }
-                    .font(.subheadline.weight(.bold))
-                    .frame(minHeight: 44)
-                }
+                quickEntryBlock
                 Button {
-                    Task { await model.completeCurrent(segments: segments) }
+                    Task {
+                        await model.completeCurrent(segments: segments, workSeconds: recordedWorkSeconds)
+                    }
                 } label: {
                     Label("Record set · start rest", systemImage: "checkmark")
                 }
@@ -162,44 +178,337 @@ private struct AttemptBoard: View {
             .padding(20)
         }
         .background(SetlinePalette.paper)
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedField = nil }
+                    .font(.subheadline.weight(.bold))
+            }
+        }
+        .onAppear(perform: seedDrafts)
     }
 
-    @ViewBuilder
-    private var actualInputs: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(text: "Recorded actuals")
-            switch step.kind {
-            case .strength:
-                HStack(spacing: 12) {
-                    numericField("Weight", value: $weight, unit: "kg")
-                    numericField("Reps", value: $repetitions, unit: "reps")
-                }
-                if hasDropSegment {
-                    HStack(spacing: 12) {
-                        numericField("Drop weight", value: $dropWeight, unit: "kg")
-                        numericField("Drop reps", value: $dropRepetitions, unit: "reps")
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            case .repetitions, .mobility:
-                numericField("Repetitions", value: $repetitions, unit: "reps")
-            case .timed:
-                numericField("Duration", value: $duration, unit: "seconds")
-            case .cardio:
-                HStack(spacing: 12) {
-                    numericField("Duration", value: $duration, unit: "minutes")
-                    numericField("Distance", value: $distance, unit: "km")
+    private var heading: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 5) {
+                SectionLabel(text: headingLabel)
+                Text(step.exerciseName)
+                    .font(.system(size: 32, weight: .black, design: .rounded))
+                    .tracking(-0.7)
+            }
+            Spacer()
+            VStack(spacing: 4) {
+                Text("#\(step.authoredPosition + 1)")
+                    .font(.headline.monospacedDigit().weight(.black))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(step.stepType.countsAsWorkingSet ? SetlinePalette.lime : SetlinePalette.blue)
+                    .clipShape(RoundedRectangle(cornerRadius: 7))
+                if step.isOptional {
+                    Text("OPTIONAL")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(SetlinePalette.ink.opacity(0.55))
                 }
             }
         }
     }
 
-    private func numericField(_ title: String, value: Binding<String>, unit: String) -> some View {
+    /// The set label already names its own kind on most authored sets ("Warm-up",
+    /// "Working set 2 of 3"), so the step type is only appended when it adds something.
+    private var headingLabel: String {
+        if step.isExtra { return "Session-only extra" }
+        let type = step.stepType.title
+        guard !step.label.localizedCaseInsensitiveContains(type) else { return step.label }
+        return "\(step.label) · \(type.lowercased())"
+    }
+
+    private var targetBlock: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("TARGET")
+                .font(.caption.weight(.bold))
+                .tracking(1.1)
+            Text(step.target.displayString)
+                .font(.system(size: 42, weight: .black, design: .rounded).monospacedDigit())
+                .minimumScaleFactor(0.6)
+                .lineLimit(2)
+            if !step.target.qualifiers.isEmpty {
+                Text(step.target.qualifiers.joined(separator: " · "))
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+            }
+            if !step.rest.isEmpty {
+                Text("Authored rest \(step.rest.displayString)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+            }
+            if !step.cue.isEmpty {
+                Text(step.cue)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(SetlinePalette.ink.opacity(0.65))
+                    .padding(.top, 4)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Work timer
+
+    private var workTimer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SectionLabel(text: "Set timer")
+            HStack(spacing: 14) {
+                TimelineView(.periodic(from: .now, by: 0.5)) { context in
+                    Text(TimeInterval(liveWorkSeconds(at: context.date)).durationClock)
+                        .font(.system(size: 34, weight: .black, design: .rounded).monospacedDigit())
+                        .accessibilityLabel("Set duration \(liveWorkSeconds(at: context.date)) seconds")
+                }
+                Spacer()
+                Button(workStartedAt == nil ? "Start set" : "Stop") {
+                    toggleWorkTimer()
+                }
+                .font(.subheadline.weight(.bold))
+                .frame(minWidth: 96, minHeight: 44)
+                .background(workStartedAt == nil ? SetlinePalette.blue : SetlinePalette.coral.opacity(0.85))
+                .clipShape(RoundedRectangle(cornerRadius: 9))
+                if accumulatedWorkSeconds > 0 || workStartedAt != nil {
+                    Button("Reset") { resetWorkTimer() }
+                        .font(.subheadline.weight(.bold))
+                        .frame(minHeight: 44)
+                }
+            }
+            Text("Timed independently of rest, so time under load is recorded rather than estimated.")
+                .font(.caption)
+                .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+        }
+    }
+
+    private func liveWorkSeconds(at date: Date) -> Int {
+        guard let workStartedAt else { return accumulatedWorkSeconds }
+        return accumulatedWorkSeconds + max(0, Int(date.timeIntervalSince(workStartedAt)))
+    }
+
+    private func toggleWorkTimer() {
+        if let workStartedAt {
+            accumulatedWorkSeconds += max(0, Int(Date.now.timeIntervalSince(workStartedAt)))
+            self.workStartedAt = nil
+        } else {
+            workStartedAt = .now
+        }
+    }
+
+    private func resetWorkTimer() {
+        workStartedAt = nil
+        accumulatedWorkSeconds = 0
+    }
+
+    private var recordedWorkSeconds: Int? {
+        let total = liveWorkSeconds(at: .now)
+        return total > 0 ? total : nil
+    }
+
+    // MARK: - Segment entry
+
+    @ViewBuilder
+    private var actualInputs: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                SectionLabel(text: "Recorded actuals")
+                Spacer()
+                Button {
+                    isQuickEntryShown.toggle()
+                } label: {
+                    Label("Type it", systemImage: "text.cursor")
+                        .font(.caption.weight(.bold))
+                }
+                .frame(minHeight: 32)
+            }
+            ForEach($drafts) { $draft in
+                segmentRow($draft, index: drafts.firstIndex(where: { $0.id == draft.id }) ?? 0)
+            }
+            HStack(spacing: 12) {
+                Button {
+                    drafts.append(SegmentDraft(side: step.target.perSide ? .right : nil))
+                } label: {
+                    Label("Add segment", systemImage: "plus")
+                        .font(.subheadline.weight(.bold))
+                }
+                .frame(minHeight: 44)
+                if drafts.count > 1 {
+                    Button(role: .destructive) {
+                        _ = drafts.popLast()
+                    } label: {
+                        Label("Remove last", systemImage: "minus")
+                            .font(.subheadline.weight(.bold))
+                    }
+                    .frame(minHeight: 44)
+                }
+            }
+            if drafts.count > 1 {
+                Text("All \(drafts.count) segments record as one set.")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func segmentRow(_ draft: Binding<SegmentDraft>, index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if drafts.count > 1 || step.target.perSide {
+                HStack {
+                    Text("SEGMENT \(index + 1)")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+                    Spacer()
+                    if step.target.perSide {
+                        Picker("Side", selection: draft.side) {
+                            Text("Left").tag(BodySide?.some(.left))
+                            Text("Right").tag(BodySide?.some(.right))
+                            Text("Both").tag(BodySide?.some(.both))
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 200)
+                    }
+                }
+            }
+            let id = draft.wrappedValue.id
+            switch step.kind {
+            case .strength:
+                HStack(spacing: 12) {
+                    numericField("Reps", value: draft.repetitions, unit: "reps", field: .reps(id))
+                    numericField("Weight", value: draft.weight, unit: "kg", field: .weight(id))
+                }
+            case .repetitions, .mobility:
+                numericField("Repetitions", value: draft.repetitions, unit: "reps", field: .reps(id))
+            case .timed:
+                HStack(spacing: 12) {
+                    numericField("Duration", value: draft.duration, unit: "seconds", field: .duration(id))
+                    numericField("Weight", value: draft.weight, unit: "kg", field: .weight(id))
+                }
+            case .cardio:
+                HStack(spacing: 12) {
+                    numericField("Duration", value: draft.duration, unit: "minutes", field: .duration(id))
+                    numericField("Distance", value: draft.distance, unit: "km", field: .distance(id))
+                }
+            }
+        }
+        .padding(.bottom, 4)
+    }
+
+    // MARK: - Quick entry
+
+    @ViewBuilder
+    private var quickEntryBlock: some View {
+        if isQuickEntryShown {
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(text: "Quick entry")
+                TextField("5x40, 2x30", text: $quickEntry)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .font(.body.monospaced())
+                    .accessibilityLabel("Shorthand set entry")
+                let parsed = SetEntryParser.parse(quickEntry)
+                if !quickEntry.isEmpty {
+                    // The interpretation is always shown before it is applied, so
+                    // shorthand never silently records the wrong thing.
+                    Text(parsed.segments.isEmpty
+                        ? "Not understood yet."
+                        : "Reads as: " + parsed.segments.map(describe).joined(separator: " + "))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(parsed.segments.isEmpty
+                            ? SetlinePalette.coral
+                            : SetlinePalette.ink.opacity(0.75))
+                    if !parsed.unrecognised.isEmpty {
+                        Text("Ignored: \(parsed.unrecognised.joined(separator: ", "))")
+                            .font(.caption)
+                            .foregroundStyle(SetlinePalette.coral)
+                    }
+                }
+                Button("Apply to segments") {
+                    applyQuickEntry(parsed)
+                }
+                .font(.subheadline.weight(.bold))
+                .frame(minHeight: 44)
+                .disabled(parsed.segments.isEmpty)
+            }
+            .padding(14)
+            .background(SetlinePalette.chalk)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private func applyQuickEntry(_ parsed: SetEntryParser.Result) {
+        guard !parsed.segments.isEmpty else { return }
+        drafts = parsed.segments.map { segment in
+            SegmentDraft(
+                weight: segment.weight.map(\.trimmedString) ?? "",
+                repetitions: segment.repetitions.map(String.init) ?? "",
+                duration: segment.durationSeconds.map { step.kind == .cardio ? String($0 / 60) : String($0) } ?? "",
+                distance: segment.distanceKilometres.map(\.trimmedString) ?? "",
+                rpe: segment.rpe.map(\.trimmedString) ?? "",
+                side: segment.side
+            )
+        }
+        quickEntry = ""
+        isQuickEntryShown = false
+    }
+
+    private func describe(_ segment: SetSegment) -> String {
+        var parts: [String] = []
+        if let side = segment.side, side != .both { parts.append(side.title) }
+        if let reps = segment.repetitions, let weight = segment.weight {
+            parts.append("\(reps) × \(weight.trimmedString) kg")
+        } else if let reps = segment.repetitions {
+            parts.append("\(reps) reps")
+        } else if let weight = segment.weight {
+            parts.append("\(weight.trimmedString) kg")
+        }
+        if let seconds = segment.durationSeconds { parts.append(seconds.durationLabel) }
+        if let kilometres = segment.distanceKilometres { parts.append("\(kilometres.trimmedString) km") }
+        if let rpe = segment.rpe { parts.append("RPE \(rpe.trimmedString)") }
+        return parts.joined(separator: " · ")
+    }
+
+    // MARK: - State
+
+    /// Per-side work starts with a left and a right segment; everything else with one.
+    private func seedDrafts() {
+        guard drafts.isEmpty else { return }
+        if step.target.perSide {
+            drafts = [SegmentDraft(side: .left), SegmentDraft(side: .right)]
+        } else {
+            drafts = [SegmentDraft()]
+        }
+    }
+
+    private var segments: [SetSegment] {
+        drafts.compactMap { $0.segment(kind: step.kind) }
+    }
+
+    private var canComplete: Bool {
+        guard let first = segments.first else { return false }
+        switch step.kind {
+        case .strength: return first.repetitions != nil
+        case .repetitions, .mobility: return first.repetitions != nil
+        case .timed: return first.durationSeconds != nil
+        case .cardio: return first.durationSeconds != nil || first.distanceKilometres != nil
+        }
+    }
+
+    private func numericField(
+        _ title: String,
+        value: Binding<String>,
+        unit: String,
+        field: EntryField
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.caption.weight(.bold))
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 TextField("0", text: value)
                     .keyboardType(.decimalPad)
+                    .focused($focusedField, equals: field)
                     .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
                     .accessibilityLabel(title)
                 Text(unit)
@@ -212,33 +521,6 @@ private struct AttemptBoard: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .frame(maxWidth: .infinity)
-    }
-
-    private var canComplete: Bool {
-        switch step.kind {
-        case .strength: Double(weight) != nil && Int(repetitions) != nil
-        case .repetitions, .mobility: Int(repetitions) != nil
-        case .timed: Int(duration) != nil
-        case .cardio: Int(duration) != nil || Double(distance) != nil
-        }
-    }
-
-    private var segments: [SetSegment] {
-        var result = [SetSegment(
-            weight: Double(weight),
-            repetitions: Int(repetitions),
-            durationSeconds: durationSeconds,
-            distanceKilometres: Double(distance)
-        )]
-        if hasDropSegment, let dropWeight = Double(dropWeight), let dropRepetitions = Int(dropRepetitions) {
-            result.append(SetSegment(weight: dropWeight, repetitions: dropRepetitions))
-        }
-        return result
-    }
-
-    private var durationSeconds: Int? {
-        guard let value = Int(duration) else { return nil }
-        return step.kind == .cardio ? value * 60 : value
     }
 }
 
@@ -271,7 +553,7 @@ private struct RestBoard: View {
                         SectionLabel(text: "Next in authored order")
                         Text(next.exerciseName)
                             .font(.system(.title, design: .rounded, weight: .black))
-                        Text("\(next.label) · \(next.target)")
+                        Text("\(next.label) · \(next.target.displayString)")
                             .font(.title3.weight(.semibold).monospacedDigit())
                         Button(remaining > 0 ? "Start next early" : "Start next set") {
                             Task { await model.endRest() }
@@ -336,7 +618,7 @@ private struct SetRail: View {
     }
 }
 
-private extension TimeInterval {
+extension TimeInterval {
     var durationClock: String {
         let total = max(0, Int(self))
         return String(format: "%02d:%02d", total / 60, total % 60)
