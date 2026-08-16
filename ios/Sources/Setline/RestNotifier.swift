@@ -7,16 +7,18 @@ import UserNotifications
 /// precisely when it is least useful — you put the phone down between sets. The
 /// notification is scheduled against the rest's wall-clock end, so it stays
 /// correct whether the app is backgrounded, locked or terminated.
+///
+/// Every call into `UNUserNotificationCenter` resolves `.current()` at the point
+/// of use rather than holding it. Neither the centre nor its settings object is
+/// marked Sendable on every SDK Setline builds against, so storing one and then
+/// touching it from an async context compiles against some SDKs and fails as a
+/// data-race error on others. Resolving it inside a synchronous or nonisolated
+/// scope keeps a non-Sendable value from ever crossing an isolation boundary.
 @MainActor
 final class RestNotifier {
     private static let identifier = "setline.rest.complete"
 
-    private let centre: UNUserNotificationCenter
     private var hasRequestedAuthorisation = false
-
-    init(centre: UNUserNotificationCenter = .current()) {
-        self.centre = centre
-    }
 
     /// Schedules, reschedules or clears the alert to match the session's rest.
     ///
@@ -43,22 +45,24 @@ final class RestNotifier {
             timeInterval: TimeInterval(remaining),
             repeats: false
         )
-        let request = UNNotificationRequest(
-            identifier: Self.identifier,
-            content: content,
-            trigger: trigger
+        Self.schedule(
+            UNNotificationRequest(
+                identifier: Self.identifier,
+                content: content,
+                trigger: trigger
+            )
         )
-        try? await centre.add(request)
     }
 
     func cancel() {
+        let centre = UNUserNotificationCenter.current()
         centre.removePendingNotificationRequests(withIdentifiers: [Self.identifier])
         centre.removeDeliveredNotifications(withIdentifiers: [Self.identifier])
     }
 
     /// Asks once. A refusal is respected silently — resting still works on screen.
     private func ensureAuthorisation() async -> Bool {
-        switch await authorisationStatus() {
+        switch await Self.authorisationStatus() {
         case .authorized, .provisional, .ephemeral:
             return true
         case .denied:
@@ -66,23 +70,34 @@ final class RestNotifier {
         case .notDetermined:
             guard !hasRequestedAuthorisation else { return false }
             hasRequestedAuthorisation = true
-            return (try? await centre.requestAuthorization(options: [.alert, .sound])) ?? false
+            return await Self.requestAuthorisation()
         @unknown default:
             return false
         }
     }
 
-    /// Reads just the authorisation status, never the settings object that carries it.
-    ///
-    /// `UNNotificationSettings` is not Sendable on every SDK Setline builds against,
-    /// so `await centre.notificationSettings()` compiles on some and fails on others.
-    /// Taking the status inside the callback keeps the non-Sendable value from ever
-    /// crossing an isolation boundary, which compiles everywhere.
-    private func authorisationStatus() async -> UNAuthorizationStatus {
+    /// Synchronous, so handing the request over never crosses an isolation boundary.
+    /// A failure to queue is ignored for the same reason a refusal is: rest still
+    /// runs on screen, and there is nothing useful to say mid-set.
+    private nonisolated static func schedule(_ request: UNNotificationRequest) {
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
+
+    /// Returns only the status, never the settings object that carries it.
+    private nonisolated static func authorisationStatus() async -> UNAuthorizationStatus {
         await withCheckedContinuation { continuation in
-            centre.getNotificationSettings { settings in
+            UNUserNotificationCenter.current().getNotificationSettings { settings in
                 continuation.resume(returning: settings.authorizationStatus)
             }
+        }
+    }
+
+    private nonisolated static func requestAuthorisation() async -> Bool {
+        await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound]) { granted, _ in
+                    continuation.resume(returning: granted)
+                }
         }
     }
 }
