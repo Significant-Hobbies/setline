@@ -21,7 +21,6 @@ const hygienePaths = [
   "knip.json",
   "package.json",
   "pnpm-lock.yaml",
-  "wrangler.jsonc",
 ];
 const sourceExtensions = new Set([
   ".js",

@@ -14,5 +14,5 @@
 - Run `pnpm run check` before broader release validation.
 - Setline has no backend. Do not reintroduce an account, a server, or a
   network call in the workout path.
-- Do not deploy, change DNS, delete the retained Cloudflare resources, or change
-  production configuration without explicit approval.
+- Setline uses no Cloudflare, no database and no hosting account. Do not add one.
+- Do not change DNS or publish a release without explicit approval.

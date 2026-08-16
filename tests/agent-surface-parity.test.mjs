@@ -5,10 +5,11 @@ import test from "node:test";
 const ORIGIN = "https://setline.significanthobbies.com";
 
 /**
- * The public site is static files with no Worker in front of them, so nothing at
- * request time can reconcile the agent surfaces with each other. These tests are
- * that reconciliation: the sitemap, the agent catalog, `llms.txt` and the landing
- * page have to agree, and every path any of them advertises has to exist on disk.
+ * The public site is plain files on GitHub Pages. Nothing runs at request time, so
+ * nothing can reconcile the agent surfaces with each other or rewrite a path.
+ * These tests are that reconciliation: the sitemap, the agent catalog, `llms.txt`
+ * and the landing page have to agree, and every path any of them advertises has to
+ * resolve to a file that is actually published.
  */
 function publicFile(name) {
   return new URL(`../public/${name}`, import.meta.url);
@@ -19,8 +20,8 @@ async function readPublic(name) {
 }
 
 /**
- * Asserts a public path resolves to a file, in the order Cloudflare Pages tries:
- * the exact file, then `.html`, then a directory index.
+ * Asserts a public path resolves to a file, in the order GitHub Pages tries: the
+ * exact file, then `.html`, then a directory index.
  */
 async function assertServable(path) {
   const trimmed = path === "/" ? "index.html" : path.replace(/^\//, "");
@@ -47,23 +48,43 @@ test("the agent catalog lives at the path robots.txt advertises", async () => {
   await assert.rejects(stat(publicFile("api-ai.json")));
 });
 
-test("_headers gives the extensionless and markdown surfaces a parsable type", async () => {
-  const headers = await readPublic("_headers");
-  assert.match(headers, /^\/api\/ai$/m);
-  assert.match(headers, /Content-Type: application\/json/);
-  assert.match(headers, /^\/\*\.md$/m);
-  assert.match(headers, /Content-Type: text\/markdown/);
-  // The Worker used to set these in code; nothing else does now.
-  for (const header of [
-    "X-Content-Type-Options: nosniff",
-    "X-Frame-Options: DENY",
-    "Referrer-Policy: strict-origin-when-cross-origin",
+test("the agent catalog is valid JSON at its advertised path", async () => {
+  // GitHub Pages serves files as-is and cannot set a Content-Type for an
+  // extensionless path, so the body itself has to be unambiguously parsable.
+  const raw = await readPublic("api/ai");
+  const catalog = JSON.parse(raw);
+  for (const field of [
+    "name",
+    "url",
+    "llms",
+    "sitemap",
+    "markdown",
+    "surfaces",
   ]) {
-    assert.ok(
-      headers.includes(header),
-      `${header} must survive the Worker removal`,
+    assert.ok(field in catalog, `/api/ai must carry ${field}`);
+  }
+  assert.doesNotMatch(
+    raw.trimStart()[0],
+    /[<#]/,
+    "must not be HTML or markdown",
+  );
+});
+
+test("the site is published as-is under its own domain", async () => {
+  // Jekyll would otherwise drop dotfiles and reinterpret the markdown mirrors.
+  await stat(publicFile(".nojekyll"));
+  const cname = (await readPublic("CNAME")).trim();
+  assert.equal(cname, ORIGIN.replace("https://", ""));
+});
+
+test("no Cloudflare-specific configuration survives", async () => {
+  for (const cloudflareOnly of ["_headers", "_redirects", "_worker.js"]) {
+    await assert.rejects(
+      stat(publicFile(cloudflareOnly)),
+      `${cloudflareOnly} is Cloudflare-only and would be dead config on GitHub Pages`,
     );
   }
+  await assert.rejects(stat(new URL("../wrangler.jsonc", import.meta.url)));
 });
 
 test("every catalogued surface is in the sitemap and exists as a file", async () => {
@@ -199,11 +220,8 @@ test("the service worker only evicts its own caches and unregisters", async () =
   assert.doesNotMatch(sw, /addAll|APP_SHELL/);
 });
 
-test("no source file still references the removed Worker backend", async () => {
-  for (const [name, file] of [
-    ["wrangler config", "../wrangler.jsonc"],
-    ["package manifest", "../package.json"],
-  ]) {
+test("no source file still references Cloudflare or the removed backend", async () => {
+  for (const [name, file] of [["package manifest", "../package.json"]]) {
     const contents = await readFile(new URL(file, import.meta.url), "utf8");
     for (const gone of [
       "worker/index.ts",

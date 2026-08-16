@@ -8,7 +8,6 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "wrangler pages dev public",
     "format:check": "prettier --check \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"public/sw.js\" \"*.{json,mjs}\" \".github/workflows/*.{yml,yaml}\"",
     "lint": "eslint . --ignore-pattern dist",
     "test": "node --test --test-concurrency=1 tests/*.test.mjs",
@@ -22,21 +21,18 @@
     "quality:suppressions": "node scripts/check-code-health.mjs suppressions",
     "quality:hygiene": "node scripts/check-code-health.mjs hygiene",
     "quality": "pnpm format:check && pnpm lint && pnpm test && pnpm quality:unused && pnpm quality:complexity && pnpm quality:duplication && pnpm quality:cycles && pnpm quality:dependencies && pnpm quality:suppressions && pnpm quality:hygiene",
-    "check": "pnpm quality",
-    "deploy": "wrangler pages deploy public --project-name setline --commit-hash \"$(git rev-parse HEAD)\""
+    "check": "pnpm quality"
   },
   "devDependencies": {
     "eslint": "9.39.4",
     "jscpd": "5.0.14",
     "knip": "6.32.2",
-    "prettier": "3.9.6",
-    "wrangler": "4.121.0"
+    "prettier": "3.9.6"
   },
   "type": "module",
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild",
-      "workerd"
+      "esbuild"
     ]
   }
 }

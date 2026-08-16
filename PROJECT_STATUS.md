@@ -23,14 +23,22 @@ it, and the versioned JSON export is the only way to move or back it up.
   and local notifications for rest completion.
 - A JSON document in the app’s own container. No database, no account, no request
   during a workout.
-- Cloudflare Pages for the static public site and its agent surfaces. Nothing the
-  app does depends on it.
+- GitHub Pages for the static public site and its agent surfaces. Nothing the app
+  does depends on it, and it costs no account to maintain.
 - Node’s built-in test runner for the static-surface contracts; XCTest for
   everything the app does.
 - No backend, email provider, paid service, sensor, or third-party runtime
   dependency.
 
 ## Timeline
+
+- 2026-08-16 — left Cloudflare entirely. Deleted the live `setline` Worker and the
+  `setline` D1 database, which held zero rows in every table because no one ever
+  signed in. Removed wrangler, the Cloudflare-only `_headers` and `_redirects`, and
+  the deploy script. The public site is now published by GitHub Pages from
+  `public/` with its own CNAME. Setline holds no Cloudflare resources and no
+  hosting account. `setline.significanthobbies.com` returns 530 until a CNAME to
+  `significant-hobbies.github.io` is added and Pages publishes.
 
 - 2026-08-16 — removed the Cloudflare Worker backend and every trace of the
   account layer: Better Auth with Google and Apple sign-in, D1-backed private
@@ -126,12 +134,12 @@ it, and the versioned JSON export is the only way to move or back it up.
   App Store Connect/TestFlight transport remains manual.
 - Static public site in `public/` (landing, privacy, terms, changelog) plus the
   agent surfaces `index.md`, `llms.txt`, `llms-full.txt`, `sitemap.xml`,
-  `robots.txt` and `/api/ai`, configured for Cloudflare Pages. The live surface is
-  still the previous Worker until an owner runs the cutover.
+  `robots.txt` and `/api/ai`, published by GitHub Pages on push to `main`. The
+  canonical hostname is dark until its DNS record points at GitHub Pages.
 - [Public GitHub repository](https://github.com/Significant-Hobbies/setline) —
   canonical source, product planning, and issue owner.
-- `https://setline.significanthobbies.com` — live Cloudflare Worker production
-  surface.
+- `https://setline.significanthobbies.com` — canonical public surface, pending a
+  DNS record to GitHub Pages.
 - [Private Sites deployment](https://setline-workout.sarthak927.chatgpt.site) —
   owner-only rollback copy.
 
