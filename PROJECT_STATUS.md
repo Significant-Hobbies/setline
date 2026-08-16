@@ -13,9 +13,11 @@ current values against authored targets. It excludes coaching, automatic
 programme generation, social features, meal/recovery tracking, and sensors.
 
 Apple Health, Apple Watch, CrossFit session formats, range-of-motion
-assessments, iCloud sync, and on-device workout generation are planned rather than
-shipped. Until iCloud sync lands, training lives only on the device that recorded
-it, and the versioned JSON export is the only way to move or back it up.
+assessments, and on-device workout generation are planned rather than shipped.
+iCloud sync is implemented on this branch — per-record CloudKit in the user's
+private database, with a pure merge, a Settings status, and launch/foreground
+reconcile — but two-device convergence has not been checked on hardware, so it
+is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Dependencies
 
@@ -31,6 +33,15 @@ it, and the versioned JSON export is the only way to move or back it up.
   dependency.
 
 ## Timeline
+
+- 2026-08-16 — added the CloudKit transport on top of the merge core: a private
+  custom zone, record mapping, change tokens, a coordinator that can be tested
+  against an in-memory store, Settings that report real `CKAccountStatus`, and
+  a sync that never runs during an active workout or a demo/UI-test launch.
+  Two-device convergence is still unverified, so privacy still says sync is
+  built but not active. The native coverage floor moved from 83.8% to 82.6%
+  against a measured 83.1305%, because CloudKit network calls cannot execute
+  in the simulator; the mapping, merge, tombstones and ledger stay covered.
 
 - 2026-08-16 — replaced the placeholder privacy notice, terms and changelog with
   real pages on the tracked palette. The privacy notice had still claimed that
