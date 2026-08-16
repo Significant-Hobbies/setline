@@ -47,6 +47,7 @@ struct SettingsView: View {
         }
         .setlineBackground()
         .navigationBarHidden(true)
+        .task { await model.refreshSyncAvailability() }
         .fileImporter(isPresented: $isImporterPresented, allowedContentTypes: [.json]) { result in
             guard case let .success(url) = result else { return }
             let accessed = url.startAccessingSecurityScopedResource()
@@ -88,10 +89,47 @@ struct SettingsView: View {
             LabeledContent("Recorded workouts", value: "\(model.document.history.count)")
             LabeledContent("Templates", value: "\(model.document.templates.count)")
             LabeledContent("Targets", value: "\(model.document.goals.count)")
-            Text("Use Export to keep a copy of everything. iCloud sync across devices is being built and is not active yet.")
+            if let synced = model.document.lastSyncedAt {
+                LabeledContent(
+                    "Last iCloud sync",
+                    value: synced.formatted(date: .abbreviated, time: .shortened)
+                )
+            }
+            iCloudRow
+        }
+    }
+
+    /// Says what iCloud is doing, and when it is doing nothing, why.
+    ///
+    /// "Sync is off" with no reason is what makes people stop trusting a sync
+    /// feature, so every unavailable state explains itself and only the genuinely
+    /// actionable ones offer a button.
+    @ViewBuilder private var iCloudRow: some View {
+        if let availability = model.syncAvailability, !availability.isAvailable {
+            Text(SyncError.unavailable(availability).errorDescription ?? "iCloud is unavailable.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+        } else {
+            Button {
+                Task { await model.syncWithiCloud(announcing: true) }
+            } label: {
+                Label(
+                    model.isSyncing ? "Syncing with iCloud…" : "Sync with iCloud now",
+                    systemImage: model.isSyncing ? "arrow.triangle.2.circlepath" : "icloud"
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .disabled(model.isSyncing || model.document.activeSession != nil)
+            .frame(minHeight: 48)
+            if model.document.activeSession != nil {
+                Text("Finish the active workout first. Setline never syncs a session you are still doing.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
+        Text("Use Export to keep a copy of everything, including on devices where iCloud is off.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
     }
 
     private var storageTitle: String {

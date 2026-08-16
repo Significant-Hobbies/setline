@@ -3,10 +3,23 @@
 <plist version="1.0">
 <dict>
 	<!--
-	  Setline is device-first. Sign in with Apple was only there to identify a
-	  user to the removed Worker backend, so the app now claims no capabilities
-	  at all. iCloud and HealthKit entitlements arrive with the features that
-	  need them, not before.
+	  CloudKit only, and only the user's private database. Setline syncs one
+	  person's training between their own devices: there is no shared or public
+	  zone, no account of Setline's own, and no server-side code with access.
+	  HealthKit arrives with the feature that needs it, not before.
+
+	  Simulator builds do not validate entitlements against a provisioning
+	  profile, so the tests and the release build work without this being enabled
+	  in the developer account. A device build does validate them: CloudKit has to
+	  be turned on for the app ID and the container below created, or signing fails.
 	-->
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.significanthobbies.setline</string>
+	</array>
 </dict>
 </plist>
