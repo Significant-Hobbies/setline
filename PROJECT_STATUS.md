@@ -34,6 +34,9 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-08-16 — created the personal App Store Connect record and uploaded
+  Setline 1.0.0 (1) to internal TestFlight. No App Store submission.
+
 - 2026-08-16 — added the CloudKit transport on top of the merge core: a private
   custom zone, record mapping, change tokens, a coordinator that can be tested
   against an in-memory store, Settings that report real `CKAccountStatus`, and
@@ -154,7 +157,7 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 ## Products
 
 - `ios/` — native SwiftUI iPhone beta for local-first workout execution;
-  App Store Connect/TestFlight transport remains manual.
+  internal TestFlight on the personal team. No App Store submission.
 - Static public site in `public/` (landing, privacy, terms, changelog) plus the
   agent surfaces `index.md`, `llms.txt`, `llms-full.txt`, `sitemap.xml`,
   `robots.txt` and `/api/ai`, published by GitHub Pages on push to `main`. The
@@ -172,7 +175,8 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 - Native iPhone workout player with authored-order snapshots, activity-specific
   recording, drop segments, skips, session-only extras, deferrals,
   timestamp-derived rest, relaunch recovery, planning, history, progression,
-  data transfer, accessibility, simulator tests, and personal-team archiving.
+  data transfer, accessibility, simulator tests, personal-team archiving, and
+  internal TestFlight for 1.0.0 (1).
 - Public editorial product changelog at `/changelog`.
 - Landing page stating audience, outcome, the four pillars, what the product
   refuses to do, poor-fit cases and real FAQs, with product screenshots and no
