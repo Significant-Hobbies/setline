@@ -16,5 +16,7 @@
   (xcodegen, simulator unit and UI tests, release build, coverage floor).
 - Setline has no backend. Do not reintroduce an account, a server, or a
   network call in the workout path.
+- The public landing is Astro in `site/`. Run `pnpm --dir site check` after
+  landing edits. GitHub Pages publishes `site/dist`.
 - Setline uses no Cloudflare, no database and no hosting account. Do not add one.
 - Do not change DNS or publish a release without explicit approval.

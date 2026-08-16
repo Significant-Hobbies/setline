@@ -22,7 +22,8 @@
     "quality:hygiene": "node scripts/check-code-health.mjs hygiene",
     "quality:native": "node scripts/check-native-code-health.mjs",
     "quality": "pnpm format:check && pnpm lint && pnpm test && pnpm quality:unused && pnpm quality:complexity && pnpm quality:duplication && pnpm quality:cycles && pnpm quality:dependencies && pnpm quality:suppressions && pnpm quality:hygiene",
-    "check": "pnpm quality"
+    "check": "pnpm quality",
+    "site": "pnpm --dir site check"
   },
   "devDependencies": {
     "eslint": "9.39.4",

@@ -1,12 +1,12 @@
 name: Pages
 
-# The public site is static files. GitHub Pages serves them so the project keeps
-# no infrastructure of its own; the iPhone app depends on none of this.
+# Astro site/ is the landing. GitHub Pages serves the build so the iPhone app
+# still depends on no infrastructure of its own.
 on:
   push:
     branches: [main]
     paths:
-      - "public/**"
+      - "site/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -29,9 +29,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: corepack enable && corepack install
+      - run: pnpm install --frozen-lockfile
+        working-directory: site
+      - run: pnpm check
+        working-directory: site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: public
+          path: site/dist
       - id: deployment
         uses: actions/deploy-pages@v4

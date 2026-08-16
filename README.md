@@ -6,8 +6,13 @@ target you set. It has no backend: everything runs and records on the device, an
 the versioned JSON export is the only way data moves.
 
 The iPhone app lives in [`ios/`](./ios). The public site is static files in
-The iOS landing template lives in [`site/`](./site) (`pnpm --dir site check`).
-GitHub Pages still publishes [`public/`](./public) until that output is promoted., and nothing the app does depends
+The public landing is the Astro app in [`site/`](./site). GitHub Pages
+builds that folder and publishes `site/dist`.
+
+```bash
+pnpm --dir site dev
+pnpm --dir site check
+```, and nothing the app does depends
 on it. There is no backend and no hosting account to maintain.
 
 Site: [setline.significanthobbies.com](https://setline.significanthobbies.com) —

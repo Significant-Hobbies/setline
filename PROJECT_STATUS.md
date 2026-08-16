@@ -158,7 +158,9 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 - `ios/` — native SwiftUI iPhone beta for local-first workout execution;
   internal TestFlight on the personal team. No App Store submission.
-- Static public site in `public/` (landing, privacy, terms, changelog) plus the
+- 2026-08-17 — public landing is the Astro app in `site/`; GitHub Pages
+  builds `site/dist`. The older `public/` HTML is leftover.
+- Static public site in `site/` (landing, privacy, terms, changelog) plus the
   agent surfaces `index.md`, `llms.txt`, `llms-full.txt`, `sitemap.xml`,
   `robots.txt` and `/api/ai`, published by GitHub Pages on push to `main`. The
   canonical hostname is dark until its DNS record points at GitHub Pages.
