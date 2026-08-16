@@ -19,14 +19,27 @@ final class AppModel {
     /// Set only by a launch argument, so a specific exercise can be opened for
     /// screenshot capture without a person tapping through the interface.
     private(set) var demoExerciseName: String?
+    /// What iCloud can do right now, so Settings can say why sync is idle rather
+    /// than just showing it as off.
+    private(set) var syncAvailability: SyncAvailability?
+    private(set) var isSyncing = false
 
     private let store: SetlineStore
     private let restNotifier: RestNotifier
+    private let syncCoordinator: SyncCoordinator?
 
-    init(store: SetlineStore = SetlineStore(), restNotifier: RestNotifier = RestNotifier()) {
+    init(
+        store: SetlineStore = SetlineStore(),
+        restNotifier: RestNotifier = RestNotifier(),
+        syncCoordinator: SyncCoordinator? = SyncCoordinator(store: CloudKitRecordStore())
+    ) {
         self.store = store
         self.restNotifier = restNotifier
         let arguments = ProcessInfo.processInfo.arguments
+        // Every demo and interface-test launch runs against a fixture, so none of
+        // them may reach iCloud: a real account would make their results depend on
+        // whatever happens to be in it.
+        self.syncCoordinator = Self.isDemoLaunch(arguments) ? nil : syncCoordinator
         if arguments.contains("--plan-demo") { selectedTab = 1 }
         if arguments.contains("--history-demo") { selectedTab = 2 }
         if arguments.contains("--exercises-demo") { selectedTab = 4 }
@@ -35,6 +48,16 @@ final class AppModel {
             selectedTab = 4
             demoExerciseName = arguments[index + 1]
         }
+    }
+
+    /// Any launch argument that substitutes a fixture for the person's real data.
+    /// Listed once, so adding a demo mode cannot accidentally leave sync on.
+    private static func isDemoLaunch(_ arguments: [String]) -> Bool {
+        let demoFlags: Set<String> = [
+            "--ui-demo", "--fresh-demo", "--evidence-demo", "--active-demo", "--rest-demo",
+            "--plan-demo", "--history-demo", "--exercises-demo", "--exercise-detail-demo",
+        ]
+        return arguments.contains { demoFlags.contains($0) }
     }
 
     func load() async {
@@ -209,6 +232,54 @@ final class AppModel {
         }
     }
 
+    // MARK: - iCloud
+
+    /// Reads iCloud's state without syncing, so Settings can be honest on arrival.
+    func refreshSyncAvailability() async {
+        guard let syncCoordinator else { return }
+        syncAvailability = await syncCoordinator.availability()
+    }
+
+    /// Reconciles with iCloud. Safe to call on launch and on returning to the
+    /// foreground; it does nothing when there is no active workout to disturb and
+    /// nothing to say when the account is simply absent.
+    ///
+    /// A workout in progress blocks it. The merge already refuses to sync an active
+    /// session, but re-entering the document underneath a running set is a needless
+    /// risk for no benefit.
+    func syncWithiCloud(announcing: Bool = false) async {
+        guard let syncCoordinator, !isSyncing, document.activeSession == nil else { return }
+        isSyncing = true
+        defer { isSyncing = false }
+
+        let availability = await syncCoordinator.availability()
+        syncAvailability = availability
+        guard availability.isAvailable else {
+            if announcing, let reason = SyncError.unavailable(availability).errorDescription {
+                message = reason
+            }
+            return
+        }
+
+        do {
+            let (merged, outcome) = try await syncCoordinator.sync(document)
+            if !merged.hasSameContent(as: document) || merged.lastSyncedAt != document.lastSyncedAt {
+                try await store.save(merged)
+                document = merged
+            }
+            if announcing {
+                message = outcome.changedAnything
+                    ? "iCloud up to date. \(outcome.pulled) in, \(outcome.pushed) out."
+                    : "iCloud already up to date."
+            }
+        } catch {
+            // A failed sync must never look like a successful one, but it also must
+            // not interrupt training: the local document is untouched either way.
+            document.syncState = .failed
+            if announcing { message = error.localizedDescription }
+        }
+    }
+
     // MARK: - Data transfer
 
     func exportData() async -> Data? {
@@ -233,6 +304,9 @@ final class AppModel {
         guard let importPreview else { return }
         do {
             try await store.replace(with: importPreview)
+            // The imported file is now this device's truth, but everything it does
+            // not contain must not be read as deleted elsewhere.
+            try? await syncCoordinator?.forgetBookkeeping()
             document = importPreview
             self.importPreview = nil
             isImportConfirmationPresented = false
@@ -245,6 +319,9 @@ final class AppModel {
     func resetLocalData() async {
         do {
             try await store.reset()
+            // Resetting this device must not propagate as a deletion of the same
+            // training from iCloud and every other device.
+            try? await syncCoordinator?.forgetBookkeeping()
             document = .initial
             message = "Local data reset."
         } catch {

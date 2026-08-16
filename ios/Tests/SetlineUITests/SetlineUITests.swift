@@ -53,6 +53,67 @@ final class SetlineUITests: XCTestCase {
         ).firstMatch
     }
 
+    /// Brings an element into view before acting on it, the way a person would.
+    ///
+    /// History and session receipts scroll, and how far down a row sits depends on
+    /// how much summary content sits above it. Waiting for existence alone is not
+    /// enough: SwiftUI has not built the row yet, so the wait expires on content
+    /// that is genuinely there.
+    ///
+    /// Pass `hittable` for something about to be tapped — an off-screen row cannot be
+    /// tapped reliably. Plain existence is right for an assertion, where a built but
+    /// scrolled-past label is proof enough that the value is present.
+    @discardableResult
+    private func scrollUntil(
+        _ app: XCUIApplication,
+        _ element: XCUIElement,
+        scanning direction: ScanDirection,
+        hittable: Bool = false
+    ) -> Bool {
+        func satisfied() -> Bool { hittable ? element.isHittable : element.exists }
+        // Give SwiftUI a moment to build the cell before moving anything: a lazily
+        // built list can hold a real value that is not in the hierarchy yet, and
+        // scrolling first would walk away from a row already just above the fold.
+        if element.waitForExistence(timeout: 2), satisfied() { return true }
+        // Then scan the way the content lies. Sweeping both directions blindly costs
+        // eight useless swipes per lookup, which tripled this suite's runtime.
+        for _ in 0..<8 {
+            switch direction {
+            case .down: app.swipeUp()
+            case .up: app.swipeDown()
+            }
+            if satisfied() { return true }
+        }
+        return satisfied()
+    }
+
+    /// Which way the wanted element lies from the current scroll position.
+    private enum ScanDirection {
+        /// Further down the list, so the content moves up.
+        case down
+        /// Back towards the top, where a freshly pushed screen starts.
+        case up
+    }
+
+    /// Opens a recorded session from History by tapping its row rather than any text
+    /// that happens to mention the workout's name.
+    private func openHistorySession(_ app: XCUIApplication, named name: String) {
+        let historyTab = app.tabBars.buttons["History"]
+        XCTAssertTrue(historyTab.waitForExistence(timeout: 5))
+        historyTab.tap()
+
+        // A NavigationLink is a button; the summary sections above the list also
+        // contain this text, and tapping one of those navigates nowhere.
+        let row = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS[c] %@", name)
+        ).firstMatch
+        XCTAssertTrue(
+            scrollUntil(app, row, scanning: .down, hittable: true),
+            "No history row for \(name) was reachable"
+        )
+        row.tap()
+    }
+
     func testStartsWorkoutAndShowsTimestampRest() {
         let app = launch()
 
@@ -95,7 +156,7 @@ final class SetlineUITests: XCTestCase {
 
         app.buttons["Type it"].tap()
         let shorthand = app.textFields["Shorthand set entry"]
-        XCTAssertTrue(shorthand.waitForExistence(timeout: 2))
+        XCTAssertTrue(shorthand.waitForExistence(timeout: 5))
         shorthand.tap()
         shorthand.typeText("5x40, 2x30")
 
@@ -103,10 +164,10 @@ final class SetlineUITests: XCTestCase {
         let reading = app.staticTexts.containing(
             NSPredicate(format: "label CONTAINS %@", "Reads as:")
         ).firstMatch
-        XCTAssertTrue(reading.waitForExistence(timeout: 2))
+        XCTAssertTrue(reading.waitForExistence(timeout: 5))
 
         app.buttons["Apply to segments"].tap()
-        XCTAssertTrue(app.staticTexts["SEGMENT 2"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["SEGMENT 2"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["All 2 segments record as one set."].exists)
 
         recordSetAndWaitForRest(app)
@@ -114,17 +175,11 @@ final class SetlineUITests: XCTestCase {
         app.buttons["Finish"].tap()
         app.buttons["Finish and save"].tap()
 
-        let historyTab = app.tabBars.buttons["History"]
-        XCTAssertTrue(historyTab.waitForExistence(timeout: 5))
-        historyTab.tap()
-
-        let session = text(app, containing: "Lower strength")
-        XCTAssertTrue(session.waitForExistence(timeout: 5))
-        session.tap()
+        openHistorySession(app, named: "Lower strength")
 
         let recorded = text(app, containing: "5 × 40 kg + 2 × 30 kg")
         XCTAssertTrue(
-            recorded.waitForExistence(timeout: 5),
+            scrollUntil(app, recorded, scanning: .up),
             "Both segments must survive into the receipt as one set"
         )
     }
