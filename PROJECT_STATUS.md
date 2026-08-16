@@ -32,6 +32,17 @@ it, and the versioned JSON export is the only way to move or back it up.
 
 ## Timeline
 
+- 2026-08-16 — replaced the placeholder privacy notice, terms and changelog with
+  real pages on the tracked palette. The privacy notice had still claimed that
+  optional Google sign-in stores a private user-scoped copy, which the backend
+  removal had made false; it now states that the app collects nothing and makes
+  no network requests, and it discloses this website's PostHog and portfolio-strip
+  scripts for the first time. Terms gained the health disclaimer, the
+  recorded-versus-calculated distinction, and the bundled-programme caveat.
+  Restored the `quality:native` script that CI calls and raised its coverage floor
+  from 65.3% to 83.8% against a measured 84.1628%. The never-completed
+  Google-auth OpenSpec change and the account-data-deletion spec are archived.
+
 - 2026-08-16 — left Cloudflare entirely. Deleted the live `setline` Worker and the
   `setline` D1 database, which held zero rows in every table because no one ever
   signed in. Removed wrangler, the Cloudflare-only `_headers` and `_redirects`, and
@@ -186,7 +197,10 @@ it, and the versioned JSON export is the only way to move or back it up.
 - Versioned JSON download plus validated, bounded import preview and explicit
   whole-state replacement for local workout data.
 - Explicit state validation that preserves authored exercise and set order.
-- Public privacy notice and terms of use.
+- Public privacy notice stating that the app collects nothing and disclosing the
+  website's own third-party scripts, terms of use carrying the health disclaimer,
+  and a dated changelog that records removals as well as releases. A test reads
+  the script origins out of the markup and fails if the notice does not name them.
 - Honest summary with separate warm-up/working volume and calculated provenance.
 - Deterministic progression recommendations from the latest comparable
   completed session, with calculated provenance and explicit session-only
