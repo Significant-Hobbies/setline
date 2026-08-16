@@ -60,9 +60,10 @@ const tokenStyle = [
   `--site-blush:${t.blush}`,
   `--site-ink-on-dark:${t.inkOnDark}`
 ].join(";");
+const scheme = site.colorScheme ?? "light";
 ---
 <!doctype html>
-<html lang="en" style={tokenStyle}>
+<html lang="en" data-scheme={scheme} style={tokenStyle}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
