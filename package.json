@@ -8,7 +8,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "format:check": "prettier --check \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"public/sw.js\" \"*.{json,mjs}\" \".github/workflows/*.{yml,yaml}\"",
+    "format:check": "prettier --check \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"public/sw.js\" \"public/*.css\" \"*.{json,mjs}\" \".github/workflows/*.{yml,yaml}\"",
     "lint": "eslint . --ignore-pattern dist",
     "test": "node --test --test-concurrency=1 tests/*.test.mjs",
     "knip": "knip --no-exit-code --reporter symbols",
@@ -20,6 +20,7 @@
     "quality:dependencies": "node scripts/check-code-health.mjs dependencies",
     "quality:suppressions": "node scripts/check-code-health.mjs suppressions",
     "quality:hygiene": "node scripts/check-code-health.mjs hygiene",
+    "quality:native": "node scripts/check-native-code-health.mjs",
     "quality": "pnpm format:check && pnpm lint && pnpm test && pnpm quality:unused && pnpm quality:complexity && pnpm quality:duplication && pnpm quality:cycles && pnpm quality:dependencies && pnpm quality:suppressions && pnpm quality:hygiene",
     "check": "pnpm quality"
   },

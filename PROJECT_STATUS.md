@@ -53,9 +53,10 @@ it, and the versioned JSON export is the only way to move or back it up.
   fleet landing standard on the app's own tracked palette: hero, product
   screenshots, four-pillar breakdown, a refusals section, fit guidance and a FAQ,
   with honest pre-release status and no store link. Agent-indexing surfaces were
-  rewritten to match and a test now holds the Worker and static copies
-  byte-identical. Removed all six duplicated blocks in the native sources and
-  split the two longest new functions; duplication is now zero.
+  rewritten to match, and a test now holds the sitemap, the agent catalogue and
+  the files on disk to one another so no surface can drift. Removed all six
+  duplicated blocks in the native sources and split the two longest new
+  functions; duplication is now zero.
 
 - 2026-08-16 — replaced free-text set targets with a structured target model and
   ported the dated 12-week programme into the native app, which previously
@@ -141,7 +142,8 @@ it, and the versioned JSON export is the only way to move or back it up.
 - `https://setline.significanthobbies.com` — canonical public surface, pending a
   DNS record to GitHub Pages.
 - [Private Sites deployment](https://setline-workout.sarthak927.chatgpt.site) —
-  owner-only rollback copy.
+  owner-gated (401) survivor of the removed web app. It is not a rollback path
+  for the iPhone app and nothing depends on it.
 
 ## Features (shipped)
 

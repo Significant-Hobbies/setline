@@ -9,7 +9,8 @@ The iPhone app lives in [`ios/`](./ios). The public site is static files in
 [`public/`](./public) published by GitHub Pages, and nothing the app does depends
 on it. There is no backend and no hosting account to maintain.
 
-Site: [setline.significanthobbies.com](https://setline.significanthobbies.com)
+Site: [setline.significanthobbies.com](https://setline.significanthobbies.com) —
+dark until its DNS record points at GitHub Pages ([#43](https://github.com/Significant-Hobbies/setline/issues/43)).
 
 ## Local development
 
@@ -30,16 +31,22 @@ python3 -m http.server -d public 8080
 ## Checks
 
 ```bash
-pnpm run check
+pnpm run check                  # static surfaces and code health
+pnpm quality:native             # xcodegen, simulator tests, release build, coverage
 ```
 
-The release includes the owner-authored 12-week programme, custom workout
-templates, one bounded multi-week custom programme, flexible execution,
-device-local continuity, versioned whole-state backup/restore, optional private
-account sync, history, progress, and explicit deterministic session-only
-progression recommendations. Multiple programme libraries, arbitrary workout
-import, reminders, coaching, sensors, health integrations, social features,
-and full analytics remain deferred.
+The release includes the owner-authored dated 12-week programme, structured set
+targets, a bundled four-pillar movement catalogue, per-exercise measured current
+values against authored targets, multi-segment set recording with a shorthand
+parser, a set timer alongside rest, custom workout templates, one bounded
+multi-week custom programme, device-local continuity, versioned whole-state
+backup/restore, history, progress, and deterministic session-only progression
+recommendations.
+
+Deferred: iCloud sync across devices, Apple Health, Apple Watch, CrossFit
+session formats, range-of-motion assessments, on-device workout generation,
+coaching, and social features. Until iCloud sync lands, training lives only on
+the device that recorded it and the JSON export is the only backup.
 
 Source, product planning, and work tracking live in this repository. Fleet
 Workspace consumes only catalog and operational links.
