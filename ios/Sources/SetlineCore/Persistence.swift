@@ -1,16 +1,30 @@
 import Foundation
 
+/// Files Setline writes into Application Support.
+///
+/// One directory, two named files: the training document and the sync ledger.
+/// Naming them here means a new store cannot invent a third location, and the
+/// two files cannot drift into different containers.
+public enum SetlineFiles {
+    public static var supportDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Setline", directoryHint: .isDirectory)
+    }
+
+    public static var document: URL {
+        supportDirectory.appending(path: "setline-v1.json")
+    }
+
+    public static var syncBookkeeping: URL {
+        supportDirectory.appending(path: "setline-sync.json")
+    }
+}
+
 public actor SetlineStore {
     public let fileURL: URL
 
     public init(fileURL: URL? = nil) {
-        if let fileURL {
-            self.fileURL = fileURL
-        } else {
-            let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            self.fileURL = base.appending(path: "Setline", directoryHint: .isDirectory)
-                .appending(path: "setline-v1.json")
-        }
+        self.fileURL = fileURL ?? SetlineFiles.document
     }
 
     public func load() throws -> SetlineDocument {
