@@ -104,12 +104,25 @@ final class SimulatorICloudSignInTests: XCTestCase {
 
     private func chooseManualSignInIfOffered(_ settings: XCUIApplication) {
         for label in ["Sign in Manually", "Sign in with Apple ID", "Use a different Apple Account"] {
-            let button = settings.buttons[label]
-            if button.waitForExistence(timeout: 3) {
-                button.tap()
-                return
+            if tapLabeled(label, in: settings, timeout: 3) { return }
+        }
+        let manual = settings.descendants(matching: .any).matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Sign in Manually")
+        ).firstMatch
+        if manual.waitForExistence(timeout: 2) {
+            manual.tap()
+        }
+    }
+
+    @discardableResult
+    private func tapLabeled(_ label: String, in settings: XCUIApplication, timeout: TimeInterval) -> Bool {
+        for query in [settings.buttons[label], settings.cells[label], settings.staticTexts[label]] {
+            if query.waitForExistence(timeout: timeout) {
+                query.tap()
+                return true
             }
         }
+        return false
     }
 
     private func fill(_ value: String, intoFirstFieldOf settings: XCUIApplication) {
