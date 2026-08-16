@@ -116,8 +116,12 @@ final class SimulatorICloudSignInTests: XCTestCase {
 
     @discardableResult
     private func tapLabeled(_ label: String, in settings: XCUIApplication, timeout: TimeInterval) -> Bool {
-        for query in [settings.buttons[label], settings.cells[label], settings.staticTexts[label]] {
-            if query.waitForExistence(timeout: timeout) {
+        for query in [
+            settings.buttons[label].firstMatch,
+            settings.cells[label].firstMatch,
+            settings.staticTexts[label].firstMatch,
+        ] {
+            if query.waitForExistence(timeout: timeout), query.isHittable {
                 query.tap()
                 return true
             }
@@ -129,7 +133,13 @@ final class SimulatorICloudSignInTests: XCTestCase {
         let field = settings.textFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 10), "No email field on the Apple Account sheet")
         field.tap()
-        field.typeText(value)
+        if field.value as? String != value {
+            if let current = field.value as? String, !current.isEmpty {
+                field.doubleTap()
+            }
+            field.typeText(value)
+        }
+        field.typeText("\n")
     }
 
     private func fill(_ value: String, intoSecureFieldOf settings: XCUIApplication) {
@@ -140,12 +150,20 @@ final class SimulatorICloudSignInTests: XCTestCase {
     }
 
     private func tapContinue(_ settings: XCUIApplication) {
-        for label in ["Continue", "Next", "Sign In", "Done"] {
-            let button = settings.buttons[label]
-            if button.waitForExistence(timeout: 3), button.isEnabled {
+        for label in ["Continue", "Next", "Sign In", "Done", "return", "Return"] {
+            let button = settings.buttons[label].firstMatch
+            if button.waitForExistence(timeout: 2), button.isHittable {
                 button.tap()
                 return
             }
+            let key = settings.keys[label].firstMatch
+            if key.waitForExistence(timeout: 1), key.isHittable {
+                key.tap()
+                return
+            }
+        }
+        if settings.keyboards.buttons[">"].firstMatch.exists {
+            settings.keyboards.buttons[">"].firstMatch.tap()
         }
     }
 
