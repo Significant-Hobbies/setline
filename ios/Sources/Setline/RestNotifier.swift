@@ -58,8 +58,7 @@ final class RestNotifier {
 
     /// Asks once. A refusal is respected silently — resting still works on screen.
     private func ensureAuthorisation() async -> Bool {
-        let settings = await centre.notificationSettings()
-        switch settings.authorizationStatus {
+        switch await authorisationStatus() {
         case .authorized, .provisional, .ephemeral:
             return true
         case .denied:
@@ -70,6 +69,20 @@ final class RestNotifier {
             return (try? await centre.requestAuthorization(options: [.alert, .sound])) ?? false
         @unknown default:
             return false
+        }
+    }
+
+    /// Reads just the authorisation status, never the settings object that carries it.
+    ///
+    /// `UNNotificationSettings` is not Sendable on every SDK Setline builds against,
+    /// so `await centre.notificationSettings()` compiles on some and fails on others.
+    /// Taking the status inside the callback keeps the non-Sendable value from ever
+    /// crossing an isolation boundary, which compiles everywhere.
+    private func authorisationStatus() async -> UNAuthorizationStatus {
+        await withCheckedContinuation { continuation in
+            centre.getNotificationSettings { settings in
+                continuation.resume(returning: settings.authorizationStatus)
+            }
         }
     }
 }
