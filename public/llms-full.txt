@@ -45,9 +45,11 @@ Status: in development. Not on the App Store yet. Free. iPhone only.
 
 ## Not yet built
 
-Apple Health heart-rate zones and VO2 max, an Apple Watch app, AMRAP, EMOM and
-For Time scoring, range-of-motion assessments, and on-device workout generation.
-These are not claimed as shipped.
+Syncing across devices through iCloud, Apple Health heart-rate zones and VO2
+max, an Apple Watch app, AMRAP, EMOM and For Time scoring, range-of-motion
+assessments, and on-device workout generation. These are not claimed as shipped.
+Until iCloud sync lands, training lives only on the device that recorded it and
+the JSON export is the only backup.
 
 ## Agent entrypoints
 
@@ -58,9 +60,9 @@ These are not claimed as shipped.
 ## Product links
 
 - Home: https://setline.significanthobbies.com/ — What Setline does, how one set is recorded, and what it refuses to do
-- Privacy: https://setline.significanthobbies.com/privacy — Device and private cloud data handling
-- Terms: https://setline.significanthobbies.com/terms — Product terms
-- Changelog: https://setline.significanthobbies.com/changelog — Verified product releases
+- Privacy: https://setline.significanthobbies.com/privacy — How the app handles data: no account, no server, nothing collected; plus this site's third-party scripts
+- Terms: https://setline.significanthobbies.com/terms — Terms of use, the health disclaimer, and what calculated values do and do not mean
+- Changelog: https://setline.significanthobbies.com/changelog — What shipped, newest first, including what was removed
 
 ## Machine surfaces
 

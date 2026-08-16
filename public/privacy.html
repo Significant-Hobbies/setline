@@ -4,24 +4,78 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Setline — Privacy</title>
-  <meta name="description" content="Setline privacy: device-first workouts with optional private cloud sync.">
+  <meta name="description" content="Setline privacy: the iPhone app has no account and no server, so your training never leaves the device unless you export it.">
   <link rel="canonical" href="https://setline.significanthobbies.com/privacy">
   <link rel="icon" href="/favicon.png">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
-    .container { max-width: 42rem; margin: 0 auto; }
-    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; color: #fbbf24; }
-    p { font-size: 1rem; line-height: 1.7; color: #cbd5e1; }
-    a { color: #38bdf8; text-decoration: none; }
-    .back { margin-top: 2rem; display: inline-block; font-size: 0.9rem; }
-  </style>
+  <link rel="stylesheet" href="/legal.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Setline privacy</h1>
-    <p>Active workouts work device-first. Optional Google sign-in stores one private, user-scoped state copy. Workout progress and history are not public agent surfaces.</p>
-    <a class="back" href="/">&larr; Back to Setline</a>
+  <div class="wrap">
+    <header>
+      <a class="wordmark" href="/">SETLINE</a>
+      <h1>Privacy</h1>
+      <p class="lede">Setline has no account and no server. Your training is a file on your iPhone.</p>
+      <p class="updated">Last updated 16 August 2026</p>
+    </header>
+
+    <div class="callout">
+      <p><strong>The app collects nothing.</strong> Setline has no sign-in, no analytics and makes no network requests. Every workout, target and measurement is written to the app's own container on your device. There is no copy anywhere else, and the developer cannot see your data.</p>
+    </div>
+
+    <h2>What the app stores, and where</h2>
+    <p>Setline keeps one JSON document in its own private container on your iPhone. It holds your programme, workout templates, recorded sets, exercise targets and history. iOS protects it with the same sandbox and device encryption it applies to any app's private storage.</p>
+    <p>That document is the only copy. If you delete the app, iOS deletes it with the app, and the data is gone. If you lose the device, the data is gone with it.</p>
+
+    <h3>Your data leaves only when you send it</h3>
+    <ul>
+      <li><strong>Export</strong> writes the complete document to a file you choose the destination for, using the standard iOS share sheet. Where it goes after that — Files, iCloud Drive, a message, another app — is your choice and that service's privacy policy, not Setline's.</li>
+      <li><strong>Import</strong> reads a file you pick and, after showing you what it contains, replaces the data on the device. Nothing is uploaded.</li>
+      <li><strong>Reset local data</strong> erases the document on the device immediately.</li>
+    </ul>
+
+    <h3>Notifications</h3>
+    <p>If you allow notifications, Setline schedules a local alert so a rest timer still finishes when you leave the app. Local notifications are scheduled by iOS on the device; nothing is sent to a push server, and no notification content reaches the developer.</p>
+
+    <h2>What Setline does not do</h2>
+    <ul>
+      <li>No account, sign-in, or user identity.</li>
+      <li>No backend, database, or hosting account. There is no server to hold your data or to breach.</li>
+      <li>No analytics, telemetry, crash reporting, or advertising SDK in the app.</li>
+      <li>No tracking across apps or websites, and no data shared with or sold to anyone.</li>
+      <li>No sensors, contacts, photos, location, or Apple Health access. The app requests no permissions beyond notifications, and only if you enable them.</li>
+    </ul>
+    <p>Planned features — syncing across your devices through iCloud, and reading and writing Apple Health — are not built. When either ships, this page will change before it does, and both will be something you turn on rather than a default.</p>
+
+    <h2>This website</h2>
+    <p>The website is separate from the app and is not needed to use it. It is static files served by GitHub Pages, which records request logs including IP addresses as any web host does. See the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Privacy Statement</a>.</p>
+    <p>Two third-party scripts run on these pages:</p>
+    <h3>PostHog analytics</h3>
+    <p>Counts page views, so the developer knows whether anyone reads these pages. It handles the page URL, referrer, browser and device type, approximate location derived from your IP address, and a stored identifier. Autocapture of clicks and typing is switched off, so it records that a page was viewed and not what you did on it.</p>
+    <h3>Portfolio strip (<code>sassmaker.com</code>)</h3>
+    <p>Shows the developer's other projects at the bottom of the page. Loading it requests a file from that domain, which exposes your IP address to it as any embedded script does.</p>
+    <p>No workout data reaches either one, because the app never sends anything to the website. Blocking both, or blocking cookies, does not affect the app.</p>
+
+    <h2>Children</h2>
+    <p>Setline is not directed at children under 13 and collects nothing from anyone.</p>
+
+    <h2>Your rights</h2>
+    <p>Rights to access, correct, export and erase personal data generally assume someone else is holding it. For the app, nobody is: you already hold the only copy, Export produces it in full, and Reset local data or deleting the app erases it. For website analytics, ask for removal at the contact below and it will be deleted.</p>
+
+    <h2>Changes</h2>
+    <p>If this notice changes, the date above changes with it, and the reason appears in the <a href="/changelog">changelog</a>. It will not be changed to retroactively permit collecting something that was previously stated as not collected.</p>
+
+    <h2>Contact</h2>
+    <p>Raise a privacy question as a <a href="https://github.com/Significant-Hobbies/setline/issues">GitHub issue</a>, or through <a href="https://sarthakagrawal.dev">sarthakagrawal.dev</a>.</p>
+
+    <footer>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/terms">Terms</a>
+        <a href="/changelog">Changelog</a>
+        <a href="https://github.com/Significant-Hobbies/setline">Source</a>
+      </nav>
+      <p class="fine">Setline · iPhone app in development · Not on the App Store yet</p>
+    </footer>
   </div>
 </body>
 </html>

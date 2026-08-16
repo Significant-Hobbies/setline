@@ -23,25 +23,25 @@
       "url": "https://setline.significanthobbies.com/privacy",
       "md": "https://setline.significanthobbies.com/privacy.md",
       "kind": "static",
-      "description": "Device and private cloud data handling"
+      "description": "How the app handles data: no account, no server, nothing collected; plus this site's third-party scripts"
     },
     {
       "id": "terms",
       "url": "https://setline.significanthobbies.com/terms",
       "md": "https://setline.significanthobbies.com/terms.md",
       "kind": "static",
-      "description": "Product terms"
+      "description": "Terms of use, the health disclaimer, and what calculated values do and do not mean"
     },
     {
       "id": "changelog",
       "url": "https://setline.significanthobbies.com/changelog",
       "md": "https://setline.significanthobbies.com/changelog.md",
       "kind": "static",
-      "description": "Verified product releases"
+      "description": "What shipped, newest first, including what was removed"
     }
   ],
   "auth": {
     "public": true,
-    "notes": "Auth-walled app routes are not agent-indexed unless listed here."
+    "notes": "Every surface here is public. Setline has no accounts and no auth-walled routes; recorded training never leaves the device."
   }
 }

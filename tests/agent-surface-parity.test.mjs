@@ -220,6 +220,114 @@ test("the service worker only evicts its own caches and unregisters", async () =
   assert.doesNotMatch(sw, /addAll|APP_SHELL/);
 });
 
+const PAGES = ["index.html", "privacy.html", "terms.html", "changelog.html"];
+
+test("every page ships on the tracked palette, not the placeholder navy", async () => {
+  for (const page of PAGES) {
+    const html = await readPublic(page);
+    for (const placeholder of ["#0f172a", "#fbbf24", "#e2e8f0", "#38bdf8"]) {
+      assert.ok(
+        !html.includes(placeholder),
+        `${page} still uses the placeholder colour ${placeholder}`,
+      );
+    }
+    assert.ok(
+      html.includes("#f7f6f0") || html.includes("/legal.css"),
+      `${page} must use the tracked tokens directly or via legal.css`,
+    );
+  }
+});
+
+test("every asset any page references exists", async () => {
+  for (const page of PAGES) {
+    const html = await readPublic(page);
+    const references = [
+      ...[...html.matchAll(/<img[^>]+src="\/([^"]+)"/g)].map((m) => m[1]),
+      ...[...html.matchAll(/<link[^>]+href="\/([^"]+)"/g)].map((m) => m[1]),
+    ];
+    assert.ok(references.length > 0, `${page} references no local assets`);
+    for (const reference of references) {
+      await stat(publicFile(reference));
+    }
+  }
+});
+
+test("no page claims an account, a sign-in or a server copy", async () => {
+  // The account layer was deleted. A public page that still offers it would be a
+  // false statement about where a person's training data goes.
+  const claims = [
+    /Google sign-in/i,
+    /Sign in with Apple/i,
+    /\bsign in to\b/i,
+    /private cloud/i,
+    // \b keeps this off "iCloud sync", which is a named Apple feature the pages
+    // may legitimately describe as not yet built.
+    /\bcloud (copy|sync)\b/i,
+    /user-scoped/i,
+  ];
+  for (const page of [...PAGES, "privacy.md", "terms.md", "changelog.md"]) {
+    const text = await readPublic(page);
+    for (const claim of claims) {
+      const match = text.match(claim);
+      // The changelog records the removal, so it may name what was removed.
+      if (match && page.startsWith("changelog")) continue;
+      assert.ok(!match, `${page} still claims "${match?.[0]}"`);
+    }
+  }
+});
+
+test("the privacy notice discloses every third-party script the site loads", async () => {
+  // Tying disclosure to the actual markup means adding a tracker without saying
+  // so in the notice fails here rather than shipping quietly.
+  const hosts = new Set();
+  for (const page of PAGES) {
+    const html = await readPublic(page);
+    for (const [, host] of html.matchAll(
+      /(?:src|href)="https?:\/\/([^/"]+)/g,
+    )) {
+      if (host.endsWith("setline.significanthobbies.com")) continue;
+      hosts.add(host);
+    }
+  }
+  const [privacyHtml, privacyMd] = await Promise.all([
+    readPublic("privacy.html"),
+    readPublic("privacy.md"),
+  ]);
+  // Documentation links are not scripts; only script/style origins need naming.
+  const scriptHosts = [...hosts].filter(
+    (host) => host === "us.i.posthog.com" || host === "sassmaker.com",
+  );
+  assert.ok(scriptHosts.length > 0, "expected to find the analytics origins");
+  const named = { "us.i.posthog.com": "PostHog", "sassmaker.com": "sassmaker" };
+  for (const host of scriptHosts) {
+    for (const [label, copy] of [
+      ["privacy.html", privacyHtml],
+      ["privacy.md", privacyMd],
+    ]) {
+      assert.match(
+        copy,
+        new RegExp(named[host], "i"),
+        `${label} must disclose ${host}`,
+      );
+    }
+  }
+});
+
+test("the privacy notice and terms carry a date and the health disclaimer", async () => {
+  for (const page of ["privacy.html", "privacy.md", "terms.html", "terms.md"]) {
+    const text = await readPublic(page);
+    assert.match(
+      text,
+      /(Last updated|updated) 16 August 2026/,
+      `${page} must state when it was last updated`,
+    );
+  }
+  for (const page of ["terms.html", "terms.md"]) {
+    const text = await readPublic(page);
+    assert.match(text, /not medical advice/i, `${page} must disclaim advice`);
+  }
+});
+
 test("no source file still references Cloudflare or the removed backend", async () => {
   for (const [name, file] of [["package manifest", "../package.json"]]) {
     const contents = await readFile(new URL(file, import.meta.url), "utf8");

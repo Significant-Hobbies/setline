@@ -5,9 +5,9 @@
 ## Product
 
 - [Home](https://setline.significanthobbies.com/): What Setline does, how one set is recorded, and what it refuses to do
-- [Privacy](https://setline.significanthobbies.com/privacy): Device and private cloud data handling
-- [Terms](https://setline.significanthobbies.com/terms): Product terms
-- [Changelog](https://setline.significanthobbies.com/changelog): Verified product releases
+- [Privacy](https://setline.significanthobbies.com/privacy): How the app handles data: no account, no server, nothing collected; plus this site's third-party scripts
+- [Terms](https://setline.significanthobbies.com/terms): Terms of use, the health disclaimer, and what calculated values do and do not mean
+- [Changelog](https://setline.significanthobbies.com/changelog): What shipped, newest first, including what was removed
 
 ## Machine surfaces
 

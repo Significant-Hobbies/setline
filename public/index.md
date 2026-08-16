@@ -39,9 +39,11 @@ Status: in development. Not on the App Store yet. Free. iPhone only.
 
 ## Not yet built
 
-Apple Health heart-rate zones and VO2 max, an Apple Watch app, AMRAP, EMOM and
-For Time scoring, range-of-motion assessments, and on-device workout generation.
-These are not claimed as shipped.
+Syncing across devices through iCloud, Apple Health heart-rate zones and VO2
+max, an Apple Watch app, AMRAP, EMOM and For Time scoring, range-of-motion
+assessments, and on-device workout generation. These are not claimed as shipped.
+Until iCloud sync lands, training lives only on the device that recorded it and
+the JSON export is the only backup.
 
 ## Agent entrypoints
 
