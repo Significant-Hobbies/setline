@@ -8,6 +8,13 @@
 set -euo pipefail
 
 project_root="$(cd "$(dirname "$0")/.." && pwd)"
+# Same lock as ios/scripts/archive.sh. Xcode's last-used team can be Vault.
+personal_team="8F7LXHTJZR"
+development_team="${SETLINE_DEVELOPMENT_TEAM:-$personal_team}"
+if [[ "$development_team" != "$personal_team" ]]; then
+  print -u2 "Refusing to run: Setline is locked to personal team $personal_team."
+  exit 3
+fi
 cd "$project_root"
 
 A="${SETLINE_SIM_A:-6A01186A-2F27-4175-860E-E9F04DBE817F}"
@@ -50,7 +57,8 @@ sign_in() {
       -scheme Setline \
       -destination "platform=iOS Simulator,id=$udid" \
       -only-testing:SetlineUITests/SimulatorICloudSignInTests/testSignIntoICloud \
-      -derivedDataPath /tmp/setline-sim-icloud-derived
+      -derivedDataPath /tmp/setline-sim-icloud-derived \
+      DEVELOPMENT_TEAM="$development_team"
   )
   xcrun simctl spawn "$udid" rm -f /tmp/setline-icloud-creds
 }
@@ -66,7 +74,8 @@ install_app() {
         -project Setline.xcodeproj \
         -scheme Setline \
         -destination "platform=iOS Simulator,id=$udid" \
-        -derivedDataPath /tmp/setline-sim-icloud-derived
+        -derivedDataPath /tmp/setline-sim-icloud-derived \
+        DEVELOPMENT_TEAM="$development_team"
     )
   fi
   xcrun simctl install "$udid" "$app"

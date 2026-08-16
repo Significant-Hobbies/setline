@@ -39,6 +39,30 @@ test("the CloudKit container is identical in the entitlement and the source", as
   );
 });
 
+test("Setline is locked to the personal Apple team, not the company team", async () => {
+  const [project, archive, simulator] = await Promise.all([
+    readSource("ios/project.yml"),
+    readSource("ios/scripts/archive.sh"),
+    readSource("scripts/simulator-icloud-sync.sh"),
+  ]);
+
+  const personal = "8F7LXHTJZR";
+  const company = "B97DAJX353";
+  assert.match(project, new RegExp(`DEVELOPMENT_TEAM:\\s*${personal}`));
+  assert.match(archive, new RegExp(`personal_team="${personal}"`));
+  assert.match(simulator, new RegExp(`personal_team="${personal}"`));
+  for (const [name, source] of [
+    ["project.yml", project],
+    ["archive.sh", archive],
+    ["simulator-icloud-sync.sh", simulator],
+  ]) {
+    assert.ok(
+      !source.includes(company),
+      `${name} must not mention the Vault company team`,
+    );
+  }
+});
+
 test("the container is derived from the app's own bundle identifier", async () => {
   const [project, entitlements] = await Promise.all([
     readSource("ios/project.yml"),

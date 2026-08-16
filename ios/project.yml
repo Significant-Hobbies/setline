@@ -10,6 +10,7 @@ configs:
 settings:
   base:
     SWIFT_VERSION: 6.0
+    # Personal team "Sarthak Agrawal". Never the Vault company team.
     DEVELOPMENT_TEAM: 8F7LXHTJZR
     CODE_SIGN_STYLE: Automatic
     TARGETED_DEVICE_FAMILY: "1"
