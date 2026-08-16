@@ -9,13 +9,9 @@ import { fileURLToPath } from "node:url";
 
 const currentFile = fileURLToPath(import.meta.url);
 const projectRoot = resolve(dirname(currentFile), "..");
-const productionPaths = [
-  "src",
-  "worker",
-  "public/sw.js",
-  "ios/Sources",
-  "vite.config.ts",
-];
+// The TypeScript backend was removed when Setline became device-first, so the
+// production surface is the native app plus the one script the static site ships.
+const productionPaths = ["ios/Sources", "public/sw.js"];
 const hygienePaths = [
   ...productionPaths,
   ".github",
@@ -25,7 +21,6 @@ const hygienePaths = [
   "knip.json",
   "package.json",
   "pnpm-lock.yaml",
-  "tsconfig.json",
   "wrangler.jsonc",
 ];
 const sourceExtensions = new Set([
@@ -37,22 +32,23 @@ const sourceExtensions = new Set([
   ".tsx",
 ]);
 const baselines = {
-  // The complexity budget rose from 20/14 when the native structured-target model
-  // landed. Every added violation is a memberwise initializer on a Codable value
-  // type with more than 7 stored properties (WorkoutStep is the 19-parameter
-  // case). Grouping those fields into nested structs is the only way to shrink the
-  // count, and it would change the persisted JSON shape that the version 1
-  // migration reads — so the parameter counts are accepted rather than traded for
-  // a schema break. Logic complexity is deliberately not part of this increase:
-  // the long progression and measurement functions were split instead.
-  complexity: { violations: 27, maxCcn: 52, maxLength: 283, maxParams: 19 },
+  // Measured against the native sources alone, now that the TypeScript library and
+  // Worker are gone — they held every high-CCN and long function. All nine
+  // remaining violations are memberwise initializers on Codable value types with
+  // more than 7 stored properties; WorkoutStep is the 19-parameter case. Grouping
+  // those fields into nested structs is the only way to shrink the count, and it
+  // would change the persisted JSON shape the version 1 migration reads, so the
+  // parameter counts are accepted rather than traded for a schema break.
+  complexity: { violations: 9, maxCcn: 15, maxLength: 73, maxParams: 19 },
   // Zero after the shared legacy decoder, programme set builders and cardio
   // definition builder replaced the copied blocks. Keep it at zero.
   duplication: { clones: 0, duplicatedLines: 0 },
+  // Zero once the TypeScript library and Worker were deleted; the remaining
+  // JavaScript is test and tooling code with no unused surface.
   unused: {
     files: 0,
-    exports: 21,
-    types: 5,
+    exports: 0,
+    types: 0,
     dependencies: 0,
     devDependencies: 0,
     unlisted: 0,
@@ -64,10 +60,7 @@ const acceptedHighAdvisories = new Set([
   "GHSA-3jxr-9vmj-r5cp",
   "GHSA-52cp-r559-cp3m",
   "GHSA-5p4m-2wfm-xmqj",
-  "GHSA-6g55-p6wh-862q",
-  "GHSA-f88m-g3jw-g9cj",
   "GHSA-mh99-v99m-4gvg",
-  "GHSA-r28c-9q8g-f849",
   "GHSA-rgw5-rvv9-x895",
 ]);
 
@@ -303,19 +296,9 @@ function sourceFiles(root) {
 }
 
 function checkSuppressions() {
-  const files = [
-    "src",
-    "worker",
-    "public/sw.js",
-    "ios/Sources",
-    "ios/Tests",
-    "tests",
-  ]
+  const files = [...productionPaths, "ios/Tests", "tests"]
     .flatMap((root) => sourceFiles(resolve(projectRoot, root)))
-    .filter(
-      (file) =>
-        file !== currentFile && !file.endsWith("/worker/agent-edge.mjs"),
-    );
+    .filter((file) => file !== currentFile);
   const matches = files.flatMap((file) =>
     readFileSync(file, "utf8")
       .split("\n")

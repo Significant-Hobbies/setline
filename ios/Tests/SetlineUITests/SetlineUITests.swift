@@ -221,11 +221,15 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(addExercise.waitForExistence(timeout: 3))
     }
 
-    func testAccountScreenOffersAppleAlongsideGoogle() {
+    func testStorageScreenStatesWhereTrainingLivesWithoutOfferingAnAccount() {
         let app = launch()
 
         app.tabBars.buttons["You"].tap()
-        XCTAssertTrue(app.buttons["Connect Google account"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["apple-account-button"].exists)
+        XCTAssertTrue(app.staticTexts["On this iPhone"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["STORAGE"].exists)
+        XCTAssertTrue(app.buttons["Export complete Setline data"].exists)
+        // There is no account, so nothing may invite the user to sign in.
+        XCTAssertFalse(app.buttons["Connect Google account"].exists)
+        XCTAssertFalse(app.buttons["apple-account-button"].exists)
     }
 }

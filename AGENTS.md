@@ -12,5 +12,7 @@
   visibly distinct.
 - Use pnpm and the committed `pnpm-lock.yaml`.
 - Run `pnpm run check` before broader release validation.
-- Do not deploy, migrate D1, change OAuth configuration, or change production
-  secrets without explicit approval.
+- Setline has no backend. Do not reintroduce an account, a server, or a
+  network call in the workout path.
+- Do not deploy, change DNS, delete the retained Cloudflare resources, or change
+  production configuration without explicit approval.

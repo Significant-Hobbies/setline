@@ -1,17 +1,29 @@
 # Setline
 
-Setline is a mobile-first workout execution tracker for following an authored
-programme, recording actual sets, controlling rest, and preserving detailed
-history without depending on a gym connection. Workouts remain device-first;
-optional Google sign-in keeps one private, user-scoped D1 copy in sync.
+Setline is an iPhone training tracker for following an authored programme,
+recording actual sets, controlling rest, and measuring each exercise against a
+target you set. It has no backend: everything runs and records on the device, and
+the versioned JSON export is the only way data moves.
 
-Production: [setline.significanthobbies.com](https://setline.significanthobbies.com)
+The iPhone app lives in [`ios/`](./ios). The public site is static files in
+[`public/`](./public), deployed to Cloudflare Pages, and nothing the app does
+depends on it.
+
+Site: [setline.significanthobbies.com](https://setline.significanthobbies.com)
 
 ## Local development
 
+The app:
+
+```bash
+./ios/scripts/check.sh          # xcodegen, simulator tests, release build
+```
+
+The public site:
+
 ```bash
 pnpm install
-pnpm run dev
+pnpm run dev                    # serves public/ locally
 ```
 
 ## Checks

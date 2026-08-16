@@ -2,9 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>com.apple.developer.applesignin</key>
-	<array>
-		<string>Default</string>
-	</array>
+	<!--
+	  Setline is device-first. Sign in with Apple was only there to identify a
+	  user to the removed Worker backend, so the app now claims no capabilities
+	  at all. iCloud and HealthKit entitlements arrive with the features that
+	  need them, not before.
+	-->
 </dict>
 </plist>

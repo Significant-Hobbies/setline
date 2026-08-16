@@ -1,90 +1,18 @@
-import AuthenticationServices
 import SetlineCore
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.colorScheme) private var colorScheme
     @State private var isImporterPresented = false
     @State private var showResetConfirmation = false
-    @State private var showDeleteAccountConfirmation = false
-    @State private var appleNonce = AppleNonce.make()
 
     var body: some View {
         @Bindable var model = model
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 pageHeader("You", subtitle: "Device-first. Nothing leaves this iPhone unless you choose it.")
-                settingsSection("Account & sync") {
-                    HStack {
-                        Image(systemName: "iphone.gen3")
-                            .font(.title2)
-                            .frame(width: 44, height: 44)
-                            .background(SetlinePalette.blue)
-                            .clipShape(RoundedRectangle(cornerRadius: 9))
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(model.account?.name ?? "Device-only mode").font(.headline)
-                            Text(model.account?.email ?? "Workout actions work offline.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Text(syncLabel(model.document.syncState).uppercased())
-                            .font(.caption2.weight(.black))
-                    }
-                    if model.isAccountBusy {
-                        HStack(spacing: 10) {
-                            ProgressView()
-                            Text("Contacting Setline…")
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                    } else if model.account == nil {
-                        Button { Task { await model.connectAccount() } } label: {
-                            Label("Connect Google account", systemImage: "person.crop.circle.badge.plus")
-                                .frame(maxWidth: .infinity, minHeight: 48)
-                                .foregroundStyle(.white)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(SetlinePalette.ink)
-                        appleAccountButton
-                    } else {
-                        if let lastSync = model.document.lastSyncedAt {
-                            LabeledContent("Last synced") {
-                                Text(lastSync, style: .relative).foregroundStyle(.secondary)
-                            }
-                        }
-                        Button { Task { await model.syncNow() } } label: {
-                            Label("Sync now", systemImage: "arrow.triangle.2.circlepath")
-                                .frame(maxWidth: .infinity, minHeight: 48)
-                                .foregroundStyle(.white)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(SetlinePalette.ink)
-                        if model.account?.hasApple == false {
-                            Text("Add Apple to this account so future Apple sign-ins open the same private workout copy.")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                            appleAccountButton
-                        }
-                        Button { Task { await model.signOut() } } label: {
-                            Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .frame(minHeight: 48)
-                        Button(role: .destructive) { showDeleteAccountConfirmation = true } label: {
-                            Label("Delete Setline account", systemImage: "person.crop.circle.badge.minus")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .frame(minHeight: 48)
-                    }
-                    if let accountMessage = model.accountMessage {
-                        Text(accountMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel("Account status: \(accountMessage)")
-                    }
-                }
+                storageSection
                 settingsSection("Your data") {
                     ShareLink(
                         item: SetlineExportPayload(document: model.document),
@@ -137,87 +65,43 @@ struct SettingsView: View {
             Button("Reset local data", role: .destructive) { Task { await model.resetLocalData() } }
             Button("Cancel", role: .cancel) {}
         }
-        .confirmationDialog(
-            "Delete your Setline account and private cloud copy?",
-            isPresented: $showDeleteAccountConfirmation
-        ) {
-            Button("Delete account", role: .destructive) { Task { await model.deleteAccount() } }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Workouts already saved on this iPhone remain local. This account action cannot be undone.")
-        }
-        .sheet(item: $model.cloudConflict) { conflict in
-            NavigationStack {
-                VStack(alignment: .leading, spacing: 22) {
-                    Image(systemName: "arrow.triangle.branch")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(SetlinePalette.blue)
-                    Text("Choose the workout copy to keep")
-                        .font(.title2.bold())
-                    Text("This iPhone and your private account changed separately. Review the totals, then choose. Nothing is replaced until you decide.")
+    }
+
+    /// States plainly where the training lives. There is no account to sign into
+    /// and no server holding a copy, so the screen says so rather than implying one.
+    private var storageSection: some View {
+        settingsSection("Storage") {
+            HStack {
+                Image(systemName: "iphone.gen3")
+                    .font(.title2)
+                    .frame(width: 44, height: 44)
+                    .background(SetlinePalette.blue)
+                    .clipShape(RoundedRectangle(cornerRadius: 9))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(storageTitle).font(.headline)
+                    Text("Workouts run and record with no signal and no sign-in.")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    LabeledContent("This iPhone") {
-                        Text(workoutCount(model.document.history.count))
-                    }
-                    LabeledContent("Account copy") {
-                        Text(workoutCount(conflict.document.history.count))
-                    }
-                    Button { Task { await model.keepDeviceCopy() } } label: {
-                        Text("Keep this iPhone’s copy").foregroundStyle(.white)
-                    }
-                        .buttonStyle(.borderedProminent)
-                        .tint(SetlinePalette.ink)
-                        .controlSize(.large)
-                        .frame(maxWidth: .infinity)
-                    Button("Use the account copy") { Task { await model.useAccountCopy() } }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
-                        .frame(maxWidth: .infinity)
-                    Button("Decide later") { model.decideConflictLater() }
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                    Spacer()
                 }
-                .padding(24)
-                .navigationTitle("Sync conflict")
-                .navigationBarTitleDisplayMode(.inline)
+                Spacer()
             }
-            .presentationDetents([.large])
-            .interactiveDismissDisabled()
+            LabeledContent("Recorded workouts", value: "\(model.document.history.count)")
+            LabeledContent("Templates", value: "\(model.document.templates.count)")
+            LabeledContent("Targets", value: "\(model.document.goals.count)")
+            Text("Use Export to keep a copy of everything. iCloud sync across devices is being built and is not active yet.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 
-    private var appleAccountButton: some View {
-        SignInWithAppleButton(.continue) { request in
-            appleNonce = AppleNonce.make()
-            request.requestedScopes = [.fullName, .email]
-            request.nonce = AppleNonce.digest(appleNonce)
-        } onCompletion: { result in
-            guard
-                case let .success(authorization) = result,
-                let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
-                let tokenData = credential.identityToken,
-                let token = String(data: tokenData, encoding: .utf8)
-            else {
-                if case let .failure(error) = result,
-                   (error as? ASAuthorizationError)?.code != .canceled {
-                    model.accountMessage = error.localizedDescription
-                }
-                return
-            }
-            let payload = AppleIdentityPayload(
-                identityToken: token,
-                nonce: appleNonce,
-                email: credential.email,
-                firstName: credential.fullName?.givenName,
-                lastName: credential.fullName?.familyName
-            )
-            Task { await model.completeAppleSignIn(payload) }
+    private var storageTitle: String {
+        switch model.document.syncState {
+        case .deviceOnly: "On this iPhone"
+        case .pending: "Saving to iCloud"
+        case .synced: "Synced with iCloud"
+        case .conflict: "Decision needed"
+        case .failed: "iCloud retry needed"
         }
-        .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-        .frame(maxWidth: .infinity, minHeight: 48)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .accessibilityIdentifier("apple-account-button")
-        .disabled(model.isAccountBusy)
     }
 
     private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -228,20 +112,6 @@ struct SettingsView: View {
                 .background(SetlinePalette.paper)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
         }
-    }
-
-    private func syncLabel(_ state: SyncState) -> String {
-        switch state {
-        case .deviceOnly: "On device"
-        case .pending: "Syncing"
-        case .synced: "Synced"
-        case .conflict: "Decision needed"
-        case .failed: "Retry needed"
-        }
-    }
-
-    private func workoutCount(_ count: Int) -> String {
-        "\(count) workout\(count == 1 ? "" : "s")"
     }
 }
 

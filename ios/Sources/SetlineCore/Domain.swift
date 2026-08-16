@@ -602,6 +602,20 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
 }
 
 public extension SetlineDocument {
+    /// True when two documents hold the same training, ignoring sync bookkeeping.
+    ///
+    /// Recording that a save succeeded must never itself look like a change, or
+    /// syncing would trigger another sync forever.
+    func hasSameContent(as other: SetlineDocument) -> Bool {
+        var left = self
+        var right = other
+        left.syncState = .deviceOnly
+        left.lastSyncedAt = nil
+        right.syncState = .deviceOnly
+        right.lastSyncedAt = nil
+        return left == right
+    }
+
     /// What a fresh install opens on: the authored twelve-week block, enabled.
     static var initial: SetlineDocument {
         SetlineDocument(programme: .bundled(.twelveWeekStrengthCardioMobility))

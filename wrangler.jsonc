@@ -1,35 +1,9 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "setline",
-  "main": "worker/index.ts",
-  "compatibility_date": "2026-05-22",
-  "compatibility_flags": ["nodejs_compat"],
-  "vars": {
-    "APPLE_APP_BUNDLE_IDENTIFIER": "com.significanthobbies.setline"
-  },
-  "routes": [
-    {
-      "pattern": "setline.significanthobbies.com",
-      "custom_domain": true
-    }
-  ],
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "public"
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "setline",
-      "database_id": "2b52f12a-451e-4aad-bf9f-2cc079f41f8f",
-      "migrations_dir": "migrations"
-    }
-  ],
-  "placement": {
-    "mode": "smart"
-  },
-  "observability": {
-    "enabled": true,
-    "head_sampling_rate": 0.1
-  }
+  // Static-only. The Worker that used to serve auth, private state and MCP was
+  // removed when Setline became device-first with iCloud sync, so nothing here
+  // needs a script, a database, or a binding.
+  "pages_build_output_dir": "public",
+  "compatibility_date": "2026-05-22"
 }

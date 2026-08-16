@@ -4,7 +4,9 @@ import XCTest
 final class SetlineCoreTests: XCTestCase {
     // MARK: - Session mechanics
 
-    func testCloudDocumentExcludesDeviceSyncMetadata() {
+    /// Sync bookkeeping must not read as a training change, or a successful save
+    /// would look like new work and trigger the next save indefinitely.
+    func testSyncMetadataIsNotATrainingChange() {
         var first = SetlineDocument.sample
         first.syncState = .pending
         first.lastSyncedAt = Date(timeIntervalSince1970: 100)
@@ -12,16 +14,17 @@ final class SetlineCoreTests: XCTestCase {
         second.syncState = .failed
         second.lastSyncedAt = Date(timeIntervalSince1970: 200)
 
-        XCTAssertEqual(SetlineCloudDocument(document: first), SetlineCloudDocument(document: second))
+        XCTAssertTrue(first.hasSameContent(as: second))
+        XCTAssertNotEqual(first, second)
     }
 
-    func testCloudDocumentRestoresAsSyncedLocalDocument() {
-        let cloud = SetlineCloudDocument(document: .sample)
-        let restored = cloud.localDocument(lastSyncedAt: Date(timeIntervalSince1970: 300))
+    func testRecordedWorkIsATrainingChange() throws {
+        let first = SetlineDocument.sample
+        var second = first
+        let templateID = try XCTUnwrap(second.templates.first?.id)
+        try second.startWorkout(templateID: templateID)
 
-        XCTAssertEqual(restored.syncState, .synced)
-        XCTAssertEqual(restored.lastSyncedAt, Date(timeIntervalSince1970: 300))
-        XCTAssertEqual(SetlineCloudDocument(document: restored), cloud)
+        XCTAssertFalse(first.hasSameContent(as: second))
     }
 
     func testSessionSnapshotKeepsAuthoredOrderWhenTemplateChanges() throws {

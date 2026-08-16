@@ -4,8 +4,8 @@
 
 Setline helps people execute a structured workout programme precisely without referring to another document or deciding what to do between sets. The user controls the programme; Setline presents the current action, records explicit results, controls rest, and separates recorded values from calculations.
 
-The first release is an iOS-native workout player with a Cloudflare Worker API
-backend. It includes Sarthak’s dated 12-week strength, cardio, and mobility
+The first release is an iOS-native workout player with no backend of its own. It
+includes Sarthak’s dated 12-week strength, cardio, and mobility
 programme resolved natively on device, structured set targets, multi-segment set
 recording, a set timer alongside the rest timer, a bundled movement catalogue
 spanning strength, stamina, mobility and flexibility, and per-exercise measured
@@ -13,21 +13,33 @@ current values against authored targets. It excludes coaching, automatic
 programme generation, social features, meal/recovery tracking, and sensors.
 
 Apple Health, Apple Watch, CrossFit session formats, range-of-motion
-assessments, and on-device workout generation are planned rather than shipped.
+assessments, iCloud sync, and on-device workout generation are planned rather than
+shipped. Until iCloud sync lands, training lives only on the device that recorded
+it, and the versioned JSON export is the only way to move or back it up.
 
 ## Dependencies
 
-- SwiftUI native iPhone app for workout execution.
-- Cloudflare Workers for the API backend (auth, state sync, MCP, agent surfaces).
-- Vite for test module loading.
-- Better Auth with Google OAuth and native Sign in with Apple for optional
-  identity; existing accounts use an explicit linking flow rather than
-  email-based implicit linking.
-- Cloudflare Workers and D1 for authenticated, user-scoped state.
-- Browser `localStorage`, Service Worker, vibration, and installation APIs where supported.
-- No email provider, paid service, sensor, or native runtime dependency.
+- SwiftUI native iPhone app for workout execution, with Swift Charts for trends
+  and local notifications for rest completion.
+- A JSON document in the app’s own container. No database, no account, no request
+  during a workout.
+- Cloudflare Pages for the static public site and its agent surfaces. Nothing the
+  app does depends on it.
+- Node’s built-in test runner for the static-surface contracts; XCTest for
+  everything the app does.
+- No backend, email provider, paid service, sensor, or third-party runtime
+  dependency.
 
 ## Timeline
+
+- 2026-08-16 — removed the Cloudflare Worker backend and every trace of the
+  account layer: Better Auth with Google and Apple sign-in, D1-backed private
+  state, the MCP read surface, the whole-document sync and conflict flow, 3,277
+  lines of superseded TypeScript, and 12 test files covering it. Setline is now
+  device-first with no server of its own. The public site became static Pages
+  content carrying its own headers, and the service worker was replaced with one
+  that evicts the shell of the deleted web app. The sync invariant that the
+  removed cloud type used to guard is preserved as a document-level contract.
 
 - 2026-08-16 — replaced the placeholder landing page with a real one built to the
   fleet landing standard on the app's own tracked palette: hero, product
@@ -112,9 +124,10 @@ assessments, and on-device workout generation are planned rather than shipped.
 
 - `ios/` — native SwiftUI iPhone beta for local-first workout execution;
   App Store Connect/TestFlight transport remains manual.
-- Static public pages (landing, privacy, terms, changelog) served from public/ via
-  the Worker ASSETS binding, plus the agent surfaces `index.md`, `llms.txt`,
-  `llms-full.txt`, `sitemap.xml`, `robots.txt` and `/api/ai`.
+- Static public site in `public/` (landing, privacy, terms, changelog) plus the
+  agent surfaces `index.md`, `llms.txt`, `llms-full.txt`, `sitemap.xml`,
+  `robots.txt` and `/api/ai`, configured for Cloudflare Pages. The live surface is
+  still the previous Worker until an owner runs the cutover.
 - [Public GitHub repository](https://github.com/Significant-Hobbies/setline) —
   canonical source, product planning, and issue owner.
 - `https://setline.significanthobbies.com` — live Cloudflare Worker production
@@ -162,12 +175,6 @@ assessments, and on-device workout generation are planned rather than shipped.
 - Device-local active-session continuity and workout history.
 - Versioned JSON download plus validated, bounded import preview and explicit
   whole-state replacement for local workout data.
-- Optional Google sign-in with one private, user-scoped D1 state copy.
-- Fresh-session-protected self-service account deletion that removes linked
-  auth records and the private workout copy through existing D1 cascades, then
-  reports browser cleanup separately.
-- Device-first changes with offline retry and deterministic whole-state
-  reconciliation.
 - Explicit state validation that preserves authored exercise and set order.
 - Public privacy notice and terms of use.
 - Honest summary with separate warm-up/working volume and calculated provenance.
@@ -180,8 +187,8 @@ assessments, and on-device workout generation are planned rather than shipped.
   actual execution positions.
 - Authored, adjusted, and actual rest retained separately from wall-clock
   completion and next-start timestamps.
-- Detailed per-set execution history preserved on device and in authenticated
-  cloud state.
+- Detailed per-set execution history preserved on device, with a versioned JSON
+  export and a bounded import preview as the only way data leaves or enters.
 - Recorded-history analytics with normalized exercise identity, metric-aware
   newest-eight trends, lifetime bests and volume, workout aggregates, and
   represented bundled programme-week summaries; custom workouts stay separate
@@ -189,14 +196,10 @@ assessments, and on-device workout generation are planned rather than shipped.
 - Bounded custom workout templates with ordered exercise authoring, edit,
   independent duplication from bundled or custom workouts, confirmed deletion,
   and the existing offline-first workout player.
-- Custom templates included in private whole-state sync and versioned JSON
-  backup/restore, while active sessions and history retain immutable snapshots.
 - One named 1–16 week custom programme with explicit seven-day assignments,
   confirmed copy/shrink/delete actions, and enabled or paused state.
 - Calendar-correct Today resolution for scheduled custom workouts and explicit
   unplanned days, with scheduled sessions retaining programme week/day context.
-- Programme assignments reference custom templates, clear atomically when a
-  template is deleted, and travel in private sync and JSON backup/restore.
 
 ## Work queue
 

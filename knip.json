@@ -1,20 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "tests/*.test.mjs",
-    "src/lib/workout-data-transfer.ts",
-    "src/lib/progression.ts",
-    "src/lib/custom-programme.ts",
-    "src/lib/custom-workouts.ts",
-    "src/lib/history-analytics.ts",
-    "worker/native-handoff.ts",
-    "worker/native-state.ts"
-  ],
-  "project": [
-    "src/**/*.{ts,tsx}",
-    "worker/**/*.{ts,mjs,mts}",
-    "tests/**/*.mjs"
-  ],
-  "ignore": ["worker/agent-edge.mjs"],
+  "entry": ["tests/*.test.mjs", "scripts/*.mjs"],
+  "project": ["tests/**/*.mjs", "scripts/**/*.mjs"],
   "ignoreDependencies": ["jscpd"]
 }

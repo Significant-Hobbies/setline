@@ -94,6 +94,14 @@ struct WorkoutPlayerView: View {
     }
 }
 
+/// Identifies one numeric field so focus can move between them unambiguously.
+private enum EntryField: Hashable {
+    case reps(UUID)
+    case weight(UUID)
+    case duration(UUID)
+    case distance(UUID)
+}
+
 /// One editable piece of the set being recorded.
 private struct SegmentDraft: Identifiable, Equatable {
     let id = UUID()
@@ -132,7 +140,9 @@ private struct AttemptBoard: View {
     @State private var workStartedAt: Date?
     @State private var accumulatedWorkSeconds = 0
     /// The decimal keypad has no return key, so entry needs an explicit way out.
-    @FocusState private var isEnteringNumbers: Bool
+    /// Focus is tracked per field rather than as one flag, so moving between Reps
+    /// and Weight actually transfers focus instead of leaving it ambiguous.
+    @FocusState private var focusedField: EntryField?
 
     var body: some View {
         ScrollView {
@@ -172,7 +182,7 @@ private struct AttemptBoard: View {
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") { isEnteringNumbers = false }
+                Button("Done") { focusedField = nil }
                     .font(.subheadline.weight(.bold))
             }
         }
@@ -362,23 +372,24 @@ private struct AttemptBoard: View {
                     }
                 }
             }
+            let id = draft.wrappedValue.id
             switch step.kind {
             case .strength:
                 HStack(spacing: 12) {
-                    numericField("Reps", value: draft.repetitions, unit: "reps")
-                    numericField("Weight", value: draft.weight, unit: "kg")
+                    numericField("Reps", value: draft.repetitions, unit: "reps", field: .reps(id))
+                    numericField("Weight", value: draft.weight, unit: "kg", field: .weight(id))
                 }
             case .repetitions, .mobility:
-                numericField("Repetitions", value: draft.repetitions, unit: "reps")
+                numericField("Repetitions", value: draft.repetitions, unit: "reps", field: .reps(id))
             case .timed:
                 HStack(spacing: 12) {
-                    numericField("Duration", value: draft.duration, unit: "seconds")
-                    numericField("Weight", value: draft.weight, unit: "kg")
+                    numericField("Duration", value: draft.duration, unit: "seconds", field: .duration(id))
+                    numericField("Weight", value: draft.weight, unit: "kg", field: .weight(id))
                 }
             case .cardio:
                 HStack(spacing: 12) {
-                    numericField("Duration", value: draft.duration, unit: "minutes")
-                    numericField("Distance", value: draft.distance, unit: "km")
+                    numericField("Duration", value: draft.duration, unit: "minutes", field: .duration(id))
+                    numericField("Distance", value: draft.distance, unit: "km", field: .distance(id))
                 }
             }
         }
@@ -486,13 +497,18 @@ private struct AttemptBoard: View {
         }
     }
 
-    private func numericField(_ title: String, value: Binding<String>, unit: String) -> some View {
+    private func numericField(
+        _ title: String,
+        value: Binding<String>,
+        unit: String,
+        field: EntryField
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.caption.weight(.bold))
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 TextField("0", text: value)
                     .keyboardType(.decimalPad)
-                    .focused($isEnteringNumbers)
+                    .focused($focusedField, equals: field)
                     .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
                     .accessibilityLabel(title)
                 Text(unit)
