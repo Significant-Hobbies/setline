@@ -25,14 +25,17 @@ is not claimed as shipped. The versioned JSON export remains the backup.
   and local notifications for rest completion.
 - A JSON document in the app’s own container. No database, no account, no request
   during a workout.
-- GitHub Pages for the static public site and its agent surfaces. Nothing the app
-  does depends on it, and it costs no account to maintain.
+- Cloudflare Pages (`setline`) for the static public site from the
+  ios-landings factory. Nothing the app does depends on it.
 - Node’s built-in test runner for the static-surface contracts; XCTest for
   everything the app does.
 - No backend, email provider, paid service, sensor, or third-party runtime
   dependency.
 
 ## Timeline
+
+- 2026-08-17 — public landing live again at setline.significanthobbies.com
+  from the ios-landings factory on Cloudflare Pages.
 
 - 2026-08-16 — created the personal App Store Connect record and uploaded
   Setline 1.0.0 (1) to internal TestFlight. No App Store submission.
