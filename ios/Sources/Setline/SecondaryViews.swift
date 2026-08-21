@@ -1,3 +1,4 @@
+import PersonalSyncKit
 import SetlineCore
 import SwiftUI
 import UniformTypeIdentifiers
@@ -11,8 +12,9 @@ struct SettingsView: View {
         @Bindable var model = model
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                pageHeader("You", subtitle: "Device-first. Nothing leaves this iPhone unless you choose it.")
+                pageHeader("You", subtitle: "Device-first. Cloud sync only when you choose it.")
                 storageSection
+                personalPlatformSection
                 settingsSection("Your data") {
                     ShareLink(
                         item: SetlineExportPayload(document: model.document),
@@ -36,7 +38,7 @@ struct SettingsView: View {
                     .frame(minHeight: 48)
                 }
                 settingsSection("About") {
-                    LabeledContent("Version", value: "1.0.0 (1)")
+                    LabeledContent("Version", value: "1.0.0 (2)")
                     Link("Privacy", destination: URL(string: "https://setline.significanthobbies.com/privacy")!)
                         .frame(minHeight: 44)
                     Link("Support", destination: URL(string: "https://setline.significanthobbies.com")!)
@@ -68,8 +70,42 @@ struct SettingsView: View {
         }
     }
 
-    /// States plainly where the training lives. There is no account to sign into
-    /// and no server holding a copy, so the screen says so rather than implying one.
+    private var personalPlatformSection: some View {
+        settingsSection("Cloudflare") {
+            if let account = model.account {
+                if account.isSignedIn {
+                    Label(account.session?.email ?? "Connected", systemImage: "checkmark.icloud")
+                    Button {
+                        Task { await model.syncWithPlatform(announcing: true) }
+                    } label: {
+                        Label(model.isPlatformSyncing ? "Syncing…" : "Sync with Cloudflare now", systemImage: "arrow.triangle.2.circlepath")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .disabled(model.isPlatformSyncing || model.document.activeSession != nil)
+                    Button("Sign out", role: .destructive) { Task { await account.signOut() } }
+                } else {
+                    Text("Connect your private Significant Hobbies account to keep completed workouts available across devices.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Button("Connect Significant Hobbies") {
+                        Task {
+                            await account.connect()
+                            await model.syncWithPlatform()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .frame(maxWidth: .infinity)
+                    .disabled(account.isConnecting)
+                }
+                if account.isConnecting { ProgressView() }
+                if let error = account.errorMessage {
+                    Text(error).font(.footnote).foregroundStyle(.red)
+                }
+            }
+        }
+    }
+
+    /// States plainly where the immediate training copy lives.
     private var storageSection: some View {
         settingsSection("Storage") {
             HStack {

@@ -23,17 +23,20 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 - SwiftUI native iPhone app for workout execution, with Swift Charts for trends
   and local notifications for rest completion.
-- A JSON document in the app’s own container. No database, no account, no request
-  during a workout.
+- A JSON document in the app’s own container. No request runs during a workout.
+- PersonalSyncKit and Personal Platform for optional signed-in completed-session sync.
 - Cloudflare Pages (`setline`) for the static public site from the
   ios-landings factory. Nothing the app does depends on it.
 - Node’s built-in test runner for the static-surface contracts; XCTest for
   everything the app does.
-- No backend, email provider, paid service, sensor, or third-party runtime
-  dependency.
+- No product-specific backend, email provider, paid service, sensor, or analytics SDK.
 
 ## Timeline
 
+- 2026-08-21 — added optional Sign in with Apple synchronization of completed
+  sessions through Personal Platform. Local JSON remains immediate and the
+  active workout path performs no network request; CloudKit remains enabled as
+  transition rollback.
 - 2026-08-17 — public landing live again at setline.significanthobbies.com
   from the ios-landings factory on Cloudflare Pages.
 
@@ -182,6 +185,8 @@ is not claimed as shipped. The versioned JSON export remains the backup.
   timestamp-derived rest, relaunch recovery, planning, history, progression,
   data transfer, accessibility, simulator tests, personal-team archiving, and
   internal TestFlight for 1.0.0 (1).
+- Optional Personal Platform synchronization for completed sessions, with a
+  durable local outbox and manual/foreground pull.
 - Public editorial product changelog at `/changelog`.
 - Landing page stating audience, outcome, the four pillars, what the product
   refuses to do, poor-fit cases and real FAQs, with product screenshots and no

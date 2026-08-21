@@ -14,11 +14,13 @@
 - Run `pnpm run check` before broader release validation. For any change under
   `ios/`, run `pnpm quality:native` too — it is the gate CI runs on macOS
   (xcodegen, simulator unit and UI tests, release build, coverage floor).
-- Setline has no backend. Do not reintroduce an account, a server, or a
-  network call in the workout path.
+- Setline has no product-specific backend. Optional signed-in synchronization
+  uses PersonalSyncKit and Personal Platform; never put a network call in the
+  active workout path.
 - The public landing source of truth is `ios-landings` (`PRODUCT=setline`).
   This repo still has a buildable `site/` copy; GitHub Pages still
   publishes `site/dist`. Run `pnpm --dir site check` after local landing
   edits.
-- Setline uses no Cloudflare, no database and no hosting account. Do not add one.
+- Setline owns no Cloudflare runtime or database. Its shared signed-in state is
+  owned by Personal Platform.
 - Do not change DNS or publish a release without explicit approval.
