@@ -30,7 +30,7 @@ final class AppModel {
     private let restNotifier: RestNotifier
     private let syncCoordinator: SetlineCore.SyncCoordinator?
     private let platform: PersonalPlatformConnection?
-    let account: PersonalWebSignInModel?
+    let account: PersonalAccountModel?
 
     init(
         store: SetlineStore = SetlineStore(),
@@ -47,7 +47,7 @@ final class AppModel {
         self.syncCoordinator = Self.isDemoLaunch(arguments) ? nil : syncCoordinator
         self.platform = Self.isDemoLaunch(arguments) ? nil : platform
         account = self.platform.map {
-            PersonalWebSignInModel(identity: $0.identity, callbackScheme: "setline")
+            PersonalAccountModel(identity: $0.identity, callbackScheme: "setline")
         }
         if arguments.contains("--plan-demo") { selectedTab = 1 }
         if arguments.contains("--history-demo") { selectedTab = 2 }
