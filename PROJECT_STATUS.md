@@ -33,6 +33,9 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-08-22 — Apple completed processing Setline 1.0.0 (3) and confirmed it
+  available to internal TestFlight testers on personal team `8F7LXHTJZR`.
+
 - 2026-08-21 — Personal Platform-enabled Setline 1.0.0 (2) completed
   internal-only TestFlight processing on personal team `8F7LXHTJZR` after the
   full native gate passed. No App Store submission.
