@@ -14,13 +14,13 @@ settings:
     DEVELOPMENT_TEAM: 8F7LXHTJZR
     CODE_SIGN_STYLE: Automatic
     TARGETED_DEVICE_FAMILY: "1"
-    CURRENT_PROJECT_VERSION: 2
+    CURRENT_PROJECT_VERSION: 3
     MARKETING_VERSION: 1.0.0
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 packages:
   PersonalSyncKit:
     url: https://github.com/Significant-Hobbies/personal-platform.git
-    revision: a254f77f883e0ff3a85841ea9620754875a21666
+    revision: 55176cac008d3857ef815d9bc5c8e74b68e7c3f3
 targets:
   SetlineCore:
     type: framework
