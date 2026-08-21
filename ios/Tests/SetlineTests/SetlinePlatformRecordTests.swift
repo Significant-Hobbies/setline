@@ -9,12 +9,9 @@ final class SetlinePlatformRecordTests: XCTestCase {
   func testSessionProducesTheDomainContract() throws {
     let startedAt = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-08-21T06:00:00Z"))
     let session = WorkoutSession(
-      id: UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!,
-      templateID: UUID(),
-      templateName: "Lower strength",
-      startedAt: startedAt,
-      completedAt: startedAt.addingTimeInterval(1_859),
-      steps: []
+        id: UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!,
+        context: .init(templateID: UUID(), templateName: "Lower strength", startedAt: startedAt, completedAt: startedAt.addingTimeInterval(1_859)),
+        state: .init(steps: [])
     )
 
     guard

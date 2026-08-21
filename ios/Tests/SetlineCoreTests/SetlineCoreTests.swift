@@ -47,8 +47,8 @@ final class SetlineCoreTests: XCTestCase {
         try document.startWorkout(templateID: templateID)
 
         let segments = [
-            SetSegment(weight: 40, repetitions: 5),
-            SetSegment(weight: 30, repetitions: 2),
+            SetSegment(loadMetrics: .init(weight: 40, repetitions: 5)),
+            SetSegment(loadMetrics: .init(weight: 30, repetitions: 2)),
         ]
         try document.completeCurrent(with: segments, at: Date(timeIntervalSince1970: 500))
 
@@ -64,7 +64,7 @@ final class SetlineCoreTests: XCTestCase {
         try document.startWorkout(templateID: templateID)
 
         try document.completeCurrent(
-            with: [SetSegment(weight: 40, repetitions: 8)],
+            with: [SetSegment(loadMetrics: .init(weight: 40, repetitions: 8))],
             workSeconds: 37,
             at: Date(timeIntervalSince1970: 0)
         )
@@ -104,7 +104,7 @@ final class SetlineCoreTests: XCTestCase {
         let templateID = try XCTUnwrap(document.templates.first?.id)
         let start = Date(timeIntervalSince1970: 1_000)
         try document.startWorkout(templateID: templateID, at: start)
-        try document.completeCurrent(with: [SetSegment(weight: 40, repetitions: 8)], at: start)
+        try document.completeCurrent(with: [SetSegment(loadMetrics: .init(weight: 40, repetitions: 8))], at: start)
         let rest = try XCTUnwrap(document.activeSession?.rest)
 
         XCTAssertEqual(rest.remaining(at: start.addingTimeInterval(17)), rest.adjustedSeconds - 17)
@@ -119,7 +119,7 @@ final class SetlineCoreTests: XCTestCase {
         let templateID = try XCTUnwrap(document.templates.first?.id)
         let timestamp = Date(timeIntervalSince1970: 10_000)
         try document.startWorkout(templateID: templateID, at: timestamp)
-        try document.completeCurrent(with: [SetSegment(weight: 40, repetitions: 8)], at: timestamp)
+        try document.completeCurrent(with: [SetSegment(loadMetrics: .init(weight: 40, repetitions: 8))], at: timestamp)
 
         try await store.save(document)
         let restored = try await store.load()
@@ -599,29 +599,19 @@ final class ExerciseMetricsTests: XCTestCase {
         completedAt: Date
     ) -> WorkoutStep {
         WorkoutStep(
-            plannedSetID: UUID(),
-            exerciseName: name,
-            exerciseSlug: ExerciseCatalogue.match(name: name)?.slug,
-            cue: "",
-            label: "Working",
-            kind: .strength,
-            stepType: type,
-            target: SetTarget(repsLow: reps, load: kilograms.map { .absolute(kilograms: $0) }),
-            authoredPosition: position,
-            rest: RestRange(120),
-            status: .complete,
-            segments: [SetSegment(weight: kilograms, repetitions: reps)],
-            completedAt: completedAt
+            exerciseRef: .init(plannedSetID: UUID(), exerciseName: name, exerciseSlug: ExerciseCatalogue.match(name: name)?.slug, cue: "", label: "Working", kind: .strength),
+            config: .init(stepType: type, target: SetTarget(
+                repTarget: .init(repsLow: reps),
+                load: kilograms.map { .absolute(kilograms: $0) }
+            ), authoredPosition: position, rest: RestRange(120)),
+            state: .init(status: .complete, segments: [SetSegment(loadMetrics: .init(weight: kilograms, repetitions: reps))], completedAt: completedAt)
         )
     }
 
     private func session(_ steps: [WorkoutStep], at date: Date) -> WorkoutSession {
         WorkoutSession(
-            templateID: UUID(),
-            templateName: "Upper",
-            startedAt: date,
-            completedAt: date,
-            steps: steps
+            context: .init(templateID: UUID(), templateName: "Upper", startedAt: date, completedAt: date),
+            state: .init(steps: steps)
         )
     }
 
@@ -663,7 +653,7 @@ final class ExerciseMetricsTests: XCTestCase {
 
     func testMaxRepetitionsSumsSegmentsWithinOneSet() {
         var step = step("Ab wheel from knees", reps: 5, kilograms: nil, completedAt: sessionDate)
-        step.segments = [SetSegment(repetitions: 5), SetSegment(repetitions: 2)]
+        step.segments = [SetSegment(loadMetrics: .init(repetitions: 5)), SetSegment(loadMetrics: .init(repetitions: 2))]
         let history = [session([step], at: sessionDate)]
 
         let value = ExerciseMetrics.current(for: "Ab wheel from knees", metric: .maxRepetitions, history: history)
@@ -685,7 +675,7 @@ final class ExerciseMetricsTests: XCTestCase {
             metric: .topSetLoad,
             targetValue: 80,
             referenceRepetitions: 5,
-            createdAt: week0
+            timing: .init(createdAt: week0)
         )
 
         let progress = ExerciseMetrics.progress(for: goal, history: history)
@@ -720,7 +710,7 @@ final class ExerciseMetricsTests: XCTestCase {
         XCTAssertTrue(ExerciseMetrics.progress(for: rising, history: history).isAchieved)
 
         var paceStep = step("Run", reps: 1, kilograms: nil, completedAt: sessionDate)
-        paceStep.segments = [SetSegment(durationSeconds: 1_500, distanceKilometres: 5)]
+        paceStep.segments = [SetSegment(enduranceMetrics: .init(durationSeconds: 1_500, distanceKilometres: 5))]
         let paceHistory = [session([paceStep], at: sessionDate)]
         // 300 s/km recorded against a 330 s/km target: lower is better.
         let falling = ExerciseGoal(
@@ -743,7 +733,7 @@ final class ExerciseMetricsTests: XCTestCase {
             exerciseName: "Bench press",
             metric: .topSetLoad,
             targetValue: 90,
-            createdAt: week0
+            timing: .init(createdAt: week0)
         )
 
         let progress = ExerciseMetrics.progress(for: goal, history: history)
@@ -757,27 +747,17 @@ final class ProgressionEngineTests: XCTestCase {
 
     private func benchSession(reps: [Int], kilograms: Double) -> WorkoutSession {
         WorkoutSession(
-            templateID: UUID(),
-            templateName: "Upper",
-            startedAt: sessionDate,
-            completedAt: sessionDate,
-            steps: reps.enumerated().map { index, count in
+            context: .init(templateID: UUID(), templateName: "Upper", startedAt: sessionDate, completedAt: sessionDate),
+            state: .init(steps: reps.enumerated().map { index, count in
                 WorkoutStep(
-                    plannedSetID: UUID(),
-                    exerciseName: "Bench press",
-                    exerciseSlug: "bench-press",
-                    cue: "",
-                    label: "Working set \(index + 1) of 3",
-                    kind: .strength,
-                    stepType: .working,
-                    target: SetTarget(repsLow: 5, repsHigh: 8, load: .absolute(kilograms: kilograms)),
-                    authoredPosition: index,
-                    rest: RestRange(180),
-                    status: .complete,
-                    segments: [SetSegment(weight: kilograms, repetitions: count)],
-                    completedAt: sessionDate
+                    exerciseRef: .init(plannedSetID: UUID(), exerciseName: "Bench press", exerciseSlug: "bench-press", cue: "", label: "Working set \(index + 1) of 3", kind: .strength),
+                    config: .init(stepType: .working, target: SetTarget(
+                        repTarget: .init(repsLow: 5, repsHigh: 8),
+                        load: .absolute(kilograms: kilograms)
+                    ), authoredPosition: index, rest: RestRange(180)),
+                    state: .init(status: .complete, segments: [SetSegment(loadMetrics: .init(weight: kilograms, repetitions: count))], completedAt: sessionDate)
                 )
-            }
+            })
         )
     }
 
@@ -880,10 +860,8 @@ final class FormattingTests: XCTestCase {
 
     func testTargetDisplayCombinesLoadAndRepetitionRange() {
         let target = SetTarget(
-            repsLow: 5,
-            repsHigh: 8,
-            load: .absolute(kilograms: 65),
-            repsInReserve: 2
+            repTarget: .init(repsLow: 5, repsHigh: 8, repsInReserve: 2),
+            load: .absolute(kilograms: 65)
         )
 
         XCTAssertEqual(target.displayString, "65 kg · 5–8 reps")
@@ -892,15 +870,25 @@ final class FormattingTests: XCTestCase {
 
     func testPerSideAndRelativeLoadTargetsReadCorrectly() {
         XCTAssertEqual(
-            SetTarget(repsLow: 8, repsHigh: 12, load: .chooseLoad, perSide: true).displayString,
+            SetTarget(
+                repTarget: .init(repsLow: 8, repsHigh: 12),
+                load: .chooseLoad,
+                perSide: true
+            ).displayString,
             "Choose load · 8–12 reps per side"
         )
         XCTAssertEqual(
-            SetTarget(repsLow: 3, load: .percentOfOneRepMax(70)).displayString,
+            SetTarget(
+                repTarget: .init(repsLow: 3),
+                load: .percentOfOneRepMax(70)
+            ).displayString,
             "70% 1RM · 3 reps"
         )
         XCTAssertEqual(
-            SetTarget(repsLow: 8, load: .bodyweight(plusKilograms: 10)).displayString,
+            SetTarget(
+                repTarget: .init(repsLow: 8),
+                load: .bodyweight(plusKilograms: 10)
+            ).displayString,
             "Bodyweight + 10 kg · 8 reps"
         )
         XCTAssertEqual(SetTarget().displayString, "Complete")

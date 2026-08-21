@@ -63,7 +63,7 @@ final class SyncCoordinatorTests: XCTestCase {
                 exerciseName: "Bench press",
                 metric: .estimatedOneRepMax,
                 targetValue: target,
-                createdAt: Date(timeIntervalSince1970: 1_784_000_000)
+                timing: .init(createdAt: Date(timeIntervalSince1970: 1_784_000_000))
             )
         ]
         return document
@@ -142,12 +142,8 @@ final class SyncCoordinatorTests: XCTestCase {
         var mine = SetlineDocument.demoWithEvidence
         let mySession = WorkoutSession(
             id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
-            templateID: theirSession.templateID,
-            templateName: "Upper A",
-            startedAt: now,
-            completedAt: now.addingTimeInterval(3600),
-            steps: [],
-            activeIndex: 0
+            context: .init(templateID: theirSession.templateID, templateName: "Upper A", startedAt: now, completedAt: now.addingTimeInterval(3600)),
+            state: .init(steps: [], activeIndex: 0)
         )
         mine.history = [mySession]
 

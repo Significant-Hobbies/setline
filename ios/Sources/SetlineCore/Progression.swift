@@ -13,6 +13,16 @@ public enum ProgressionAction: String, Equatable, Sendable {
 }
 
 public struct ProgressionRecommendation: Equatable, Sendable {
+    public struct LoadInfo: Equatable, Sendable {
+        public var currentLoad: Double?
+        public var recommendedLoad: Double?
+
+        public init(currentLoad: Double? = nil, recommendedLoad: Double? = nil) {
+            self.currentLoad = currentLoad
+            self.recommendedLoad = recommendedLoad
+        }
+    }
+
     public var exerciseName: String
     public var exerciseSlug: String?
     public var action: ProgressionAction
@@ -28,8 +38,7 @@ public struct ProgressionRecommendation: Equatable, Sendable {
         exerciseName: String,
         exerciseSlug: String? = nil,
         action: ProgressionAction,
-        currentLoad: Double? = nil,
-        recommendedLoad: Double? = nil,
+        load: LoadInfo = .init(),
         lastSessionRepetitions: [Int] = [],
         lastSessionDate: Date? = nil,
         rationale: String
@@ -37,8 +46,8 @@ public struct ProgressionRecommendation: Equatable, Sendable {
         self.exerciseName = exerciseName
         self.exerciseSlug = exerciseSlug
         self.action = action
-        self.currentLoad = currentLoad
-        self.recommendedLoad = recommendedLoad
+        self.currentLoad = load.currentLoad
+        self.recommendedLoad = load.recommendedLoad
         self.lastSessionRepetitions = lastSessionRepetitions
         self.lastSessionDate = lastSessionDate
         self.rationale = rationale
@@ -113,8 +122,7 @@ public enum ProgressionEngine {
                 exerciseName: exerciseName,
                 exerciseSlug: resolvedSlug,
                 action: action,
-                currentLoad: evidence.currentLoad,
-                recommendedLoad: recommendedLoad,
+                load: .init(currentLoad: evidence.currentLoad, recommendedLoad: recommendedLoad),
                 lastSessionRepetitions: evidence.repetitions,
                 lastSessionDate: evidence.date,
                 rationale: rationale

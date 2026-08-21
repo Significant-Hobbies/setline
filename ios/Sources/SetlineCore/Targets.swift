@@ -131,6 +131,57 @@ public struct RestRange: Codable, Equatable, Sendable {
 /// be machine-readable for progression, volume and personal records to mean
 /// anything.
 public struct SetTarget: Codable, Equatable, Sendable {
+    public struct RepTarget: Equatable, Sendable {
+        public var repsLow: Int?
+        public var repsHigh: Int?
+        public var repsInReserve: Int?
+        public var rpe: Double?
+
+        public init(
+            repsLow: Int? = nil,
+            repsHigh: Int? = nil,
+            repsInReserve: Int? = nil,
+            rpe: Double? = nil
+        ) {
+            self.repsLow = repsLow
+            self.repsHigh = repsHigh
+            self.repsInReserve = repsInReserve
+            self.rpe = rpe
+        }
+    }
+
+    public struct TimeTarget: Equatable, Sendable {
+        public var tempo: Tempo?
+        public var timeSeconds: Int?
+        public var holdSeconds: Int?
+
+        public init(
+            tempo: Tempo? = nil,
+            timeSeconds: Int? = nil,
+            holdSeconds: Int? = nil
+        ) {
+            self.tempo = tempo
+            self.timeSeconds = timeSeconds
+            self.holdSeconds = holdSeconds
+        }
+    }
+
+    public struct DistanceTarget: Equatable, Sendable {
+        public var distanceMetres: Double?
+        public var paceSecondsPerKilometre: Int?
+        public var heartRateZone: Int?
+
+        public init(
+            distanceMetres: Double? = nil,
+            paceSecondsPerKilometre: Int? = nil,
+            heartRateZone: Int? = nil
+        ) {
+            self.distanceMetres = distanceMetres
+            self.paceSecondsPerKilometre = paceSecondsPerKilometre
+            self.heartRateZone = heartRateZone
+        }
+    }
+
     public var repsLow: Int?
     public var repsHigh: Int?
     public var load: LoadTarget?
@@ -148,31 +199,24 @@ public struct SetTarget: Codable, Equatable, Sendable {
     public var legacyDisplay: String?
 
     public init(
-        repsLow: Int? = nil,
-        repsHigh: Int? = nil,
+        repTarget: RepTarget = .init(),
+        timeTarget: TimeTarget = .init(),
+        distanceTarget: DistanceTarget = .init(),
         load: LoadTarget? = nil,
-        repsInReserve: Int? = nil,
-        rpe: Double? = nil,
-        tempo: Tempo? = nil,
-        timeSeconds: Int? = nil,
-        holdSeconds: Int? = nil,
-        distanceMetres: Double? = nil,
-        paceSecondsPerKilometre: Int? = nil,
-        heartRateZone: Int? = nil,
         perSide: Bool = false,
         legacyDisplay: String? = nil
     ) {
-        self.repsLow = repsLow
-        self.repsHigh = repsHigh
+        self.repsLow = repTarget.repsLow
+        self.repsHigh = repTarget.repsHigh
         self.load = load
-        self.repsInReserve = repsInReserve
-        self.rpe = rpe
-        self.tempo = tempo
-        self.timeSeconds = timeSeconds
-        self.holdSeconds = holdSeconds
-        self.distanceMetres = distanceMetres
-        self.paceSecondsPerKilometre = paceSecondsPerKilometre
-        self.heartRateZone = heartRateZone
+        self.repsInReserve = repTarget.repsInReserve
+        self.rpe = repTarget.rpe
+        self.tempo = timeTarget.tempo
+        self.timeSeconds = timeTarget.timeSeconds
+        self.holdSeconds = timeTarget.holdSeconds
+        self.distanceMetres = distanceTarget.distanceMetres
+        self.paceSecondsPerKilometre = distanceTarget.paceSecondsPerKilometre
+        self.heartRateZone = distanceTarget.heartRateZone
         self.perSide = perSide
         self.legacyDisplay = legacyDisplay
     }

@@ -586,8 +586,7 @@ private struct GoalEditorView: View {
             metric: metric,
             targetValue: targetValue,
             referenceRepetitions: metric == .topSetLoad ? Int(referenceRepetitions) : nil,
-            targetDate: hasTargetDate ? targetDate : nil,
-            createdAt: existing?.createdAt ?? .now,
+            timing: .init(targetDate: hasTargetDate ? targetDate : nil, createdAt: existing?.createdAt ?? .now),
             note: note.isEmpty ? nil : note
         )
         Task {

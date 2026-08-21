@@ -119,11 +119,8 @@ private struct SegmentDraft: Identifiable, Equatable {
     func segment(kind: ActivityKind) -> SetSegment? {
         let seconds = Int(duration).map { kind == .cardio ? $0 * 60 : $0 }
         let segment = SetSegment(
-            weight: Double(weight),
-            repetitions: Int(repetitions),
-            durationSeconds: seconds,
-            distanceKilometres: Double(distance),
-            rpe: Double(rpe),
+            loadMetrics: .init(weight: Double(weight), repetitions: Int(repetitions), rpe: Double(rpe)),
+            enduranceMetrics: .init(durationSeconds: seconds, distanceKilometres: Double(distance)),
             side: side
         )
         return segment.isEmpty ? nil : segment

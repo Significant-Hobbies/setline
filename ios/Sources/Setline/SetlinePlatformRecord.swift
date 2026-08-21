@@ -21,12 +21,9 @@ enum SetlinePlatformRecord {
     else { return nil }
     let minutes = max(0, Int(object["minutes"]?.numberValue ?? 0))
     return WorkoutSession(
-      id: stableUUID(change.id),
-      templateID: stableUUID("template:\(title)"),
-      templateName: title,
-      startedAt: occurred,
-      completedAt: occurred.addingTimeInterval(TimeInterval(minutes * 60)),
-      steps: []
+        id: stableUUID(change.id),
+        context: .init(templateID: stableUUID("template:\(title)"), templateName: title, startedAt: occurred, completedAt: occurred.addingTimeInterval(TimeInterval(minutes * 60))),
+        state: .init(steps: [])
     )
   }
 

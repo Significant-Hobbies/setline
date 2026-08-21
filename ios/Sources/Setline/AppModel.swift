@@ -108,7 +108,10 @@ final class AppModel {
             // preparation work deliberately flows straight through.
             while document.activeSession?.rest == nil, document.activeSession?.currentStep != nil {
                 try document.completeCurrent(
-                    with: [SetSegment(weight: 40, repetitions: 8, durationSeconds: 60)]
+                    with: [SetSegment(
+                        loadMetrics: .init(weight: 40, repetitions: 8),
+                        enduranceMetrics: .init(durationSeconds: 60)
+                    )]
                 )
             }
         }

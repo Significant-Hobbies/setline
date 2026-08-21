@@ -64,6 +64,16 @@ public enum MetricKind: String, Codable, CaseIterable, Sendable {
 
 /// The ideal you are training toward for one exercise.
 public struct ExerciseGoal: Codable, Equatable, Identifiable, Sendable {
+    public struct GoalTiming: Equatable, Sendable {
+        public var targetDate: Date?
+        public var createdAt: Date
+
+        public init(targetDate: Date? = nil, createdAt: Date = .now) {
+            self.targetDate = targetDate
+            self.createdAt = createdAt
+        }
+    }
+
     public var id: UUID
     /// Matched against recorded step names, case- and whitespace-insensitively.
     public var exerciseName: String
@@ -81,8 +91,7 @@ public struct ExerciseGoal: Codable, Equatable, Identifiable, Sendable {
         metric: MetricKind,
         targetValue: Double,
         referenceRepetitions: Int? = nil,
-        targetDate: Date? = nil,
-        createdAt: Date = .now,
+        timing: GoalTiming = .init(),
         note: String? = nil
     ) {
         self.id = id
@@ -90,8 +99,8 @@ public struct ExerciseGoal: Codable, Equatable, Identifiable, Sendable {
         self.metric = metric
         self.targetValue = targetValue
         self.referenceRepetitions = referenceRepetitions
-        self.targetDate = targetDate
-        self.createdAt = createdAt
+        self.targetDate = timing.targetDate
+        self.createdAt = timing.createdAt
         self.note = note
     }
 

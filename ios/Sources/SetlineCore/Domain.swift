@@ -45,6 +45,53 @@ public enum BodySide: String, Codable, CaseIterable, Sendable {
 /// `2 reps × 30 kg` is one set with two segments, and both halves have to survive
 /// into the record for the set to mean anything later.
 public struct SetSegment: Codable, Equatable, Identifiable, Sendable {
+    public struct LoadMetrics: Equatable, Sendable {
+        public var weight: Double?
+        public var repetitions: Int?
+        public var rpe: Double?
+        public var repsInReserve: Int?
+        public var reachedFailure: Bool
+        public var assistanceKilograms: Double?
+
+        public init(
+            weight: Double? = nil,
+            repetitions: Int? = nil,
+            rpe: Double? = nil,
+            repsInReserve: Int? = nil,
+            reachedFailure: Bool = false,
+            assistanceKilograms: Double? = nil
+        ) {
+            self.weight = weight
+            self.repetitions = repetitions
+            self.rpe = rpe
+            self.repsInReserve = repsInReserve
+            self.reachedFailure = reachedFailure
+            self.assistanceKilograms = assistanceKilograms
+        }
+    }
+
+    public struct EnduranceMetrics: Equatable, Sendable {
+        public var durationSeconds: Int?
+        public var distanceKilometres: Double?
+        public var rangeOfMotionValue: Double?
+        public var averageHeartRate: Int?
+        public var workSeconds: Int?
+
+        public init(
+            durationSeconds: Int? = nil,
+            distanceKilometres: Double? = nil,
+            rangeOfMotionValue: Double? = nil,
+            averageHeartRate: Int? = nil,
+            workSeconds: Int? = nil
+        ) {
+            self.durationSeconds = durationSeconds
+            self.distanceKilometres = distanceKilometres
+            self.rangeOfMotionValue = rangeOfMotionValue
+            self.averageHeartRate = averageHeartRate
+            self.workSeconds = workSeconds
+        }
+    }
+
     public var id: UUID
     public var weight: Double?
     public var repetitions: Int?
@@ -64,34 +111,25 @@ public struct SetSegment: Codable, Equatable, Identifiable, Sendable {
 
     public init(
         id: UUID = UUID(),
-        weight: Double? = nil,
-        repetitions: Int? = nil,
-        durationSeconds: Int? = nil,
-        distanceKilometres: Double? = nil,
-        rpe: Double? = nil,
-        repsInReserve: Int? = nil,
-        reachedFailure: Bool = false,
-        assistanceKilograms: Double? = nil,
-        rangeOfMotionValue: Double? = nil,
-        averageHeartRate: Int? = nil,
+        loadMetrics: LoadMetrics = .init(),
+        enduranceMetrics: EnduranceMetrics = .init(),
         side: BodySide? = nil,
-        workSeconds: Int? = nil,
         hadPain: Bool = false,
         note: String? = nil
     ) {
         self.id = id
-        self.weight = weight
-        self.repetitions = repetitions
-        self.durationSeconds = durationSeconds
-        self.distanceKilometres = distanceKilometres
-        self.rpe = rpe
-        self.repsInReserve = repsInReserve
-        self.reachedFailure = reachedFailure
-        self.assistanceKilograms = assistanceKilograms
-        self.rangeOfMotionValue = rangeOfMotionValue
-        self.averageHeartRate = averageHeartRate
+        self.weight = loadMetrics.weight
+        self.repetitions = loadMetrics.repetitions
+        self.durationSeconds = enduranceMetrics.durationSeconds
+        self.distanceKilometres = enduranceMetrics.distanceKilometres
+        self.rpe = loadMetrics.rpe
+        self.repsInReserve = loadMetrics.repsInReserve
+        self.reachedFailure = loadMetrics.reachedFailure
+        self.assistanceKilograms = loadMetrics.assistanceKilograms
+        self.rangeOfMotionValue = enduranceMetrics.rangeOfMotionValue
+        self.averageHeartRate = enduranceMetrics.averageHeartRate
         self.side = side
-        self.workSeconds = workSeconds
+        self.workSeconds = enduranceMetrics.workSeconds
         self.hadPain = hadPain
         self.note = note
     }
@@ -161,6 +199,16 @@ enum LegacyDecoding {
 }
 
 public struct PlannedSet: Codable, Equatable, Identifiable, Sendable {
+    public struct SetConfig: Equatable, Sendable {
+        public var stepType: StepType
+        public var isOptional: Bool
+
+        public init(stepType: StepType = .working, isOptional: Bool = false) {
+            self.stepType = stepType
+            self.isOptional = isOptional
+        }
+    }
+
     public var id: UUID
     public var label: String
     public var kind: ActivityKind
@@ -177,19 +225,18 @@ public struct PlannedSet: Codable, Equatable, Identifiable, Sendable {
         id: UUID = UUID(),
         label: String,
         kind: ActivityKind,
-        stepType: StepType = .working,
         target: SetTarget,
         rest: RestRange,
-        isOptional: Bool = false,
+        config: SetConfig = .init(),
         cue: String? = nil
     ) {
         self.id = id
         self.label = label
         self.kind = kind
-        self.stepType = stepType
+        self.stepType = config.stepType
         self.target = target
         self.rest = rest
-        self.isOptional = isOptional
+        self.isOptional = config.isOptional
         self.cue = cue
     }
 
@@ -293,6 +340,81 @@ public struct WorkoutTemplate: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct WorkoutStep: Codable, Equatable, Identifiable, Sendable {
+    public struct ExerciseRef: Equatable, Sendable {
+        public var plannedSetID: UUID?
+        public var exerciseName: String
+        public var exerciseSlug: String?
+        public var cue: String
+        public var label: String
+        public var kind: ActivityKind
+
+        public init(
+            plannedSetID: UUID?,
+            exerciseName: String,
+            exerciseSlug: String? = nil,
+            cue: String,
+            label: String,
+            kind: ActivityKind
+        ) {
+            self.plannedSetID = plannedSetID
+            self.exerciseName = exerciseName
+            self.exerciseSlug = exerciseSlug
+            self.cue = cue
+            self.label = label
+            self.kind = kind
+        }
+    }
+
+    public struct StepConfig: Equatable, Sendable {
+        public var stepType: StepType
+        public var target: SetTarget
+        public var pillars: Set<Pillar>
+        public var authoredPosition: Int
+        public var rest: RestRange
+        public var isOptional: Bool
+
+        public init(
+            stepType: StepType = .working,
+            target: SetTarget,
+            pillars: Set<Pillar> = [.strength],
+            authoredPosition: Int,
+            rest: RestRange,
+            isOptional: Bool = false
+        ) {
+            self.stepType = stepType
+            self.target = target
+            self.pillars = pillars
+            self.authoredPosition = authoredPosition
+            self.rest = rest
+            self.isOptional = isOptional
+        }
+    }
+
+    public struct StepState: Equatable, Sendable {
+        public var status: StepStatus
+        public var segments: [SetSegment]
+        public var isExtra: Bool
+        public var performedPosition: Int?
+        public var completedAt: Date?
+        public var workSeconds: Int?
+
+        public init(
+            status: StepStatus = .planned,
+            segments: [SetSegment] = [],
+            isExtra: Bool = false,
+            performedPosition: Int? = nil,
+            completedAt: Date? = nil,
+            workSeconds: Int? = nil
+        ) {
+            self.status = status
+            self.segments = segments
+            self.isExtra = isExtra
+            self.performedPosition = performedPosition
+            self.completedAt = completedAt
+            self.workSeconds = workSeconds
+        }
+    }
+
     public var id: UUID
     public var plannedSetID: UUID?
     public var exerciseName: String
@@ -316,44 +438,29 @@ public struct WorkoutStep: Codable, Equatable, Identifiable, Sendable {
 
     public init(
         id: UUID = UUID(),
-        plannedSetID: UUID?,
-        exerciseName: String,
-        exerciseSlug: String? = nil,
-        cue: String,
-        label: String,
-        kind: ActivityKind,
-        stepType: StepType = .working,
-        target: SetTarget,
-        pillars: Set<Pillar> = [.strength],
-        authoredPosition: Int,
-        rest: RestRange,
-        isOptional: Bool = false,
-        status: StepStatus = .planned,
-        segments: [SetSegment] = [],
-        isExtra: Bool = false,
-        performedPosition: Int? = nil,
-        completedAt: Date? = nil,
-        workSeconds: Int? = nil
+        exerciseRef: ExerciseRef,
+        config: StepConfig,
+        state: StepState = .init()
     ) {
         self.id = id
-        self.plannedSetID = plannedSetID
-        self.exerciseName = exerciseName
-        self.exerciseSlug = exerciseSlug
-        self.cue = cue
-        self.label = label
-        self.kind = kind
-        self.stepType = stepType
-        self.target = target
-        self.pillars = pillars
-        self.authoredPosition = authoredPosition
-        self.rest = rest
-        self.isOptional = isOptional
-        self.status = status
-        self.segments = segments
-        self.isExtra = isExtra
-        self.performedPosition = performedPosition
-        self.completedAt = completedAt
-        self.workSeconds = workSeconds
+        self.plannedSetID = exerciseRef.plannedSetID
+        self.exerciseName = exerciseRef.exerciseName
+        self.exerciseSlug = exerciseRef.exerciseSlug
+        self.cue = exerciseRef.cue
+        self.label = exerciseRef.label
+        self.kind = exerciseRef.kind
+        self.stepType = config.stepType
+        self.target = config.target
+        self.pillars = config.pillars
+        self.authoredPosition = config.authoredPosition
+        self.rest = config.rest
+        self.isOptional = config.isOptional
+        self.status = state.status
+        self.segments = state.segments
+        self.isExtra = state.isExtra
+        self.performedPosition = state.performedPosition
+        self.completedAt = state.completedAt
+        self.workSeconds = state.workSeconds
     }
 
     public init(from decoder: any Decoder) throws {
@@ -421,6 +528,47 @@ public struct RestState: Codable, Equatable, Sendable {
 }
 
 public struct WorkoutSession: Codable, Equatable, Identifiable, Sendable {
+    public struct SessionContext: Equatable, Sendable {
+        public var templateID: UUID
+        public var templateName: String
+        public var startedAt: Date
+        public var completedAt: Date?
+
+        public init(
+            templateID: UUID,
+            templateName: String,
+            startedAt: Date,
+            completedAt: Date? = nil
+        ) {
+            self.templateID = templateID
+            self.templateName = templateName
+            self.startedAt = startedAt
+            self.completedAt = completedAt
+        }
+    }
+
+    public struct SessionState: Equatable, Sendable {
+        public var steps: [WorkoutStep]
+        public var activeIndex: Int
+        public var rest: RestState?
+        public var programmeWeek: Int?
+        public var programmeDayIndex: Int?
+
+        public init(
+            steps: [WorkoutStep],
+            activeIndex: Int = 0,
+            rest: RestState? = nil,
+            programmeWeek: Int? = nil,
+            programmeDayIndex: Int? = nil
+        ) {
+            self.steps = steps
+            self.activeIndex = activeIndex
+            self.rest = rest
+            self.programmeWeek = programmeWeek
+            self.programmeDayIndex = programmeDayIndex
+        }
+    }
+
     public var id: UUID
     public var templateID: UUID
     public var templateName: String
@@ -436,26 +584,19 @@ public struct WorkoutSession: Codable, Equatable, Identifiable, Sendable {
 
     public init(
         id: UUID = UUID(),
-        templateID: UUID,
-        templateName: String,
-        startedAt: Date,
-        completedAt: Date? = nil,
-        steps: [WorkoutStep],
-        activeIndex: Int = 0,
-        rest: RestState? = nil,
-        programmeWeek: Int? = nil,
-        programmeDayIndex: Int? = nil
+        context: SessionContext,
+        state: SessionState
     ) {
         self.id = id
-        self.templateID = templateID
-        self.templateName = templateName
-        self.startedAt = startedAt
-        self.completedAt = completedAt
-        self.steps = steps
-        self.activeIndex = activeIndex
-        self.rest = rest
-        self.programmeWeek = programmeWeek
-        self.programmeDayIndex = programmeDayIndex
+        self.templateID = context.templateID
+        self.templateName = context.templateName
+        self.startedAt = context.startedAt
+        self.completedAt = context.completedAt
+        self.steps = state.steps
+        self.activeIndex = state.activeIndex
+        self.rest = state.rest
+        self.programmeWeek = state.programmeWeek
+        self.programmeDayIndex = state.programmeDayIndex
     }
 
     public var currentStep: WorkoutStep? {
@@ -549,6 +690,16 @@ public enum SyncState: String, Codable, Sendable {
 }
 
 public struct SetlineDocument: Codable, Equatable, Sendable {
+    public struct SyncInfo: Equatable, Sendable {
+        public var syncState: SyncState
+        public var lastSyncedAt: Date?
+
+        public init(syncState: SyncState = .deviceOnly, lastSyncedAt: Date? = nil) {
+            self.syncState = syncState
+            self.lastSyncedAt = lastSyncedAt
+        }
+    }
+
     public var schemaVersion: Int
     public var templates: [WorkoutTemplate]
     public var programme: ProgrammeSelection
@@ -567,8 +718,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         activeSession: WorkoutSession? = nil,
         history: [WorkoutSession] = [],
         goals: [ExerciseGoal] = [],
-        syncState: SyncState = .deviceOnly,
-        lastSyncedAt: Date? = nil
+        sync: SyncInfo = .init()
     ) {
         self.schemaVersion = schemaVersion
         self.templates = templates
@@ -576,8 +726,8 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         self.activeSession = activeSession
         self.history = history
         self.goals = goals
-        self.syncState = syncState
-        self.lastSyncedAt = lastSyncedAt
+        self.syncState = sync.syncState
+        self.lastSyncedAt = sync.lastSyncedAt
     }
 
     /// Reads both the version 1 envelope, whose `programme` was a bare custom
@@ -652,33 +802,18 @@ public extension SetlineDocument {
                 return entry.reps.map { reps in
                     defer { position += 1 }
                     return WorkoutStep(
-                        plannedSetID: UUID(),
-                        exerciseName: name,
-                        exerciseSlug: slug,
-                        cue: "",
-                        label: "Working set \(position % 3 + 1) of 3",
-                        kind: .strength,
-                        stepType: .working,
-                        target: SetTarget(
-                            repsLow: repsHigh - 3,
-                            repsHigh: repsHigh,
-                            load: .absolute(kilograms: entry.load),
-                            repsInReserve: 1
-                        ),
-                        authoredPosition: position,
-                        rest: RestRange(lowSeconds: 150, highSeconds: 180),
-                        status: .complete,
-                        segments: [SetSegment(weight: entry.load, repetitions: reps)],
-                        completedAt: date
+                        exerciseRef: WorkoutStep.ExerciseRef(plannedSetID: UUID(), exerciseName: name, exerciseSlug: slug, cue: "", label: "Working set \(position % 3 + 1) of 3", kind: .strength),
+                        config: WorkoutStep.StepConfig(stepType: .working, target: SetTarget(
+                            repTarget: SetTarget.RepTarget(repsLow: repsHigh - 3, repsHigh: repsHigh, repsInReserve: 1),
+                            load: .absolute(kilograms: entry.load)
+                        ), authoredPosition: position, rest: RestRange(lowSeconds: 150, highSeconds: 180)),
+                        state: WorkoutStep.StepState(status: .complete, segments: [SetSegment(loadMetrics: SetSegment.LoadMetrics(weight: entry.load, repetitions: reps))], completedAt: date)
                     )
                 }
             }
             return WorkoutSession(
-                templateID: ProgrammeSessionKind.upper.templateID,
-                templateName: "Upper",
-                startedAt: date,
-                completedAt: date.addingTimeInterval(3_900),
-                steps: steps(
+                context: WorkoutSession.SessionContext(templateID: ProgrammeSessionKind.upper.templateID, templateName: "Upper", startedAt: date, completedAt: date.addingTimeInterval(3_900)),
+                state: WorkoutSession.SessionState(steps: steps(
                     name: "Bench press",
                     slug: "bench-press",
                     repsHigh: 8,
@@ -688,9 +823,7 @@ public extension SetlineDocument {
                     slug: "lat-pulldown",
                     repsHigh: 10,
                     progression: pulldownProgression
-                ),
-                programmeWeek: index + 1,
-                programmeDayIndex: 0
+                ), programmeWeek: index + 1, programmeDayIndex: 0)
             )
         }
 
@@ -707,14 +840,14 @@ public extension SetlineDocument {
                     metric: .topSetLoad,
                     targetValue: 90,
                     referenceRepetitions: 5,
-                    createdAt: Date.now.addingTimeInterval(-4 * week),
+                    timing: ExerciseGoal.GoalTiming(createdAt: Date.now.addingTimeInterval(-4 * week)),
                     note: "Bodyweight-relative strength target for the block after this one."
                 ),
                 ExerciseGoal(
                     exerciseName: "Lat pulldown",
                     metric: .estimatedOneRepMax,
                     targetValue: 80,
-                    createdAt: Date.now.addingTimeInterval(-4 * week)
+                    timing: ExerciseGoal.GoalTiming(createdAt: Date.now.addingTimeInterval(-4 * week))
                 ),
             ]
         )
@@ -730,26 +863,38 @@ public extension SetlineDocument {
                     PlannedSet(
                         label: "Warm-up",
                         kind: .strength,
-                        stepType: .warmUp,
-                        target: SetTarget(repsLow: 8, load: .absolute(kilograms: 40)),
-                        rest: RestRange(60)
+                        target: SetTarget(
+                            repTarget: SetTarget.RepTarget(repsLow: 8),
+                            load: .absolute(kilograms: 40)
+                        ),
+                        rest: RestRange(60),
+                        config: PlannedSet.SetConfig(stepType: .warmUp)
                     ),
                     PlannedSet(
                         label: "Working 1",
                         kind: .strength,
-                        target: SetTarget(repsLow: 5, load: .absolute(kilograms: 60)),
+                        target: SetTarget(
+                            repTarget: SetTarget.RepTarget(repsLow: 5),
+                            load: .absolute(kilograms: 60)
+                        ),
                         rest: RestRange(150)
                     ),
                     PlannedSet(
                         label: "Working 2",
                         kind: .strength,
-                        target: SetTarget(repsLow: 5, load: .absolute(kilograms: 60)),
+                        target: SetTarget(
+                            repTarget: SetTarget.RepTarget(repsLow: 5),
+                            load: .absolute(kilograms: 60)
+                        ),
                         rest: RestRange(150)
                     ),
                     PlannedSet(
                         label: "Working 3",
                         kind: .strength,
-                        target: SetTarget(repsLow: 5, load: .absolute(kilograms: 60)),
+                        target: SetTarget(
+                            repTarget: SetTarget.RepTarget(repsLow: 5),
+                            load: .absolute(kilograms: 60)
+                        ),
                         rest: RestRange(150)
                     ),
                 ], pillars: [.strength]),
@@ -757,19 +902,28 @@ public extension SetlineDocument {
                     PlannedSet(
                         label: "Working 1",
                         kind: .strength,
-                        target: SetTarget(repsLow: 8, load: .absolute(kilograms: 70)),
+                        target: SetTarget(
+                            repTarget: SetTarget.RepTarget(repsLow: 8),
+                            load: .absolute(kilograms: 70)
+                        ),
                         rest: RestRange(120)
                     ),
                     PlannedSet(
                         label: "Working 2",
                         kind: .strength,
-                        target: SetTarget(repsLow: 8, load: .absolute(kilograms: 70)),
+                        target: SetTarget(
+                            repTarget: SetTarget.RepTarget(repsLow: 8),
+                            load: .absolute(kilograms: 70)
+                        ),
                         rest: RestRange(120)
                     ),
                     PlannedSet(
                         label: "Working 3",
                         kind: .strength,
-                        target: SetTarget(repsLow: 8, load: .absolute(kilograms: 70)),
+                        target: SetTarget(
+                            repTarget: SetTarget.RepTarget(repsLow: 8),
+                            load: .absolute(kilograms: 70)
+                        ),
                         rest: RestRange(120)
                     ),
                 ], pillars: [.strength]),
@@ -777,13 +931,19 @@ public extension SetlineDocument {
                     PlannedSet(
                         label: "Left",
                         kind: .timed,
-                        target: SetTarget(holdSeconds: 45, perSide: true),
+                        target: SetTarget(
+                            timeTarget: SetTarget.TimeTarget(holdSeconds: 45),
+                            perSide: true
+                        ),
                         rest: RestRange(45)
                     ),
                     PlannedSet(
                         label: "Right",
                         kind: .timed,
-                        target: SetTarget(holdSeconds: 45, perSide: true),
+                        target: SetTarget(
+                            timeTarget: SetTarget.TimeTarget(holdSeconds: 45),
+                            perSide: true
+                        ),
                         rest: RestRange(45)
                     ),
                 ], pillars: [.strength, .stamina]),
@@ -801,9 +961,9 @@ public extension SetlineDocument {
                         PlannedSet(
                             label: "Round \(round)",
                             kind: .cardio,
-                            stepType: .cardio,
-                            target: SetTarget(timeSeconds: 240),
-                            rest: RestRange(90)
+                            target: SetTarget(timeTarget: SetTarget.TimeTarget(timeSeconds: 240)),
+                            rest: RestRange(90),
+                            config: PlannedSet.SetConfig(stepType: .cardio)
                         )
                     },
                     pillars: [.stamina]
@@ -815,9 +975,12 @@ public extension SetlineDocument {
                         PlannedSet(
                             label: "Mobility",
                             kind: .mobility,
-                            stepType: .mobility,
-                            target: SetTarget(repsLow: 8, perSide: true),
-                            rest: RestRange(30)
+                            target: SetTarget(
+                                repTarget: SetTarget.RepTarget(repsLow: 8),
+                                perSide: true
+                            ),
+                            rest: RestRange(30),
+                            config: PlannedSet.SetConfig(stepType: .mobility)
                         ),
                     ],
                     pillars: [.mobility]
@@ -851,28 +1014,14 @@ public extension SetlineDocument {
             exercise.sets.map { planned in
                 defer { position += 1 }
                 return WorkoutStep(
-                    plannedSetID: planned.id,
-                    exerciseName: exercise.name,
-                    exerciseSlug: exercise.definitionSlug,
-                    cue: planned.cue ?? exercise.cue,
-                    label: planned.label,
-                    kind: planned.kind,
-                    stepType: planned.stepType,
-                    target: planned.target,
-                    pillars: exercise.pillars,
-                    authoredPosition: position,
-                    rest: planned.rest,
-                    isOptional: planned.isOptional
+                    exerciseRef: .init(plannedSetID: planned.id, exerciseName: exercise.name, exerciseSlug: exercise.definitionSlug, cue: planned.cue ?? exercise.cue, label: planned.label, kind: planned.kind),
+                    config: .init(stepType: planned.stepType, target: planned.target, pillars: exercise.pillars, authoredPosition: position, rest: planned.rest, isOptional: planned.isOptional)
                 )
             }
         }
         activeSession = WorkoutSession(
-            templateID: template.id,
-            templateName: template.name,
-            startedAt: date,
-            steps: steps,
-            programmeWeek: programmeWeek,
-            programmeDayIndex: programmeDayIndex
+            context: .init(templateID: template.id, templateName: template.name, startedAt: date),
+            state: .init(steps: steps, programmeWeek: programmeWeek, programmeDayIndex: programmeDayIndex)
         )
     }
 
@@ -939,18 +1088,9 @@ public extension SetlineDocument {
             throw SetlineError.noActiveStep
         }
         let extra = WorkoutStep(
-            plannedSetID: nil,
-            exerciseName: current.exerciseName,
-            exerciseSlug: current.exerciseSlug,
-            cue: current.cue,
-            label: "Extra set",
-            kind: current.kind,
-            stepType: current.stepType,
-            target: current.target,
-            pillars: current.pillars,
-            authoredPosition: current.authoredPosition,
-            rest: current.rest,
-            isExtra: true
+            exerciseRef: .init(plannedSetID: nil, exerciseName: current.exerciseName, exerciseSlug: current.exerciseSlug, cue: current.cue, label: "Extra set", kind: current.kind),
+            config: .init(stepType: current.stepType, target: current.target, pillars: current.pillars, authoredPosition: current.authoredPosition, rest: current.rest),
+            state: .init(isExtra: true)
         )
         session.steps.insert(extra, at: min(session.activeIndex + 1, session.steps.count))
         activeSession = session

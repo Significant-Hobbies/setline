@@ -291,7 +291,10 @@ struct TemplateEditorView: View {
             sets: [PlannedSet(
                 label: "Working 1",
                 kind: .strength,
-                target: SetTarget(repsLow: 8, load: .chooseLoad),
+                target: SetTarget(
+                    repTarget: .init(repsLow: 8),
+                    load: .chooseLoad
+                ),
                 rest: RestRange(90)
             )]
         )
@@ -314,9 +317,12 @@ struct TemplateEditorView: View {
                             exercise.sets.append(PlannedSet(
                                 label: "Working \(exercise.sets.count + 1)",
                                 kind: exercise.sets.last?.kind ?? .strength,
-                                stepType: .working,
-                                target: exercise.sets.last?.target ?? SetTarget(repsLow: 8, load: .chooseLoad),
-                                rest: exercise.sets.last?.rest ?? RestRange(90)
+                                target: exercise.sets.last?.target ?? SetTarget(
+                                    repTarget: .init(repsLow: 8),
+                                    load: .chooseLoad
+                                ),
+                                rest: exercise.sets.last?.rest ?? RestRange(90),
+                                config: .init(stepType: .working)
                             ))
                         } label: {
                             Label("Add set", systemImage: "plus")

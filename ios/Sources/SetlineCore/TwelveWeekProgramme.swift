@@ -370,7 +370,7 @@ public enum TwelveWeekProgramme {
                 "General preparation · 1 of 4",
                 .cardio,
                 .preparation,
-                SetTarget(timeSeconds: 180),
+                SetTarget(timeTarget: .init(timeSeconds: 180)),
                 cue: "Use an easy pace for 2–3 minutes."
             ),
         ]),
@@ -379,19 +379,22 @@ public enum TwelveWeekProgramme {
                 "General preparation · 2 of 4",
                 .mobility,
                 .preparation,
-                SetTarget(repsLow: 20),
+                SetTarget(repTarget: .init(repsLow: 20)),
                 cue: "Complete 10 forward and 10 backward."
             ),
         ]),
         exercise("wall-slides", sets: [
-            set("General preparation · 3 of 4", .mobility, .preparation, SetTarget(repsLow: 8)),
+            set("General preparation · 3 of 4", .mobility, .preparation, SetTarget(repTarget: .init(repsLow: 8))),
         ]),
         exercise("scapular-pulldown", sets: [
             set(
                 "General preparation · 4 of 4",
                 .strength,
                 .preparation,
-                SetTarget(repsLow: 10, load: .chooseLoad)
+                SetTarget(
+                    repTarget: .init(repsLow: 10),
+                    load: .chooseLoad
+                )
             ),
         ]),
     ]
@@ -403,7 +406,10 @@ public enum TwelveWeekProgramme {
                 "20 kg bar · ramp 1 of 3",
                 .strength,
                 .warmUp,
-                SetTarget(repsLow: 10, load: .absolute(kilograms: 20)),
+                SetTarget(
+                    repTarget: .init(repsLow: 10),
+                    load: .absolute(kilograms: 20)
+                ),
                 rest: RestRange(60),
                 cue: "Set the shoulder blades and repeat the same touch point."
             ),
@@ -411,7 +417,10 @@ public enum TwelveWeekProgramme {
                 "40 kg · ramp 2 of 3",
                 .strength,
                 .warmUp,
-                SetTarget(repsLow: 5, load: .absolute(kilograms: 40)),
+                SetTarget(
+                    repTarget: .init(repsLow: 5),
+                    load: .absolute(kilograms: 40)
+                ),
                 rest: RestRange(60),
                 cue: "Keep the setup identical to the working sets."
             ),
@@ -419,7 +428,10 @@ public enum TwelveWeekProgramme {
                 "55 kg · ramp 3 of 3",
                 .strength,
                 .warmUp,
-                SetTarget(repsLow: 2, repsHigh: 3, load: .absolute(kilograms: 55)),
+                SetTarget(
+                    repTarget: .init(repsLow: 2, repsHigh: 3),
+                    load: .absolute(kilograms: 55)
+                ),
                 rest: RestRange(90),
                 cue: "Warm up without accumulating fatigue."
             ),
@@ -430,10 +442,8 @@ public enum TwelveWeekProgramme {
                 .strength,
                 .working,
                 SetTarget(
-                    repsLow: 5,
-                    repsHigh: 8,
-                    load: .absolute(kilograms: 65),
-                    repsInReserve: repsInReserve(week: week)
+                    repTarget: .init(repsLow: 5, repsHigh: 8, repsInReserve: repsInReserve(week: week)),
+                    load: .absolute(kilograms: 65)
                 ),
                 rest: RestRange(lowSeconds: 150, highSeconds: 180),
                 cue: "Do not train bench to failure."
@@ -449,7 +459,10 @@ public enum TwelveWeekProgramme {
                 "One test before pulldowns",
                 .repetitions,
                 .check,
-                SetTarget(repsLow: 1, load: .bodyweight(plusKilograms: 0)),
+                SetTarget(
+                    repTarget: .init(repsLow: 1),
+                    load: .bodyweight(plusKilograms: 0)
+                ),
                 optional: true,
                 cue: "Attempt one clean strict pull-up only. Do not repeat-test."
             ),
@@ -460,7 +473,10 @@ public enum TwelveWeekProgramme {
         exercise("lat-pulldown", sets: [
             warmUpSet(
                 "1 light set",
-                SetTarget(repsLow: 8, load: .chooseLoad),
+                SetTarget(
+                    repTarget: .init(repsLow: 8),
+                    load: .chooseLoad
+                ),
                 cue: "Use a comfortable neutral or shoulder-width grip."
             ),
         ] + workingSets(
@@ -474,7 +490,10 @@ public enum TwelveWeekProgramme {
 
     static func shoulderPressExercise(week: Int) -> Exercise {
         exercise("machine-or-db-shoulder-press", sets: [
-            warmUpSet("1 light set", SetTarget(repsLow: 6, repsHigh: 8, load: .chooseLoad)),
+            warmUpSet("1 light set", SetTarget(
+                repTarget: .init(repsLow: 6, repsHigh: 8),
+                load: .chooseLoad
+            )),
         ] + workingSets(
             count: 2,
             repsLow: 6,
@@ -488,7 +507,10 @@ public enum TwelveWeekProgramme {
         exercise("chest-supported-or-cable-row", sets: [
             warmUpSet(
                 "Optional light set",
-                SetTarget(repsLow: 8, load: .chooseLoad),
+                SetTarget(
+                    repTarget: .init(repsLow: 8),
+                    load: .chooseLoad
+                ),
                 optional: true,
                 cue: "Use this familiarisation set only if needed."
             ),
@@ -508,7 +530,10 @@ public enum TwelveWeekProgramme {
                 "Optional set \(number) of 2",
                 .strength,
                 .working,
-                SetTarget(repsLow: 12, repsHigh: 20, load: .chooseLoad),
+                SetTarget(
+                    repTarget: .init(repsLow: 12, repsHigh: 20),
+                    load: .chooseLoad
+                ),
                 rest: RestRange(60),
                 optional: true,
                 cue: "Add only if shoulders feel good and recovery is comfortable."
@@ -523,7 +548,7 @@ public enum TwelveWeekProgramme {
                 "Working set \(number) of 2",
                 .repetitions,
                 .working,
-                SetTarget(repsLow: 6, repsHigh: 12),
+                SetTarget(repTarget: .init(repsLow: 6, repsHigh: 12)),
                 rest: RestRange(lowSeconds: 60, highSeconds: 90)
             )
         }
@@ -536,7 +561,10 @@ public enum TwelveWeekProgramme {
                 "Optional light carry",
                 .timed,
                 .warmUp,
-                SetTarget(load: .chooseLoad, holdSeconds: 15),
+                SetTarget(
+                    timeTarget: .init(holdSeconds: 15),
+                    load: .chooseLoad
+                ),
                 rest: RestRange(60),
                 optional: true
             ),
@@ -545,7 +573,10 @@ public enum TwelveWeekProgramme {
                 "Carry \(number) of 2",
                 .timed,
                 .working,
-                SetTarget(load: .chooseLoad, holdSeconds: 30),
+                SetTarget(
+                    timeTarget: .init(holdSeconds: 30),
+                    load: .chooseLoad
+                ),
                 rest: RestRange(lowSeconds: 90, highSeconds: 120),
                 cue: "Build toward 45 seconds, then add weight and return to 30."
             )
@@ -558,19 +589,25 @@ public enum TwelveWeekProgramme {
                 "1 hold per side",
                 .timed,
                 .cooldown,
-                SetTarget(holdSeconds: 45, perSide: true),
+                SetTarget(
+                    timeTarget: .init(holdSeconds: 45),
+                    perSide: true
+                ),
                 cue: "Use 30–45 seconds per side."
             ),
         ]),
         exercise("bench-lat-stretch", sets: [
-            set("1 hold", .timed, .cooldown, SetTarget(holdSeconds: 45)),
+            set("1 hold", .timed, .cooldown, SetTarget(timeTarget: .init(holdSeconds: 45))),
         ]),
         exercise("open-book-rotation", sets: [
             set(
                 "Optional · each side",
                 .mobility,
                 .cooldown,
-                SetTarget(repsLow: 5, perSide: true),
+                SetTarget(
+                    repTarget: .init(repsLow: 5),
+                    perSide: true
+                ),
                 optional: true
             ),
         ]),
@@ -610,7 +647,7 @@ public enum TwelveWeekProgramme {
                 "General preparation · 1 of 5",
                 .cardio,
                 .preparation,
-                SetTarget(timeSeconds: 180),
+                SetTarget(timeTarget: .init(timeSeconds: 180)),
                 cue: "Use an easy pace for 3 minutes."
             ),
         ]),
@@ -619,36 +656,51 @@ public enum TwelveWeekProgramme {
                 "General preparation · 2 of 5",
                 .mobility,
                 .preparation,
-                SetTarget(repsLow: 10, perSide: true)
+                SetTarget(
+                    repTarget: .init(repsLow: 10),
+                    perSide: true
+                )
             ),
         ]),
         exercise("supported-squat-repetitions", sets: [
-            set("General preparation · 3 of 5", .mobility, .preparation, SetTarget(repsLow: 5)),
+            set("General preparation · 3 of 5", .mobility, .preparation, SetTarget(repTarget: .init(repsLow: 5))),
         ]),
         exercise("goblet-squat", sets: [
             set(
                 "General preparation · 4 of 5",
                 .strength,
                 .preparation,
-                SetTarget(repsLow: 6, repsHigh: 8, load: .chooseLoad),
+                SetTarget(
+                    repTarget: .init(repsLow: 6, repsHigh: 8),
+                    load: .chooseLoad
+                ),
                 cue: "Elevate the heels when needed."
             ),
         ]),
         exercise("unloaded-hip-hinge", sets: [
-            set("General preparation · 5 of 5", .mobility, .preparation, SetTarget(repsLow: 8)),
+            set("General preparation · 5 of 5", .mobility, .preparation, SetTarget(repTarget: .init(repsLow: 8))),
         ]),
     ]
 
     static func hackSquatExercise(week: Int) -> Exercise {
         exercise("hack-squat-or-leg-press", sets: [
-            warmUpSet("Light × 10 · ramp 1 of 3", SetTarget(repsLow: 10, load: .chooseLoad)),
+            warmUpSet("Light × 10 · ramp 1 of 3", SetTarget(
+                repTarget: .init(repsLow: 10),
+                load: .chooseLoad
+            )),
             warmUpSet(
                 "About 50% × 5 · ramp 2 of 3",
-                SetTarget(repsLow: 5, load: .percentOfOneRepMax(50))
+                SetTarget(
+                    repTarget: .init(repsLow: 5),
+                    load: .percentOfOneRepMax(50)
+                )
             ),
             warmUpSet(
                 "About 70% × 3 · ramp 3 of 3",
-                SetTarget(repsLow: 3, load: .percentOfOneRepMax(70)),
+                SetTarget(
+                    repTarget: .init(repsLow: 3),
+                    load: .percentOfOneRepMax(70)
+                ),
                 rest: RestRange(90),
                 cue: "Repeat the working-set stance and depth."
             ),
@@ -668,14 +720,20 @@ public enum TwelveWeekProgramme {
                 "Bar × 8 · ramp 1 of 2",
                 .strength,
                 .warmUp,
-                SetTarget(repsLow: 8, load: .absolute(kilograms: 20)),
+                SetTarget(
+                    repTarget: .init(repsLow: 8),
+                    load: .absolute(kilograms: 20)
+                ),
                 rest: RestRange(60)
             ),
             set(
                 "50–60% × 5 · ramp 2 of 2",
                 .strength,
                 .warmUp,
-                SetTarget(repsLow: 5, load: .percentOfOneRepMax(55)),
+                SetTarget(
+                    repTarget: .init(repsLow: 5),
+                    load: .percentOfOneRepMax(55)
+                ),
                 rest: RestRange(90),
                 cue: "Stop when further descent would require spinal movement."
             ),
@@ -687,10 +745,8 @@ public enum TwelveWeekProgramme {
                 .strength,
                 .working,
                 SetTarget(
-                    repsLow: 6,
-                    repsHigh: 10,
-                    load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week)
+                    repTarget: .init(repsLow: 6, repsHigh: 10, repsInReserve: repsInReserve(week: week)),
+                    load: .chooseLoad
                 ),
                 rest: RestRange(lowSeconds: 150, highSeconds: 180),
                 optional: isConditional,
@@ -706,7 +762,11 @@ public enum TwelveWeekProgramme {
         exercise("supported-bulgarian-split-squat", sets: [
             warmUpSet(
                 "Bodyweight or light × 5 per leg",
-                SetTarget(repsLow: 5, load: .chooseLoad, perSide: true)
+                SetTarget(
+                    repTarget: .init(repsLow: 5),
+                    load: .chooseLoad,
+                    perSide: true
+                )
             ),
         ] + workingSets(
             count: 2,
@@ -721,7 +781,10 @@ public enum TwelveWeekProgramme {
 
     static func legCurlExercise(week: Int) -> Exercise {
         exercise("lying-leg-curl", sets: [
-            warmUpSet("1 light set", SetTarget(repsLow: 8, repsHigh: 10, load: .chooseLoad)),
+            warmUpSet("1 light set", SetTarget(
+                repTarget: .init(repsLow: 8, repsHigh: 10),
+                load: .chooseLoad
+            )),
         ] + workingSets(
             count: 2,
             repsLow: 10,
@@ -737,7 +800,10 @@ public enum TwelveWeekProgramme {
                 "Bodyweight × 10",
                 .repetitions,
                 .warmUp,
-                SetTarget(repsLow: 10, load: .bodyweight(plusKilograms: 0)),
+                SetTarget(
+                    repTarget: .init(repsLow: 10),
+                    load: .bodyweight(plusKilograms: 0)
+                ),
                 rest: RestRange(60),
                 cue: "Use a Smith machine, single-leg dumbbell raise, or straight-knee leg-press calf press."
             ),
@@ -756,7 +822,10 @@ public enum TwelveWeekProgramme {
                 "1 hold per side",
                 .timed,
                 .cooldown,
-                SetTarget(holdSeconds: 45, perSide: true),
+                SetTarget(
+                    timeTarget: .init(holdSeconds: 45),
+                    perSide: true
+                ),
                 cue: "Use 30–45 seconds per side."
             ),
         ]),
@@ -765,7 +834,10 @@ public enum TwelveWeekProgramme {
                 "1 hold per side",
                 .timed,
                 .cooldown,
-                SetTarget(holdSeconds: 45, perSide: true),
+                SetTarget(
+                    timeTarget: .init(holdSeconds: 45),
+                    perSide: true
+                ),
                 cue: "Use 30–45 seconds per side."
             ),
         ]),
@@ -774,7 +846,10 @@ public enum TwelveWeekProgramme {
                 "1 hold per side",
                 .timed,
                 .cooldown,
-                SetTarget(holdSeconds: 45, perSide: true),
+                SetTarget(
+                    timeTarget: .init(holdSeconds: 45),
+                    perSide: true
+                ),
                 cue: "Avoid arching the lower back."
             ),
         ]),
@@ -791,7 +866,7 @@ public enum TwelveWeekProgramme {
                     "Easy warm-up",
                     .cardio,
                     .cardio,
-                    SetTarget(timeSeconds: 480),
+                    SetTarget(timeTarget: .init(timeSeconds: 480)),
                     cue: "Use 7–8 easy minutes after the full Upper session."
                 ),
             ]),
@@ -801,7 +876,7 @@ public enum TwelveWeekProgramme {
                 "Hard round \(round) of \(rounds)",
                 .cardio,
                 .cardio,
-                SetTarget(timeSeconds: 120),
+                SetTarget(timeTarget: .init(timeSeconds: 120)),
                 rest: RestRange(180),
                 cue: "Use 8/10 effort: demanding and controlled, never all-out."
             )
@@ -811,7 +886,7 @@ public enum TwelveWeekProgramme {
                 "Easy cooldown",
                 .cardio,
                 .cooldown,
-                SetTarget(timeSeconds: 300),
+                SetTarget(timeTarget: .init(timeSeconds: 300)),
                 cue: "Finish with 5 easy minutes."
             ),
         ]))
@@ -824,21 +899,21 @@ public enum TwelveWeekProgramme {
                 "Very easy start · 1 of 3",
                 .cardio,
                 .cardio,
-                SetTarget(timeSeconds: 300),
+                SetTarget(timeTarget: .init(timeSeconds: 300)),
                 cue: "Use treadmill walking, incline walking, bike, or elliptical."
             ),
             set(
                 "Aerobic work · 2 of 3",
                 .cardio,
                 .cardio,
-                SetTarget(timeSeconds: 2_100),
+                SetTarget(timeTarget: .init(timeSeconds: 2_100)),
                 cue: "Stay around 3–4/10; full sentences should remain possible."
             ),
             set(
                 "Easy finish · 3 of 3",
                 .cardio,
                 .cooldown,
-                SetTarget(timeSeconds: 300),
+                SetTarget(timeTarget: .init(timeSeconds: 300)),
                 cue: "Finish fresh; do not turn the session into a race."
             ),
         ]),
@@ -853,7 +928,10 @@ public enum TwelveWeekProgramme {
                 "Set \(number) of 2 · each side",
                 .mobility,
                 .mobility,
-                SetTarget(repsLow: 10, perSide: true),
+                SetTarget(
+                    repTarget: .init(repsLow: 10),
+                    perSide: true
+                ),
                 rest: RestRange(30)
             )
         }),
@@ -862,7 +940,7 @@ public enum TwelveWeekProgramme {
                 "Hold \(number) of 2",
                 .timed,
                 .mobility,
-                SetTarget(holdSeconds: 45),
+                SetTarget(timeTarget: .init(holdSeconds: 45)),
                 rest: RestRange(30),
                 cue: "Hold a rack or post. Elevate the heels when needed; do not force depth."
             )
@@ -872,7 +950,10 @@ public enum TwelveWeekProgramme {
                 "Set \(number) of 2 · slow descent",
                 .strength,
                 .mobility,
-                SetTarget(repsLow: 6, load: .chooseLoad),
+                SetTarget(
+                    repTarget: .init(repsLow: 6),
+                    load: .chooseLoad
+                ),
                 rest: RestRange(30),
                 cue: "Use a slow descent and control the available range."
             )
@@ -882,7 +963,10 @@ public enum TwelveWeekProgramme {
                 "Set \(number) of 2 · each side",
                 .mobility,
                 .mobility,
-                SetTarget(repsLow: 6, perSide: true),
+                SetTarget(
+                    repTarget: .init(repsLow: 6),
+                    perSide: true
+                ),
                 rest: RestRange(30)
             )
         }),
@@ -891,22 +975,28 @@ public enum TwelveWeekProgramme {
                 "1 hold per side",
                 .timed,
                 .mobility,
-                SetTarget(holdSeconds: 45, perSide: true),
+                SetTarget(
+                    timeTarget: .init(holdSeconds: 45),
+                    perSide: true
+                ),
                 rest: RestRange(15)
             ),
         ]),
         exercise("wall-slides", sets: (1...2).map { number in
-            set("Set \(number) of 2", .mobility, .mobility, SetTarget(repsLow: 8), rest: RestRange(30))
+            set("Set \(number) of 2", .mobility, .mobility, SetTarget(repTarget: .init(repsLow: 8)), rest: RestRange(30))
         }),
         exercise("bench-lat-stretch", sets: [
-            set("1 hold", .timed, .mobility, SetTarget(holdSeconds: 45), rest: RestRange(15)),
+            set("1 hold", .timed, .mobility, SetTarget(timeTarget: .init(holdSeconds: 45)), rest: RestRange(15)),
         ]),
         exercise("doorway-pec-stretch", sets: [
             set(
                 "1 hold per side",
                 .timed,
                 .mobility,
-                SetTarget(holdSeconds: 45, perSide: true),
+                SetTarget(
+                    timeTarget: .init(holdSeconds: 45),
+                    perSide: true
+                ),
                 rest: RestRange(15),
                 cue: "Use 30–45 seconds per side; stop for sharp or radiating pain."
             ),
@@ -962,10 +1052,8 @@ public enum TwelveWeekProgramme {
                 .strength,
                 .working,
                 SetTarget(
-                    repsLow: repsLow,
-                    repsHigh: repsHigh,
+                    repTarget: .init(repsLow: repsLow, repsHigh: repsHigh, repsInReserve: repsInReserve(week: week)),
                     load: .chooseLoad,
-                    repsInReserve: repsInReserve(week: week),
                     perSide: perSide
                 ),
                 rest: rest,
@@ -986,10 +1074,9 @@ public enum TwelveWeekProgramme {
         PlannedSet(
             label: label,
             kind: kind,
-            stepType: stepType,
             target: target,
             rest: rest,
-            isOptional: optional,
+            config: .init(stepType: stepType, isOptional: optional),
             cue: cue
         )
     }

@@ -32,13 +32,11 @@ const sourceExtensions = new Set([
 ]);
 const baselines = {
   // Measured against the native sources alone, now that the TypeScript library and
-  // Worker are gone — they held every high-CCN and long function. All nine
-  // remaining violations are memberwise initializers on Codable value types with
-  // more than 7 stored properties; WorkoutStep is the 19-parameter case. Grouping
-  // those fields into nested structs is the only way to shrink the count, and it
-  // would change the persisted JSON shape the version 1 migration reads, so the
-  // parameter counts are accepted rather than traded for a schema break.
-  complexity: { violations: 9, maxCcn: 15, maxLength: 73, maxParams: 19 },
+  // Worker are gone — they held every high-CCN and long function. The nine
+  // memberwise-initializer violations on Codable value types were resolved by
+  // grouping stored properties into nested structs without breaking the persisted
+  // JSON shape the version 1 migration reads.
+  complexity: { violations: 0, maxCcn: 15, maxLength: 84, maxParams: 7 },
   // Zero after the shared legacy decoder, programme set builders and cardio
   // definition builder replaced the copied blocks. Keep it at zero.
   duplication: { clones: 0, duplicatedLines: 0 },
