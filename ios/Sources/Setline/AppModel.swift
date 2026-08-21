@@ -299,6 +299,14 @@ final class AppModel {
         isPlatformSyncing = true
         defer { isPlatformSyncing = false }
         do {
+            for session in document.history {
+                guard let completedAt = session.completedAt else { continue }
+                try await platform.sync.enqueue(
+                    recordId: session.id.uuidString.lowercased(),
+                    occurredAt: SetlinePlatformRecord.iso(session.startedAt),
+                    record: SetlinePlatformRecord.session(session, completedAt: completedAt)
+                )
+            }
             let changes = try await platform.sync.synchronize()
             var next = document
             for change in changes {
