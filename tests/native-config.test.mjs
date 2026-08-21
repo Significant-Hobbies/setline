@@ -79,20 +79,17 @@ test("the container is derived from the app's own bundle identifier", async () =
   );
 });
 
-test("the app claims CloudKit and nothing it does not use", async () => {
-  const entitlements = await readSource(
-    "ios/Sources/Setline/Setline.entitlements",
-  );
+test("the app claims only the CloudKit and Apple capabilities it uses", async () => {
+  const [entitlements, settings] = await Promise.all([
+    readSource("ios/Sources/Setline/Setline.entitlements"),
+    readSource("ios/Sources/Setline/SecondaryViews.swift"),
+  ]);
 
   assert.match(entitlements, /com\.apple\.developer\.icloud-services/);
   assert.match(entitlements, /<string>CloudKit<\/string>/);
-  // Setline syncs one person's own training. A shared or public database, or a
-  // returning Sign in with Apple, would each be a change in what the app is.
-  for (const unused of [
-    "com.apple.developer.applesignin",
-    "com.apple.developer.healthkit",
-    "aps-environment",
-  ]) {
+  assert.match(entitlements, /com\.apple\.developer\.applesignin/);
+  assert.match(settings, /SignInWithAppleButton/);
+  for (const unused of ["com.apple.developer.healthkit", "aps-environment"]) {
     assert.ok(
       !entitlements.includes(unused),
       `${unused} is claimed but nothing in the app uses it`,

@@ -1,3 +1,4 @@
+import AuthenticationServices
 import PersonalSyncKit
 import SetlineCore
 import SwiftUI
@@ -87,7 +88,18 @@ struct SettingsView: View {
                     Text("Connect your private Significant Hobbies account to keep completed workouts available across devices.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    Button("Connect Significant Hobbies") {
+                    SignInWithAppleButton(.continue) { request in
+                        account.prepareApple(request)
+                    } onCompletion: { result in
+                        Task {
+                            await account.completeApple(result)
+                            if account.isSignedIn { await model.syncWithPlatform() }
+                        }
+                    }
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(minHeight: 46)
+                    .disabled(account.isConnecting)
+                    Button("Continue with Google") {
                         Task {
                             await account.connect()
                             await model.syncWithPlatform()
