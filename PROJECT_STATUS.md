@@ -33,6 +33,9 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-08-21 — Personal Platform-enabled Setline 1.0.0 (2) completed
+  internal-only TestFlight processing on personal team `8F7LXHTJZR` after the
+  full native gate passed. No App Store submission.
 - 2026-08-21 — added optional Sign in with Apple synchronization of completed
   sessions through Personal Platform. Local JSON remains immediate and the
   active workout path performs no network request; CloudKit remains enabled as
@@ -163,7 +166,8 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 ## Products
 
 - `ios/` — native SwiftUI iPhone beta for local-first workout execution;
-  internal TestFlight on the personal team. No App Store submission.
+  build 1.0.0 (2) completed internal-only TestFlight processing on the
+  personal team. No App Store submission.
 - 2026-08-17 — public landing is the Astro app in `site/`; GitHub Pages
   builds `site/dist`. The older `public/` HTML is leftover.
 - Static public site in `site/` (landing, privacy, terms, changelog) plus the
@@ -184,7 +188,7 @@ is not claimed as shipped. The versioned JSON export remains the backup.
   recording, drop segments, skips, session-only extras, deferrals,
   timestamp-derived rest, relaunch recovery, planning, history, progression,
   data transfer, accessibility, simulator tests, personal-team archiving, and
-  internal TestFlight for 1.0.0 (1).
+  internal-only TestFlight processing for 1.0.0 (2).
 - Optional Personal Platform synchronization for completed sessions, with a
   durable local outbox and manual/foreground pull.
 - Public editorial product changelog at `/changelog`.
