@@ -1,11 +1,12 @@
 import Foundation
 import Observation
+import PersonalSyncKit
 import SetlineCore
 
 /// Owns the one Setline document and every action that changes it.
 ///
-/// Setline is device-first: there is no account, no server, and no request in the
-/// middle of a set. Every mutation writes to local storage and nothing else.
+/// Setline is device-first: no request runs in the middle of a set. Personal
+/// Platform synchronization is optional and always follows the local write.
 @MainActor
 @Observable
 final class AppModel {
@@ -23,15 +24,19 @@ final class AppModel {
     /// than just showing it as off.
     private(set) var syncAvailability: SyncAvailability?
     private(set) var isSyncing = false
+    private(set) var isPlatformSyncing = false
 
     private let store: SetlineStore
     private let restNotifier: RestNotifier
-    private let syncCoordinator: SyncCoordinator?
+    private let syncCoordinator: SetlineCore.SyncCoordinator?
+    private let platform: PersonalPlatformConnection?
+    let account: PersonalWebSignInModel?
 
     init(
         store: SetlineStore = SetlineStore(),
         restNotifier: RestNotifier = RestNotifier(),
-        syncCoordinator: SyncCoordinator? = SyncCoordinator(store: CloudKitRecordStore())
+        syncCoordinator: SetlineCore.SyncCoordinator? = SetlineCore.SyncCoordinator(store: CloudKitRecordStore()),
+        platform: PersonalPlatformConnection? = AppModel.makePlatformConnection()
     ) {
         self.store = store
         self.restNotifier = restNotifier
@@ -40,6 +45,10 @@ final class AppModel {
         // them may reach iCloud: a real account would make their results depend on
         // whatever happens to be in it.
         self.syncCoordinator = Self.isDemoLaunch(arguments) ? nil : syncCoordinator
+        self.platform = Self.isDemoLaunch(arguments) ? nil : platform
+        account = self.platform.map {
+            PersonalWebSignInModel(identity: $0.identity, callbackScheme: "setline")
+        }
         if arguments.contains("--plan-demo") { selectedTab = 1 }
         if arguments.contains("--history-demo") { selectedTab = 2 }
         if arguments.contains("--exercises-demo") { selectedTab = 4 }
@@ -78,6 +87,8 @@ final class AppModel {
                 document = try await store.load()
             }
             try startDemoSessionIfRequested(arguments)
+            await account?.restore()
+            await syncWithPlatform()
         } catch {
             document = .initial
             message = error.localizedDescription
@@ -153,6 +164,7 @@ final class AppModel {
     func finishWorkout() async {
         await mutate { try $0.finishWorkout() }
         await syncRestAlert()
+        if let completed = document.history.first { enqueue(completed) }
         if document.activeSession == nil { isWorkoutPresented = false }
     }
 
@@ -280,6 +292,49 @@ final class AppModel {
         }
     }
 
+    // MARK: - Personal Platform
+
+    func syncWithPlatform(announcing: Bool = false) async {
+        guard let platform, !isPlatformSyncing, document.activeSession == nil else { return }
+        isPlatformSyncing = true
+        defer { isPlatformSyncing = false }
+        do {
+            let changes = try await platform.sync.synchronize()
+            var next = document
+            for change in changes {
+                guard change.operation == .upsert,
+                      let session = SetlinePlatformRecord.session(from: change) else { continue }
+                if let index = next.history.firstIndex(where: { $0.id == session.id }) {
+                    next.history[index] = session
+                } else {
+                    next.history.append(session)
+                }
+            }
+            next.history.sort { $0.startedAt > $1.startedAt }
+            if next != document {
+                try await store.save(next)
+                document = next
+            }
+            if announcing { message = "Cloudflare sync complete." }
+        } catch {
+            if announcing { message = "Cloudflare sync will retry when you are online." }
+        }
+    }
+
+    private func enqueue(_ session: WorkoutSession) {
+        guard let platform, let completedAt = session.completedAt else { return }
+        Task {
+            do {
+                try await platform.sync.enqueue(
+                    recordId: session.id.uuidString.lowercased(),
+                    occurredAt: SetlinePlatformRecord.iso(session.startedAt),
+                    record: SetlinePlatformRecord.session(session, completedAt: completedAt)
+                )
+                _ = try? await platform.sync.synchronize()
+            } catch {}
+        }
+    }
+
     // MARK: - Data transfer
 
     func exportData() async -> Data? {
@@ -338,5 +393,18 @@ final class AppModel {
         } catch {
             message = error.localizedDescription
         }
+    }
+
+    private static func makePlatformConnection() -> PersonalPlatformConnection? {
+        let defaults = UserDefaults.standard
+        let key = "personal-platform-device-id"
+        let deviceId = defaults.string(forKey: key) ?? UUID().uuidString.lowercased()
+        defaults.set(deviceId, forKey: key)
+        return try? PersonalPlatformConnection(
+            domain: .setline,
+            keychainService: "com.significanthobbies.setline",
+            supportDirectory: SetlineFiles.supportDirectory,
+            deviceId: deviceId
+        )
     }
 }

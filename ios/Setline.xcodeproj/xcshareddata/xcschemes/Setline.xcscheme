@@ -43,6 +43,20 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "6A171C897E7ACBACB1C3120C"
+               BuildableName = "SetlineTests.xctest"
+               BlueprintName = "SetlineTests"
+               ReferencedContainer = "container:Setline.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "74023CB72D0996B7E5057D87"
                BuildableName = "SetlineUITests.xctest"
                BlueprintName = "SetlineUITests"
@@ -76,6 +90,17 @@
                BlueprintIdentifier = "FD342A852B1288E9F67E7FFC"
                BuildableName = "SetlineCoreTests.xctest"
                BlueprintName = "SetlineCoreTests"
+               ReferencedContainer = "container:Setline.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "6A171C897E7ACBACB1C3120C"
+               BuildableName = "SetlineTests.xctest"
+               BlueprintName = "SetlineTests"
                ReferencedContainer = "container:Setline.xcodeproj">
             </BuildableReference>
          </TestableReference>

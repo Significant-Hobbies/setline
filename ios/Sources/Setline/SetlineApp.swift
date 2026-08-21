@@ -15,12 +15,16 @@ struct SetlineApp: App {
                     // Local data first, always. Syncing follows the load rather than
                     // gating it, so a workout starts instantly with no signal.
                     await model.syncWithiCloud()
+                    await model.syncWithPlatform()
                 }
                 .onChange(of: scenePhase) { _, phase in
                     // Returning to the app is when another device's work is most
                     // likely to be waiting.
                     guard phase == .active else { return }
-                    Task { await model.syncWithiCloud() }
+                    Task {
+                        await model.syncWithiCloud()
+                        await model.syncWithPlatform()
+                    }
                 }
         }
     }

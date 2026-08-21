@@ -42,11 +42,12 @@ Setline is an execution layer for user-authored programmes, not a coach or autom
   as `60 kg × 5` followed by `50 kg × 3`, within one completed planned set.
 - Rest cadence retains the authored target, any timer adjustment, and the
   actual completion-to-next-start gap as separate values.
-- Workout actions are device-first and remain usable offline. Optional Google sign-in
-  synchronizes one private whole-state copy without merging or reordering sets.
+- Workout actions are device-first and remain usable offline. Optional Sign in
+  with Apple synchronizes completed sessions through Personal Platform after
+  local writes; it never runs in the active workout path.
 - The supplied programme is bundled product data and is also available in
-  device-only mode. Signed-in session progress and history are the private data
-  associated with the user's Google identity.
+  device-only mode. Signed-in completed history is associated with the user's
+  shared Significant Hobbies identity.
 - A user can create an ordered workout template, edit it, or duplicate a
   bundled or custom workout into an independent copy. Starting a workout takes
   an immutable snapshot, so later edits or deletion never rewrite an active
