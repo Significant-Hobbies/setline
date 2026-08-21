@@ -49,3 +49,6 @@ next-env.d.ts
 site/node_modules/
 site/dist/
 site/.astro/
+.build/
+ios/.build/
+*.py
