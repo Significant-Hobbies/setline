@@ -111,6 +111,35 @@ final class SetlineCoreTests: XCTestCase {
         XCTAssertEqual(rest.actual(at: start.addingTimeInterval(31)), 31)
     }
 
+    func testSkipAndRestControlsUpdateTheActiveSession() throws {
+        var document = SetlineDocument.sample
+        let templateID = try XCTUnwrap(document.templates.first?.id)
+        let start = Date(timeIntervalSince1970: 1_000)
+        try document.startWorkout(templateID: templateID, at: start)
+
+        try document.skipCurrent()
+        XCTAssertEqual(document.activeSession?.steps.first?.status, .skipped)
+        XCTAssertEqual(document.activeSession?.activeIndex, 1)
+
+        try document.completeCurrent(with: [.init(loadMetrics: .init(weight: 60, repetitions: 5))], at: start)
+        document.adjustRest(by: 30, at: start)
+        XCTAssertEqual(document.activeSession?.rest?.adjustedSeconds, 180)
+        XCTAssertEqual(document.activeSession?.rest?.endsAt, start.addingTimeInterval(180))
+
+        document.endRest()
+        XCTAssertNil(document.activeSession?.rest)
+    }
+
+    func testDomainLabelsAndErrorsAreExplicit() {
+        XCTAssertEqual(ActivityKind.allCases.map(\.unitLabel), ["kg × reps", "reps", "seconds", "minutes", "dose"])
+        XCTAssertEqual(BodySide.allCases.map(\.title), ["Left", "Right", "Both"])
+        XCTAssertEqual(SetlineError.templateNotFound.errorDescription, "That workout is no longer available.")
+        XCTAssertEqual(SetlineError.sessionAlreadyActive.errorDescription, "Finish the active workout before starting another.")
+        XCTAssertEqual(SetlineError.noActiveSession.errorDescription, "There is no active workout.")
+        XCTAssertEqual(SetlineError.noActiveStep.errorDescription, "There is no remaining set to record.")
+        XCTAssertEqual(SetlineError.unsupportedSchema(3).errorDescription, "This Setline data uses unsupported version 3.")
+    }
+
     func testPersistenceRestoresActiveSession() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         let url = directory.appending(path: "setline.json")
