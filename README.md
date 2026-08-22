@@ -6,8 +6,9 @@ target you set. It has no backend: everything runs and records on the device, an
 the versioned JSON export is the only way data moves.
 
 The iPhone app lives in [`ios/`](./ios). The public site is static files in
-The public landing is the Astro app in [`site/`](./site). GitHub Pages
-builds that folder and publishes `site/dist`.
+The public landing is built and released from the shared `ios-landings`
+factory (`PRODUCT=setline`) onto Cloudflare Pages. This repo holds no landing
+source. The app's App Store privacy and support URLs point at that site.
 
 ```bash
 pnpm --dir site dev

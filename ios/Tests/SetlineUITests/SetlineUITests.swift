@@ -15,6 +15,16 @@ final class SetlineUITests: XCTestCase {
         return app
     }
 
+    /// Starts with the real bundled programme but bypasses first-run onboarding.
+    ///
+    /// `--fresh-demo` deliberately uses an empty local document. On a clean CI
+    /// simulator that also qualifies for onboarding, so tests of the settled app
+    /// must explicitly provide the completion default rather than inherit state
+    /// left behind by an earlier test or a developer's simulator.
+    private func launchFreshSettledApp() -> XCUIApplication {
+        launch(["--fresh-demo", "-setline.onboarding.completed.v1", "YES"])
+    }
+
     /// The decimal keypad has no return key, so the player supplies a Done button
     /// above it. Entry is unusable without one, which is why this taps the real
     /// control rather than working around its absence.
@@ -194,7 +204,7 @@ final class SetlineUITests: XCTestCase {
     }
 
     func testAuthoredBlockDrivesTodayOnAFreshInstall() {
-        let app = launch(["--fresh-demo"])
+        let app = launchFreshSettledApp()
 
         app.tabBars.buttons["Plan"].tap()
         XCTAssertTrue(
@@ -205,8 +215,38 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["End of block"].exists)
     }
 
+    func testOnboardingStartsRealWorkoutAndRecordsFirstSet() {
+        let app = launch(["--onboarding-demo"])
+
+        XCTAssertTrue(app.staticTexts["Follow the plan.\nRecord the truth."].waitForExistence(timeout: 5))
+        app.buttons["Use the bundled programme"].tap()
+        XCTAssertTrue(app.staticTexts["REVIEW BEFORE YOU START"].waitForExistence(timeout: 3))
+        app.buttons["Start this session"].tap()
+
+        XCTAssertTrue(app.staticTexts["Easy treadmill, bike or rower"].waitForExistence(timeout: 5))
+        let duration = app.textFields["Duration"]
+        duration.tap()
+        duration.typeText("3")
+        dismissKeyboard(app)
+        app.buttons["Record set · start rest"].tap()
+        XCTAssertTrue(app.staticTexts["Knee-to-wall ankle rocks"].waitForExistence(timeout: 5))
+        app.buttons["Return to Today"].tap()
+
+        XCTAssertTrue(app.staticTexts["Your workout is underway."].waitForExistence(timeout: 5))
+        app.buttons["See Today"].tap()
+        XCTAssertTrue(app.staticTexts["WORKOUT IN PROGRESS"].waitForExistence(timeout: 5))
+    }
+
+    func testOnboardingCanConfigureLaterWithoutStartingAWorkout() {
+        let app = launch(["--onboarding-demo"])
+
+        app.buttons["Configure later"].tap()
+        XCTAssertTrue(app.tabBars.buttons["Today"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts["Workout in progress"].exists)
+    }
+
     func testTodaySessionCanBeReviewedBeforeStarting() {
-        let app = launch(["--fresh-demo"])
+        let app = launchFreshSettledApp()
 
         let review = app.buttons["Review the session first"]
         XCTAssertTrue(review.waitForExistence(timeout: 3))

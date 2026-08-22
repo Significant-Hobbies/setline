@@ -26,6 +26,7 @@
 		66E5690BB3806C5D8CF41CF8 /* SetlineUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEE9CEC1CE889DCD183F4CF7 /* SetlineUITests.swift */; };
 		677B5B2EB644215DBE6CE4D0 /* SetlineCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1211B40E359F4BBD82A557A9 /* SetlineCoreTests.swift */; };
 		75A48BAD87E5189FD50988BA /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020E8CE667213A5350E98BD7 /* SyncCoordinator.swift */; };
+		75CD2A9C102789CC42FB0FFA /* SetlineOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C55F6B8E00B94E20A0A55A /* SetlineOnboardingView.swift */; };
 		7BA25FFB3FFB25D151F399E7 /* CloudKitRecordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 952100975C36861293E504E0 /* CloudKitRecordStoreTests.swift */; };
 		7DFE7762F43344AFC746CDC6 /* Domain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0859DE334CC4D97FFE0DFDA /* Domain.swift */; };
 		8AEB42E3793E01E4E40F67FF /* SetlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */; };
@@ -45,6 +46,7 @@
 		E5FAA9DE6E6F5CCBE9E4343F /* Goals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02194DFCF1365CCD34525231 /* Goals.swift */; };
 		E85DFE444A157EC32C671B9B /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B839442BFCCB000A563CD704 /* AppModel.swift */; };
 		EC589E605EEE16DA5E0F613E /* SetlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */; };
+		EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */; };
 		F5D0CC71C826F541575E7D99 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E8358BE39000A0F7E1BB90 /* Persistence.swift */; };
 		FEEC73426B437E36444A4A6D /* SyncCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CF090DBE8EAAA9150C57DA /* SyncCoordinatorTests.swift */; };
 /* End PBXBuildFile section */
@@ -110,6 +112,7 @@
 		02194DFCF1365CCD34525231 /* Goals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Goals.swift; sourceTree = "<group>"; };
 		0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SetlineCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1211B40E359F4BBD82A557A9 /* SetlineCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineCoreTests.swift; sourceTree = "<group>"; };
+		14C55F6B8E00B94E20A0A55A /* SetlineOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineOnboardingView.swift; sourceTree = "<group>"; };
 		15268979096821BD9ABB22E0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		16FAF07588C46AFAC99E674B /* RemoteRecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteRecordStore.swift; sourceTree = "<group>"; };
 		18C887472FBEDF36FD127C32 /* HistoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViews.swift; sourceTree = "<group>"; };
@@ -144,6 +147,7 @@
 		CE77BBBECF6D7ED1F7E8047E /* SetEntryParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetEntryParser.swift; sourceTree = "<group>"; };
 		D638AFB5C0FF38C44F3DE880 /* SimulatorICloudSignInTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorICloudSignInTests.swift; sourceTree = "<group>"; };
 		DFAE6EB21BC26F97140F4FEE /* SecondaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryViews.swift; sourceTree = "<group>"; };
+		E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineOnboardingTests.swift; sourceTree = "<group>"; };
 		F52F5D64B932696BAEDEE0AC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FD83BEAE219A731573D018EC /* SetlinePlatformRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlinePlatformRecord.swift; sourceTree = "<group>"; };
 		FEE9CEC1CE889DCD183F4CF7 /* SetlineUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineUITests.swift; sourceTree = "<group>"; };
@@ -190,6 +194,7 @@
 		21D215A22EA71838B882FC1D /* SetlineTests */ = {
 			isa = PBXGroup;
 			children = (
+				E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */,
 				9936C1B7553637337258AD18 /* SetlinePlatformRecordTests.swift */,
 			);
 			name = SetlineTests;
@@ -210,6 +215,7 @@
 				DFAE6EB21BC26F97140F4FEE /* SecondaryViews.swift */,
 				40CADB4F69054A14B366A16D /* Setline.entitlements */,
 				608F81A574360691A58B8581 /* SetlineApp.swift */,
+				14C55F6B8E00B94E20A0A55A /* SetlineOnboardingView.swift */,
 				FD83BEAE219A731573D018EC /* SetlinePlatformRecord.swift */,
 				818A8EDA05B5D0B4E9DE47B3 /* WorkoutPlayerView.swift */,
 				1DB949AB54ED01CA9EBB90BB /* Resources */,
@@ -487,6 +493,7 @@
 				BE5FDC83C2B64F526F64979C /* RootView.swift in Sources */,
 				A949A76428AB4118FB259A70 /* SecondaryViews.swift in Sources */,
 				C7E1EDD15D038B815CB78D27 /* SetlineApp.swift in Sources */,
+				75CD2A9C102789CC42FB0FFA /* SetlineOnboardingView.swift in Sources */,
 				187FB6C02D848DD64B0F9792 /* SetlinePlatformRecord.swift in Sources */,
 				A748F947702FBF73CBE681AD /* WorkoutPlayerView.swift in Sources */,
 			);
@@ -528,6 +535,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */,
 				D873F5E68F61DC19AB8B5D6B /* SetlinePlatformRecordTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
