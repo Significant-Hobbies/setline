@@ -176,11 +176,19 @@ private struct AttemptBoard: View {
         }
         .background(SetlinePalette.paper)
         .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { focusedField = nil }
-                    .font(.subheadline.weight(.bold))
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if focusedField != nil {
+                HStack {
+                    Spacer()
+                    // Keep dismissal in the app's safe area instead of the
+                    // system keyboard accessory, whose transient zero-width
+                    // layout can produce invalid frame warnings.
+                    Button("Done") { focusedField = nil }
+                        .font(.subheadline.weight(.bold))
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
             }
         }
         .onAppear(perform: seedDrafts)
@@ -502,7 +510,7 @@ private struct AttemptBoard: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.caption.weight(.bold))
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
+            HStack(alignment: .center, spacing: 5) {
                 TextField("0", text: value)
                     .keyboardType(.decimalPad)
                     .focused($focusedField, equals: field)
