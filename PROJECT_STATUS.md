@@ -33,6 +33,14 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-08-23 — released Setline 1.0.0 (5) to the personal team's internal
+  TestFlight group from merged commit `eeabd3e`. The full native gate passed
+  with 117 tests, one intentional iCloud-credential skip, zero failures, zero
+  runtime warnings, and a successful Release build. Build 5 was processed,
+  assigned, installed, and launched on the physical iPhone. It replaces the
+  keyboard accessory layout path that emitted invalid-frame warnings while
+  recording workout values.
+
 - 2026-08-23 — Retired the `site/` landing fork and its GitHub Pages workflow.
   Both claimed `setline.significanthobbies.com` via `site/dist/CNAME`, the same
   hostname the `ios-landings` Cloudflare Pages project already serves — two
