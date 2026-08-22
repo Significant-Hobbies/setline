@@ -22,3 +22,15 @@
 - [OpenAPI spec](https://setline.significanthobbies.com/openapi.json): OpenAPI 3.1 specification
 - [Homepage markdown](https://setline.significanthobbies.com/index.md): Product brief without JS
 - [This index](https://setline.significanthobbies.com/llms.txt)
+
+## Developer docs
+
+- [OpenAPI spec](https://setline.significanthobbies.com/openapi.json): OpenAPI 3.1 specification for the public API
+- [Agent catalog](https://setline.significanthobbies.com/api/ai): JSON inventory of public agent surfaces
+- [Sitemap](https://setline.significanthobbies.com/sitemap.xml): XML sitemap of all public pages
+
+## CLI
+
+- Local development: `pnpm --dir site dev` (Astro dev server)
+- Site check: `pnpm --dir site check` (TypeScript and Astro validation)
+- Native quality: `pnpm quality:native` (xcodegen, simulator tests, release build)
