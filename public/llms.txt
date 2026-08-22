@@ -19,13 +19,11 @@
 ## Machine surfaces
 
 - [Agent catalog](https://setline.significanthobbies.com/api/ai): JSON inventory of public surfaces
-- [OpenAPI spec](https://setline.significanthobbies.com/openapi.json): OpenAPI 3.1 specification
 - [Homepage markdown](https://setline.significanthobbies.com/index.md): Product brief without JS
 - [This index](https://setline.significanthobbies.com/llms.txt)
 
 ## Developer docs
 
-- [OpenAPI spec](https://setline.significanthobbies.com/openapi.json): OpenAPI 3.1 specification for the public API
 - [Agent catalog](https://setline.significanthobbies.com/api/ai): JSON inventory of public agent surfaces
 - [Sitemap](https://setline.significanthobbies.com/sitemap.xml): XML sitemap of all public pages
 
