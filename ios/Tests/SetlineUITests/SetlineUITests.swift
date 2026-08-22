@@ -205,6 +205,36 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["End of block"].exists)
     }
 
+    func testOnboardingStartsRealWorkoutAndRecordsFirstSet() {
+        let app = launch(["--onboarding-demo"])
+
+        XCTAssertTrue(app.staticTexts["Follow the plan.\nRecord the truth."].waitForExistence(timeout: 5))
+        app.buttons["Use the bundled programme"].tap()
+        XCTAssertTrue(app.staticTexts["REVIEW BEFORE YOU START"].waitForExistence(timeout: 3))
+        app.buttons["Start this session"].tap()
+
+        XCTAssertTrue(app.staticTexts["Easy treadmill, bike or rower"].waitForExistence(timeout: 5))
+        let duration = app.textFields["Duration"]
+        duration.tap()
+        duration.typeText("3")
+        dismissKeyboard(app)
+        app.buttons["Record set · start rest"].tap()
+        XCTAssertTrue(app.staticTexts["Knee-to-wall ankle rocks"].waitForExistence(timeout: 5))
+        app.buttons["Return to Today"].tap()
+
+        XCTAssertTrue(app.staticTexts["Your workout is underway."].waitForExistence(timeout: 5))
+        app.buttons["See Today"].tap()
+        XCTAssertTrue(app.staticTexts["WORKOUT IN PROGRESS"].waitForExistence(timeout: 5))
+    }
+
+    func testOnboardingCanConfigureLaterWithoutStartingAWorkout() {
+        let app = launch(["--onboarding-demo"])
+
+        app.buttons["Configure later"].tap()
+        XCTAssertTrue(app.tabBars.buttons["Today"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts["Workout in progress"].exists)
+    }
+
     func testTodaySessionCanBeReviewedBeforeStarting() {
         let app = launch(["--fresh-demo"])
 

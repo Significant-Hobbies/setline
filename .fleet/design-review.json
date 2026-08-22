@@ -1,8 +1,8 @@
 {
   "$schema": "fleet.design-review.v1",
   "version": 1,
-  "project": "setline-history-analytics",
-  "target": "Recorded-history exercise, workout, and programme analytics",
+  "project": "setline-onboarding-55",
+  "target": "Setline programme-to-first-workout onboarding",
   "mode": "preserve",
   "register": "product",
   "context": {
@@ -20,27 +20,19 @@
     "screenshots": [
       {
         "width": 390,
-        "path": "artifacts/design/after-390.png"
-      },
-      {
-        "width": 768,
-        "path": "artifacts/design/after-768.png"
-      },
-      {
-        "width": 1440,
-        "path": "artifacts/design/after-1440.png"
+        "path": "ios/artifacts/design/onboarding/welcome-iphone.png"
       }
     ],
     "projectCheck": {
-      "command": "pnpm run check",
-      "status": "pass"
+      "command": "ios/scripts/check.sh (tests passed; Xcode 27 diagnostics interrupted after completion) and unsigned Release simulator build",
+      "status": "passed"
     },
     "critique": {
-      "score": 40,
+      "score": 35,
       "maximum": 40
     },
     "audit": {
-      "score": 20,
+      "score": 18,
       "maximum": 20
     },
     "unresolved": {
@@ -54,6 +46,6 @@
   },
   "ownerFeedback": {
     "decision": "delegated",
-    "note": "Owner approved autonomous completion of the Fleet GitHub issue queue."
+    "note": "The owner delegated end-to-end issue resolution; the existing Setline visual language was preserved."
   }
 }

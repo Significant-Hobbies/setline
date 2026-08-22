@@ -33,6 +33,12 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-08-22 — added first-run onboarding around the real local workout path:
+  programme choice, authored-session preview, target-versus-recorded guidance,
+  first-set persistence, contextual rest notifications, relaunch-safe active
+  workout recovery, and existing-data bypass. No cloud dependency was added to
+  the workout path.
+
 - 2026-08-22 — Apple completed processing Setline 1.0.0 (3) and confirmed it
   available to internal TestFlight testers on personal team `8F7LXHTJZR`.
 

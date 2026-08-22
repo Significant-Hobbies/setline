@@ -12,6 +12,7 @@ import SetlineCore
 final class AppModel {
     private(set) var document: SetlineDocument = .initial
     var isLoading = true
+    var isOnboardingPresented = false
     var isWorkoutPresented = false
     var selectedTab = 0
     var message: String?
@@ -65,6 +66,7 @@ final class AppModel {
         let demoFlags: Set<String> = [
             "--ui-demo", "--fresh-demo", "--evidence-demo", "--active-demo", "--rest-demo",
             "--plan-demo", "--history-demo", "--exercises-demo", "--exercise-detail-demo",
+            "--onboarding-demo",
         ]
         return arguments.contains { demoFlags.contains($0) }
     }
@@ -83,9 +85,16 @@ final class AppModel {
                 document = demo
             } else if arguments.contains("--fresh-demo") {
                 document = .initial
+            } else if arguments.contains("--onboarding-demo") {
+                document = .initial
             } else {
                 document = try await store.load()
             }
+            isOnboardingPresented = arguments.contains("--onboarding-demo")
+                || SetlineOnboardingPolicy.shouldPresent(
+                    document: document,
+                    completed: UserDefaults.standard.bool(forKey: Self.onboardingCompletionKey)
+                )
             try startDemoSessionIfRequested(arguments)
             await account?.restore()
             await syncWithPlatform()
@@ -93,6 +102,14 @@ final class AppModel {
             document = .initial
             message = error.localizedDescription
         }
+    }
+
+    static let onboardingCompletionKey = "setline.onboarding.completed.v1"
+
+    func completeOnboarding(openPlan: Bool = false) {
+        UserDefaults.standard.set(true, forKey: Self.onboardingCompletionKey)
+        isOnboardingPresented = false
+        selectedTab = openPlan ? 1 : 0
     }
 
     private func startDemoSessionIfRequested(_ arguments: [String]) throws {

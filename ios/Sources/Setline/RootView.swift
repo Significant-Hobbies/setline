@@ -7,24 +7,34 @@ struct RootView: View {
 
     var body: some View {
         @Bindable var model = model
-        TabView(selection: $model.selectedTab) {
-            NavigationStack { TodayView() }
-                .tabItem { Label("Today", systemImage: "scope") }
-                .tag(0)
-            NavigationStack { PlanView() }
-                .tabItem { Label("Plan", systemImage: "list.bullet.rectangle") }
-                .tag(1)
-            NavigationStack { HistoryView() }
-                .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
-                .tag(2)
-            NavigationStack { SettingsView() }
-                .tabItem { Label("You", systemImage: "person.crop.circle") }
-                .tag(3)
-            NavigationStack { ExercisesView() }
-                .tabItem { Label("Exercises", systemImage: "chart.line.uptrend.xyaxis") }
-                .tag(4)
+        Group {
+            if model.isLoading {
+                ProgressView("Loading your programme…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .setlineBackground()
+            } else if model.isOnboardingPresented {
+                SetlineOnboardingView()
+            } else {
+                TabView(selection: $model.selectedTab) {
+                    NavigationStack { TodayView() }
+                        .tabItem { Label("Today", systemImage: "scope") }
+                        .tag(0)
+                    NavigationStack { PlanView() }
+                        .tabItem { Label("Plan", systemImage: "list.bullet.rectangle") }
+                        .tag(1)
+                    NavigationStack { HistoryView() }
+                        .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
+                        .tag(2)
+                    NavigationStack { SettingsView() }
+                        .tabItem { Label("You", systemImage: "person.crop.circle") }
+                        .tag(3)
+                    NavigationStack { ExercisesView() }
+                        .tabItem { Label("Exercises", systemImage: "chart.line.uptrend.xyaxis") }
+                        .tag(4)
+                }
+                .setlineBackground()
+            }
         }
-        .setlineBackground()
         .fullScreenCover(isPresented: $model.isWorkoutPresented) {
             WorkoutPlayerView()
         }
