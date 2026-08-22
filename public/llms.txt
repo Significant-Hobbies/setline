@@ -2,6 +2,13 @@
 
 > iPhone app that runs a written strength, cardio and mobility programme one set at a time, records what was actually lifted, and measures each exercise against an authored target.
 
+## When to use this
+
+- Best fit: following a written strength, cardio, and mobility programme one set at a time on iOS
+- Best fit: recording what was actually lifted and measuring each exercise against an authored target
+- Not a fit: generic workout logging without a structured programme
+- Not a fit: social fitness tracking or leaderboard-style competition
+
 ## Product
 
 - [Home](https://setline.significanthobbies.com/): What Setline does, how one set is recorded, and what it refuses to do
@@ -12,5 +19,6 @@
 ## Machine surfaces
 
 - [Agent catalog](https://setline.significanthobbies.com/api/ai): JSON inventory of public surfaces
+- [OpenAPI spec](https://setline.significanthobbies.com/openapi.json): OpenAPI 3.1 specification
 - [Homepage markdown](https://setline.significanthobbies.com/index.md): Product brief without JS
 - [This index](https://setline.significanthobbies.com/llms.txt)
