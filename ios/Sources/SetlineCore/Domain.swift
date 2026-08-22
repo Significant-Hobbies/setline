@@ -854,6 +854,20 @@ public extension SetlineDocument {
     }
 
     static var sample: SetlineDocument {
+        func workingSets(count: Int, repetitions: Int, kilograms: Double, rest: Int) -> [PlannedSet] {
+            (1...count).map { index in
+                PlannedSet(
+                    label: "Working \(index)",
+                    kind: .strength,
+                    target: SetTarget(
+                        repTarget: SetTarget.RepTarget(repsLow: repetitions),
+                        load: .absolute(kilograms: kilograms)
+                    ),
+                    rest: RestRange(rest)
+                )
+            }
+        }
+
         let lower = WorkoutTemplate(
             name: "Lower strength",
             detail: "Squat · hinge · carry",
@@ -870,63 +884,13 @@ public extension SetlineDocument {
                         rest: RestRange(60),
                         config: PlannedSet.SetConfig(stepType: .warmUp)
                     ),
-                    PlannedSet(
-                        label: "Working 1",
-                        kind: .strength,
-                        target: SetTarget(
-                            repTarget: SetTarget.RepTarget(repsLow: 5),
-                            load: .absolute(kilograms: 60)
-                        ),
-                        rest: RestRange(150)
-                    ),
-                    PlannedSet(
-                        label: "Working 2",
-                        kind: .strength,
-                        target: SetTarget(
-                            repTarget: SetTarget.RepTarget(repsLow: 5),
-                            load: .absolute(kilograms: 60)
-                        ),
-                        rest: RestRange(150)
-                    ),
-                    PlannedSet(
-                        label: "Working 3",
-                        kind: .strength,
-                        target: SetTarget(
-                            repTarget: SetTarget.RepTarget(repsLow: 5),
-                            load: .absolute(kilograms: 60)
-                        ),
-                        rest: RestRange(150)
-                    ),
-                ], pillars: [.strength]),
-                Exercise(name: "Romanian deadlift", cue: "Hips back. Keep the bar close.", sets: [
-                    PlannedSet(
-                        label: "Working 1",
-                        kind: .strength,
-                        target: SetTarget(
-                            repTarget: SetTarget.RepTarget(repsLow: 8),
-                            load: .absolute(kilograms: 70)
-                        ),
-                        rest: RestRange(120)
-                    ),
-                    PlannedSet(
-                        label: "Working 2",
-                        kind: .strength,
-                        target: SetTarget(
-                            repTarget: SetTarget.RepTarget(repsLow: 8),
-                            load: .absolute(kilograms: 70)
-                        ),
-                        rest: RestRange(120)
-                    ),
-                    PlannedSet(
-                        label: "Working 3",
-                        kind: .strength,
-                        target: SetTarget(
-                            repTarget: SetTarget.RepTarget(repsLow: 8),
-                            load: .absolute(kilograms: 70)
-                        ),
-                        rest: RestRange(120)
-                    ),
-                ], pillars: [.strength]),
+                ] + workingSets(count: 3, repetitions: 5, kilograms: 60, rest: 150), pillars: [.strength]),
+                Exercise(
+                    name: "Romanian deadlift",
+                    cue: "Hips back. Keep the bar close.",
+                    sets: workingSets(count: 3, repetitions: 8, kilograms: 70, rest: 120),
+                    pillars: [.strength]
+                ),
                 Exercise(name: "Suitcase carry", cue: "Walk tall without leaning.", sets: [
                     PlannedSet(
                         label: "Left",
