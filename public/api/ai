@@ -6,6 +6,7 @@
   "llmsFull": "https://setline.significanthobbies.com/llms-full.txt",
   "sitemap": "https://setline.significanthobbies.com/sitemap.xml",
   "robots": "https://setline.significanthobbies.com/robots.txt",
+  "openapi": "https://setline.significanthobbies.com/openapi.json",
   "markdown": {
     "suffix": ".md",
     "negotiation": true
