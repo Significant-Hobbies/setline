@@ -17,10 +17,11 @@
 - Setline has no product-specific backend. Optional signed-in synchronization
   uses PersonalSyncKit and Personal Platform; never put a network call in the
   active workout path.
-- The public landing source of truth is `ios-landings` (`PRODUCT=setline`).
-  This repo still has a buildable `site/` copy; GitHub Pages still
-  publishes `site/dist`. Run `pnpm --dir site check` after local landing
-  edits.
+- The public landing source of truth is `ios-landings` (`PRODUCT=setline`),
+  and it is the only one. This repo carries no landing copy: the retired
+  `site/` fork and its GitHub Pages workflow both claimed
+  `setline.significanthobbies.com`, which Cloudflare already serves. Landing
+  edits belong in `ios-landings/products/setline/`.
 - Setline owns no Cloudflare runtime or database. Its shared signed-in state is
   owned by Personal Platform.
 - Do not change DNS or publish a release without explicit approval.

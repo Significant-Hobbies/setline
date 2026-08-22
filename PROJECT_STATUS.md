@@ -33,6 +33,15 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-08-23 — Retired the `site/` landing fork and its GitHub Pages workflow.
+  Both claimed `setline.significanthobbies.com` via `site/dist/CNAME`, the same
+  hostname the `ios-landings` Cloudflare Pages project already serves — two
+  deployment systems, one host, with Cloudflare winning DNS and any push
+  touching `site/**` able to flip it. The live page is byte-identical to the
+  factory build, so the fork served nothing; it only added risk and a second
+  Astro engine to maintain. The app's App Store privacy and support URLs are
+  unchanged and still resolve.
+
 - 2026-08-22 — added first-run onboarding around the real local workout path:
   programme choice, authored-session preview, target-versus-recorded guidance,
   first-set persistence, contextual rest notifications, relaunch-safe active
@@ -177,11 +186,11 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 - `ios/` — native SwiftUI iPhone beta for local-first workout execution;
   build 1.0.0 (2) completed internal-only TestFlight processing on the
   personal team. No App Store submission.
-- 2026-08-17 — public landing is the Astro app in `site/`; GitHub Pages
-  builds `site/dist`. The older `public/` HTML is leftover.
-- Static public site in `site/` (landing, privacy, terms, changelog) plus the
-  agent surfaces `index.md`, `llms.txt`, `llms-full.txt`, `sitemap.xml`,
-  `robots.txt` and `/api/ai`, published by GitHub Pages on push to `main`. The
+- 2026-08-17 — public landing was the Astro app in `site/`, published by
+  GitHub Pages. Superseded 2026-08-23; see the entry above.
+- Public landing plus the agent surfaces `index.md`, `llms.txt`,
+  `sitemap.xml`, `robots.txt` and `/api/ai`, built and released from the
+  shared `ios-landings` factory onto Cloudflare Pages. The
   canonical hostname is dark until its DNS record points at GitHub Pages.
 - [Public GitHub repository](https://github.com/Significant-Hobbies/setline) —
   canonical source, product planning, and issue owner.
