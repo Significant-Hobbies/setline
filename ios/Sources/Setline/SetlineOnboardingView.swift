@@ -4,10 +4,14 @@ import SwiftUI
 enum SetlineOnboardingPolicy {
     static func shouldPresent(document: SetlineDocument, completed: Bool) -> Bool {
         guard !completed else { return false }
-        guard document.activeSession == nil, document.history.isEmpty else { return false }
-        guard document.templates.isEmpty, document.goals.isEmpty else { return false }
-        if case .custom = document.programme { return false }
-        return true
+        return document.activeSession == nil
+    }
+
+    static func hasExistingData(_ document: SetlineDocument) -> Bool {
+        if document.activeSession != nil || !document.history.isEmpty { return true }
+        if !document.templates.isEmpty || !document.goals.isEmpty { return true }
+        if case .custom = document.programme { return true }
+        return false
     }
 }
 
@@ -100,9 +104,9 @@ struct SetlineOnboardingView: View {
             .background(SetlinePalette.paper)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            Button(model.isReplayingOnboarding ? "Review the bundled programme" : "Use the bundled programme") {
+            Button(model.isExistingOwnerOrientation ? "Review the bundled programme" : "Use the bundled programme") {
                 Task {
-                    if !model.isReplayingOnboarding {
+                    if !model.isExistingOwnerOrientation {
                         await model.selectProgramme(.bundled(.twelveWeekStrengthCardioMobility))
                     }
                     step = .preview
@@ -165,8 +169,8 @@ struct SetlineOnboardingView: View {
                 .font(.footnote)
                 .foregroundStyle(SetlinePalette.ink.opacity(0.68))
 
-            Button(model.isReplayingOnboarding ? "Return to Setline" : "Start this session") {
-                if model.isReplayingOnboarding {
+            Button(model.isExistingOwnerOrientation ? "Return to Setline" : "Start this session") {
+                if model.isExistingOwnerOrientation {
                     model.completeOnboarding()
                 } else {
                     Task { await model.startWorkout(preview) }
@@ -174,7 +178,7 @@ struct SetlineOnboardingView: View {
             }
             .buttonStyle(ActionSlabStyle())
             .accessibilityHint(
-                model.isReplayingOnboarding
+                model.isExistingOwnerOrientation
                     ? "Closes the onboarding tour without changing your programme"
                     : "Starts the real offline workout player"
             )

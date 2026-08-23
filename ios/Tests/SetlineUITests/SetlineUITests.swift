@@ -11,6 +11,9 @@ final class SetlineUITests: XCTestCase {
     private func launch(_ arguments: [String] = ["--ui-demo"]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments
+        if !arguments.contains("--onboarding-demo") {
+            app.launchArguments += ["-setline.illustrated-onboarding.seen.v1", "YES"]
+        }
         app.launch()
         return app
     }
@@ -22,7 +25,7 @@ final class SetlineUITests: XCTestCase {
     /// must explicitly provide the completion default rather than inherit state
     /// left behind by an earlier test or a developer's simulator.
     private func launchFreshSettledApp() -> XCUIApplication {
-        launch(["--fresh-demo", "-setline.onboarding.completed.v1", "YES"])
+        launch(["--fresh-demo", "-setline.illustrated-onboarding.seen.v1", "YES"])
     }
 
     /// The decimal keypad has no return key, so the player supplies a Done button

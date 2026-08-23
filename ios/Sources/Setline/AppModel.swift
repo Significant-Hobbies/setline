@@ -13,7 +13,7 @@ final class AppModel {
     private(set) var document: SetlineDocument = .initial
     var isLoading = true
     var isOnboardingPresented = false
-    private(set) var isReplayingOnboarding = false
+    private(set) var isExistingOwnerOrientation = false
     var isWorkoutPresented = false
     var selectedTab = 0
     var message: String?
@@ -97,7 +97,10 @@ final class AppModel {
             } else {
                 document = try await store.load()
             }
-            isOnboardingPresented = arguments.contains("--onboarding-demo")
+            let showsDemo = arguments.contains("--onboarding-demo")
+            isExistingOwnerOrientation = !showsDemo
+                && SetlineOnboardingPolicy.hasExistingData(document)
+            isOnboardingPresented = showsDemo
                 || SetlineOnboardingPolicy.shouldPresent(
                     document: document,
                     completed: UserDefaults.standard.bool(forKey: Self.onboardingCompletionKey)
@@ -112,19 +115,13 @@ final class AppModel {
         }
     }
 
-    static let onboardingCompletionKey = "setline.onboarding.completed.v1"
+    static let onboardingCompletionKey = "setline.illustrated-onboarding.seen.v1"
 
     func completeOnboarding(openPlan: Bool = false) {
         UserDefaults.standard.set(true, forKey: Self.onboardingCompletionKey)
         isOnboardingPresented = false
-        isReplayingOnboarding = false
+        isExistingOwnerOrientation = false
         selectedTab = openPlan ? 1 : 0
-    }
-
-    /// Reopens the product tour without changing the current programme or workout history.
-    func replayOnboarding() {
-        isReplayingOnboarding = true
-        isOnboardingPresented = true
     }
 
     private func startDemoSessionIfRequested(_ arguments: [String]) throws {
