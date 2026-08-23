@@ -74,6 +74,13 @@ struct SetlineOnboardingView: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 24) {
+            Image("SetlineOnboarding")
+                .resizable()
+                .scaledToFit()
+                .frame(maxHeight: 210)
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel("A hand-drawn figure carries one planned weight into an honest workout record.")
+
             VStack(alignment: .leading, spacing: 10) {
                 SectionLabel(text: "Your plan, in order")
                 Text("Follow the plan.\nRecord the truth.")
@@ -93,9 +100,11 @@ struct SetlineOnboardingView: View {
             .background(SetlinePalette.paper)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            Button("Use the bundled programme") {
+            Button(model.isReplayingOnboarding ? "Review the bundled programme" : "Use the bundled programme") {
                 Task {
-                    await model.selectProgramme(.bundled(.twelveWeekStrengthCardioMobility))
+                    if !model.isReplayingOnboarding {
+                        await model.selectProgramme(.bundled(.twelveWeekStrengthCardioMobility))
+                    }
                     step = .preview
                 }
             }
@@ -156,11 +165,19 @@ struct SetlineOnboardingView: View {
                 .font(.footnote)
                 .foregroundStyle(SetlinePalette.ink.opacity(0.68))
 
-            Button("Start this session") {
-                Task { await model.startWorkout(preview) }
+            Button(model.isReplayingOnboarding ? "Return to Setline" : "Start this session") {
+                if model.isReplayingOnboarding {
+                    model.completeOnboarding()
+                } else {
+                    Task { await model.startWorkout(preview) }
+                }
             }
             .buttonStyle(ActionSlabStyle())
-            .accessibilityHint("Starts the real offline workout player")
+            .accessibilityHint(
+                model.isReplayingOnboarding
+                    ? "Closes the onboarding tour without changing your programme"
+                    : "Starts the real offline workout player"
+            )
         }
     }
 

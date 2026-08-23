@@ -13,6 +13,7 @@ final class AppModel {
     private(set) var document: SetlineDocument = .initial
     var isLoading = true
     var isOnboardingPresented = false
+    private(set) var isReplayingOnboarding = false
     var isWorkoutPresented = false
     var selectedTab = 0
     var message: String?
@@ -116,7 +117,14 @@ final class AppModel {
     func completeOnboarding(openPlan: Bool = false) {
         UserDefaults.standard.set(true, forKey: Self.onboardingCompletionKey)
         isOnboardingPresented = false
+        isReplayingOnboarding = false
         selectedTab = openPlan ? 1 : 0
+    }
+
+    /// Reopens the product tour without changing the current programme or workout history.
+    func replayOnboarding() {
+        isReplayingOnboarding = true
+        isOnboardingPresented = true
     }
 
     private func startDemoSessionIfRequested(_ arguments: [String]) throws {
