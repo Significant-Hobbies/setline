@@ -12,14 +12,17 @@ final class SetlineOnboardingTests: XCTestCase {
         XCTAssertFalse(SetlineOnboardingPolicy.shouldPresent(document: .initial, completed: true))
     }
 
-    func testExistingActivityBypassesOnboarding() throws {
+    func testActiveWorkoutDefersIllustratedOrientation() throws {
         var document = SetlineDocument.initial
         let template = TwelveWeekProgramme.template(for: .lower, week: 1)
         try document.startWorkout(template: template)
         XCTAssertFalse(SetlineOnboardingPolicy.shouldPresent(document: document, completed: false))
+        XCTAssertTrue(SetlineOnboardingPolicy.hasExistingData(document))
     }
 
-    func testExistingCustomProgrammeBypassesOnboarding() {
-        XCTAssertFalse(SetlineOnboardingPolicy.shouldPresent(document: .sample, completed: false))
+    func testExistingOwnerReceivesIllustratedOrientationOnceIdle() {
+        XCTAssertTrue(SetlineOnboardingPolicy.shouldPresent(document: .sample, completed: false))
+        XCTAssertTrue(SetlineOnboardingPolicy.hasExistingData(.sample))
+        XCTAssertFalse(SetlineOnboardingPolicy.shouldPresent(document: .sample, completed: true))
     }
 }

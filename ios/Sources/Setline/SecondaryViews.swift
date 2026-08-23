@@ -40,13 +40,6 @@ struct SettingsView: View {
                     .frame(minHeight: 48)
                 }
                 settingsSection("About") {
-                    Button {
-                        model.replayOnboarding()
-                    } label: {
-                        Label("Replay onboarding", systemImage: "sparkles")
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(minHeight: 44)
                     LabeledContent("Version", value: "1.0.0 (2)")
                     Link("Privacy", destination: URL(string: "https://setline.significanthobbies.com/privacy")!)
                         .frame(minHeight: 44)
