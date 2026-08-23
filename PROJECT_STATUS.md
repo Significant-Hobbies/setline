@@ -33,6 +33,12 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-08-23 — separated iCloud device continuity from Significant Hobbies Hub
+  visibility in Settings. iCloud now states its exact Setline scope; Hub states
+  that it receives completed-workout summaries only and shows durable queued
+  count, last-success freshness, and retry-needed state. Active workouts remain
+  device-first and neither storage path was redesigned.
+
 - 2026-08-23 — released Setline 1.0.0 (5) to the personal team's internal
   TestFlight group from merged commit `eeabd3e`. The full native gate passed
   with 117 tests, one intentional iCloud-credential skip, zero failures, zero
@@ -215,8 +221,9 @@ is not claimed as shipped. The versioned JSON export remains the backup.
   timestamp-derived rest, relaunch recovery, planning, history, progression,
   data transfer, accessibility, simulator tests, personal-team archiving, and
   internal-only TestFlight processing for 1.0.0 (2).
-- Optional Personal Platform synchronization for completed sessions, with a
-  durable local outbox and manual/foreground pull.
+- Optional Significant Hobbies Hub visibility for completed-workout summaries,
+  backed by Personal Platform with a durable local outbox, manual/foreground
+  pull, queued count, last-success freshness, and persistent retry state.
 - Public editorial product changelog at `/changelog`.
 - Landing page stating audience, outcome, the four pillars, what the product
   refuses to do, poor-fit cases and real FAQs, with product screenshots and no

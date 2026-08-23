@@ -26,21 +26,27 @@ final class AppModel {
     private(set) var syncAvailability: SyncAvailability?
     private(set) var isSyncing = false
     private(set) var isPlatformSyncing = false
+    private(set) var hubPendingCount = 0
+    private(set) var hubSyncSnapshot: HubSyncSnapshot
 
     private let store: SetlineStore
     private let restNotifier: RestNotifier
     private let syncCoordinator: SetlineCore.SyncCoordinator?
     private let platform: PersonalPlatformConnection?
+    private let hubSyncStatusStore: HubSyncStatusStore
     let account: PersonalAccountModel?
 
     init(
         store: SetlineStore = SetlineStore(),
         restNotifier: RestNotifier = RestNotifier(),
         syncCoordinator: SetlineCore.SyncCoordinator? = SetlineCore.SyncCoordinator(store: CloudKitRecordStore()),
-        platform: PersonalPlatformConnection? = AppModel.makePlatformConnection()
+        platform: PersonalPlatformConnection? = AppModel.makePlatformConnection(),
+        hubSyncStatusStore: HubSyncStatusStore = HubSyncStatusStore()
     ) {
         self.store = store
         self.restNotifier = restNotifier
+        self.hubSyncStatusStore = hubSyncStatusStore
+        hubSyncSnapshot = hubSyncStatusStore.load()
         let arguments = ProcessInfo.processInfo.arguments
         // Every demo and interface-test launch runs against a fixture, so none of
         // them may reach iCloud: a real account would make their results depend on
@@ -97,6 +103,7 @@ final class AppModel {
                 )
             try startDemoSessionIfRequested(arguments)
             await account?.restore()
+            await refreshHubSyncStatus()
             await syncWithPlatform()
         } catch {
             document = .initial
@@ -314,8 +321,14 @@ final class AppModel {
 
     // MARK: - Personal Platform
 
+    func refreshHubSyncStatus() async {
+        guard let platform else { return }
+        hubPendingCount = await platform.sync.pendingMutationCount()
+    }
+
     func syncWithPlatform(announcing: Bool = false) async {
-        guard let platform, !isPlatformSyncing, document.activeSession == nil else { return }
+        guard let platform, account?.isSignedIn == true,
+              !isPlatformSyncing, document.activeSession == nil else { return }
         isPlatformSyncing = true
         defer { isPlatformSyncing = false }
         do {
@@ -327,6 +340,7 @@ final class AppModel {
                     record: SetlinePlatformRecord.session(session, completedAt: completedAt)
                 )
             }
+            hubPendingCount = await platform.sync.pendingMutationCount()
             let changes = try await platform.sync.synchronize()
             var next = document
             for change in changes {
@@ -343,14 +357,21 @@ final class AppModel {
                 try await store.save(next)
                 document = next
             }
-            if announcing { message = "Cloudflare sync complete." }
+            hubPendingCount = await platform.sync.pendingMutationCount()
+            hubSyncSnapshot = hubSyncStatusStore.recordSuccess()
+            if announcing { message = "Significant Hobbies Hub is up to date." }
         } catch {
-            if announcing { message = "Cloudflare sync will retry when you are online." }
+            hubPendingCount = await platform.sync.pendingMutationCount()
+            hubSyncSnapshot = hubSyncStatusStore.recordFailure()
+            if announcing {
+                message = "Hub sync needs a retry. Pending summaries stay on this iPhone."
+            }
         }
     }
 
     private func enqueue(_ session: WorkoutSession) {
-        guard let platform, let completedAt = session.completedAt else { return }
+        guard let platform, account?.isSignedIn == true,
+              let completedAt = session.completedAt else { return }
         Task {
             do {
                 try await platform.sync.enqueue(
@@ -358,8 +379,14 @@ final class AppModel {
                     occurredAt: SetlinePlatformRecord.iso(session.startedAt),
                     record: SetlinePlatformRecord.session(session, completedAt: completedAt)
                 )
-                _ = try? await platform.sync.synchronize()
-            } catch {}
+                hubPendingCount = await platform.sync.pendingMutationCount()
+                _ = try await platform.sync.synchronize()
+                hubPendingCount = await platform.sync.pendingMutationCount()
+                hubSyncSnapshot = hubSyncStatusStore.recordSuccess()
+            } catch {
+                hubPendingCount = await platform.sync.pendingMutationCount()
+                hubSyncSnapshot = hubSyncStatusStore.recordFailure()
+            }
         }
     }
 

@@ -13,9 +13,10 @@ struct SettingsView: View {
         @Bindable var model = model
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                pageHeader("You", subtitle: "Device-first. Cloud sync only when you choose it.")
+                pageHeader("You", subtitle: "Device-first. Choose how your data follows you.")
                 storageSection
-                personalPlatformSection
+                iCloudSection
+                significantHobbiesHubSection
                 settingsSection("Your data") {
                     ShareLink(
                         item: SetlineExportPayload(document: model.document),
@@ -50,7 +51,10 @@ struct SettingsView: View {
         }
         .setlineBackground()
         .navigationBarHidden(true)
-        .task { await model.refreshSyncAvailability() }
+        .task {
+            await model.refreshSyncAvailability()
+            await model.refreshHubSyncStatus()
+        }
         .fileImporter(isPresented: $isImporterPresented, allowedContentTypes: [.json]) { result in
             guard case let .success(url) = result else { return }
             let accessed = url.startAccessingSecurityScopedResource()
@@ -71,21 +75,40 @@ struct SettingsView: View {
         }
     }
 
-    private var personalPlatformSection: some View {
-        settingsSection("Cloudflare") {
+    private var significantHobbiesHubSection: some View {
+        settingsSection("Significant Hobbies Hub") {
+            Text(SyncDisclosure.hubPurpose)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text(SyncDisclosure.hubScope)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            LabeledContent("Status", value: hubStatusTitle)
+            LabeledContent("Queued summaries", value: "\(model.hubPendingCount)")
+            if let synced = model.hubSyncSnapshot.lastSuccessfulAt {
+                LabeledContent(
+                    "Last successful sync",
+                    value: synced.formatted(date: .abbreviated, time: .shortened)
+                )
+            }
+            if let failed = model.hubSyncSnapshot.lastFailedAt {
+                Text("The last attempt failed \(failed.formatted(date: .abbreviated, time: .shortened)). Pending summaries stay on this iPhone until a retry succeeds.")
+                    .font(.footnote)
+                    .foregroundStyle(SetlinePalette.coral)
+            }
             if let account = model.account {
                 if account.isSignedIn {
                     Label(account.session?.email ?? "Connected", systemImage: "checkmark.icloud")
                     Button {
                         Task { await model.syncWithPlatform(announcing: true) }
                     } label: {
-                        Label(model.isPlatformSyncing ? "Syncing…" : "Sync with Cloudflare now", systemImage: "arrow.triangle.2.circlepath")
+                        Label(hubSyncButtonTitle, systemImage: "arrow.triangle.2.circlepath")
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .disabled(model.isPlatformSyncing || model.document.activeSession != nil)
                     Button("Sign out", role: .destructive) { Task { await account.signOut() } }
                 } else {
-                    Text("Connect your private Significant Hobbies account to keep completed workouts available across devices.")
+                    Text("Connect your private Significant Hobbies account to make these summaries visible in Hub. iCloud device continuity works separately.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     SignInWithAppleButton(.continue) { request in
@@ -114,6 +137,11 @@ struct SettingsView: View {
                     Text(error).font(.footnote).foregroundStyle(.red)
                 }
             }
+            if model.document.activeSession != nil {
+                Text("Finish the active workout first. Setline never shares a workout you are still doing.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -137,9 +165,21 @@ struct SettingsView: View {
             LabeledContent("Recorded workouts", value: "\(model.document.history.count)")
             LabeledContent("Templates", value: "\(model.document.templates.count)")
             LabeledContent("Targets", value: "\(model.document.goals.count)")
+        }
+    }
+
+    private var iCloudSection: some View {
+        settingsSection("iCloud device continuity") {
+            Text(SyncDisclosure.iCloudPurpose)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text(SyncDisclosure.iCloudScope)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            LabeledContent("Status", value: iCloudStatusTitle)
             if let synced = model.document.lastSyncedAt {
                 LabeledContent(
-                    "Last iCloud sync",
+                    "Last successful sync",
                     value: synced.formatted(date: .abbreviated, time: .shortened)
                 )
             }
@@ -181,13 +221,36 @@ struct SettingsView: View {
     }
 
     private var storageTitle: String {
-        switch model.document.syncState {
-        case .deviceOnly: "On this iPhone"
-        case .pending: "Saving to iCloud"
-        case .synced: "Synced with iCloud"
-        case .conflict: "Decision needed"
-        case .failed: "iCloud retry needed"
+        "On this iPhone"
+    }
+
+    private var iCloudStatusTitle: String {
+        if model.isSyncing { return "Syncing now" }
+        if let availability = model.syncAvailability, !availability.isAvailable {
+            return "Unavailable"
         }
+        return switch model.document.syncState {
+        case .deviceOnly: "On this iPhone"
+        case .pending: "Pending"
+        case .synced: "Up to date"
+        case .conflict: "Decision needed"
+        case .failed: "Retry needed"
+        }
+    }
+
+    private var hubStatusTitle: String {
+        HubSyncPresentation.statusTitle(
+            snapshot: model.hubSyncSnapshot,
+            pendingCount: model.hubPendingCount,
+            isSyncing: model.isPlatformSyncing,
+            isSignedIn: model.account?.isSignedIn == true
+        )
+    }
+
+    private var hubSyncButtonTitle: String {
+        if model.isPlatformSyncing { return "Syncing with Hub…" }
+        if model.hubSyncSnapshot.lastFailedAt != nil { return "Retry Hub sync" }
+        return "Sync Hub now"
     }
 
     private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
