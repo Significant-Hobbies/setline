@@ -33,6 +33,10 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-08-23 — prepared Setline `1.0.0 (6)` for internal TestFlight with the
+  truthful iCloud and Significant Hobbies Hub roles, freshness, waiting-change
+  count, and retry state from #69. The workout path remains entirely local.
+
 - 2026-08-23 — separated iCloud device continuity from Significant Hobbies Hub
   visibility in Settings. iCloud now states its exact Setline scope; Hub states
   that it receives completed-workout summaries only and shows durable queued
