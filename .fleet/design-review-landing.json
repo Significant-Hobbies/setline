@@ -1,0 +1,106 @@
+{
+  "$schema": "fleet.design-review.v1",
+  "version": 1,
+  "project": "setline",
+  "target": "Native workout product landing and internal beta entry",
+  "surfaceMode": "persuade",
+  "mode": "preserve",
+  "register": "product",
+  "context": {
+    "product": "PRODUCT.md",
+    "design": "DESIGN.md"
+  },
+  "direction": {
+    "references": [],
+    "probes": [],
+    "selected": "authored-set-instrument",
+    "approval": "not-required",
+    "before": "artifacts/design/before.png",
+    "library": {
+      "strategy": "upstream-first",
+      "primary": "existing-project-system",
+      "sources": [],
+      "runtime": "existing",
+      "customReplacement": {
+        "used": false,
+        "authorization": "not-required",
+        "reason": ""
+      }
+    },
+    "contract": {
+      "purpose": "Explain Setline as a device-first iPhone player for executing an already-authored workout one set at a time.",
+      "purposeSource": "site-health/docs/project-dossiers/setline.yaml plus PRODUCT.md and PROJECT_STATUS.md",
+      "canonicalPurpose": "Setline runs a written workout one set at a time and measures each exercise against its authored target.",
+      "purposeAlignment": "match",
+      "driftNote": "",
+      "audience": "A person following a structured strength, cardio, or mobility programme during a real session.",
+      "job": "Show authored order, current-set focus, explicit deviations, rest evidence, device-first behavior, and honest beta availability.",
+      "thesis": "The gym is the wrong place to decide; write the session first, then preserve what actually happened without turning Setline into a coach.",
+      "system": "Light training-instrument landing with real iPhone screens, neon-lime execution cues, explicit fit boundaries, privacy, beta status, project strip, and Ask AI footer.",
+      "signature": "The current-set player dominates the opening frame while authored, adjusted, and actual values remain visibly distinct.",
+      "risk": "Avoid coaching, medical, verified multi-device sync, public download, and permanent pricing claims."
+    }
+  },
+  "evidence": {
+    "screenshots": [
+      {
+        "width": 390,
+        "path": ".fleet/evidence/landing-audit/after-390.png"
+      },
+      {
+        "width": 768,
+        "path": ".fleet/evidence/landing-audit/after-768.png"
+      },
+      {
+        "width": 1440,
+        "path": ".fleet/evidence/landing-audit/after-1440.png"
+      }
+    ],
+    "projectCheck": {
+      "command": "pnpm check",
+      "status": "pass"
+    },
+    "critique": {
+      "score": 39,
+      "maximum": 40
+    },
+    "audit": {
+      "score": 19,
+      "maximum": 20
+    },
+    "unresolved": {
+      "p0": 0,
+      "p1": 0
+    },
+    "detector": {
+      "posture": "advisory",
+      "findings": []
+    },
+    "comprehension": {
+      "status": "pass",
+      "reviewer": "Codex fresh-visitor purpose readback",
+      "answers": {
+        "product": "A device-first iPhone workout player for running an already-written strength, cardio, or mobility programme.",
+        "audience": "Someone who follows a structured programme and wants less decision-making between sets.",
+        "value": "It keeps the current set and rest timing obvious while preserving the difference between the plan and what happened.",
+        "mechanism": "Today resolves authored order, the player records actuals and explicit deviations, and History keeps completed-session evidence.",
+        "proof": "The page uses real native product screens and names the Today, Player, Rest, Plan, and History surfaces.",
+        "nextAction": "Inspect the real app screens or read the honest internal TestFlight status."
+      },
+      "purposeScore": {
+        "product": 25,
+        "audience": 15,
+        "value": 15,
+        "mechanism": 15,
+        "proof": 14,
+        "nextAction": 15,
+        "total": 99
+      },
+      "mismatches": []
+    }
+  },
+  "ownerFeedback": {
+    "decision": "delegated",
+    "note": "The owner delegated fleet landing repairs and asked the agent to continue without project-by-project feedback pauses."
+  }
+}
