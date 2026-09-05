@@ -18,6 +18,23 @@ final class SetlineUITests: XCTestCase {
         return app
     }
 
+    /// Taps a tab by name, navigating through the iOS "More" overflow when the
+    /// tab bar has more than five items. Tabs beyond the fourth slot live behind
+    /// a "More" button; this helper transparently handles that indirection.
+    private func tapTab(_ app: XCUIApplication, _ tab: String) {
+        let tabBar = app.tabBars.buttons
+        if tabBar[tab].exists {
+            tabBar[tab].tap()
+        } else {
+            tabBar["More"].tap()
+            // The More overflow lists tabs as table cells containing a static
+            // text label matching the tab name.
+            let cell = app.tables.cells.containing(.staticText, identifier: tab).firstMatch
+            XCTAssertTrue(cell.waitForExistence(timeout: 3), "Tab \(tab) should be listed in the More overflow")
+            cell.tap()
+        }
+    }
+
     /// Starts with the real bundled programme but bypasses first-run onboarding.
     ///
     /// `--fresh-demo` deliberately uses an empty local document. On a clean CI
@@ -201,7 +218,7 @@ final class SetlineUITests: XCTestCase {
         let app = launch()
 
         for tab in ["Plan", "History", "You", "Exercises"] {
-            app.tabBars.buttons[tab].tap()
+            tapTab(app, tab)
             XCTAssertTrue(app.staticTexts[tab].waitForExistence(timeout: 2))
         }
     }
@@ -260,7 +277,7 @@ final class SetlineUITests: XCTestCase {
     func testExercisesTabExplainsItselfBeforeAnyEvidenceExists() {
         let app = launch()
 
-        app.tabBars.buttons["Exercises"].tap()
+        tapTab(app, "Exercises")
         XCTAssertTrue(app.staticTexts["No recorded working sets"].waitForExistence(timeout: 3))
         let setTarget = app.buttons["Set a target from the catalogue"]
         XCTAssertTrue(setTarget.exists)
@@ -329,5 +346,45 @@ final class SetlineUITests: XCTestCase {
         // There is no account, so nothing may invite the user to sign in.
         XCTAssertFalse(app.buttons["Connect Google account"].exists)
         XCTAssertFalse(app.buttons["apple-account-button"].exists)
+    }
+
+    /// Navigates to the Benchmarks view, which lives inside the You tab.
+    private func openBenchmarks(_ app: XCUIApplication) {
+        app.tabBars.buttons["You"].tap()
+        XCTAssertTrue(app.staticTexts["BENCHMARKS"].waitForExistence(timeout: 3))
+        app.staticTexts["Capability scorecard"].tap()
+    }
+
+    func testBenchmarksTabShowsChecklistAndGuide() {
+        let app = launch()
+
+        openBenchmarks(app)
+        // The 15-benchmark checklist is the core of the view.
+        XCTAssertTrue(text(app, containing: "10 km run").exists)
+        XCTAssertTrue(text(app, containing: "Strict pull-ups").exists)
+        // The guide subview explains the methodology.
+        app.buttons["Guide"].tap()
+        XCTAssertTrue(text(app, containing: "Measure the capability").waitForExistence(timeout: 3))
+    }
+
+    func testBenchmarksCheckInsTabShowsEmptyState() {
+        let app = launch()
+
+        openBenchmarks(app)
+        app.buttons["Check-ins"].tap()
+        XCTAssertTrue(text(app, containing: "Your first chapter is unwritten").waitForExistence(timeout: 3))
+    }
+
+    func testBenchmarksCanSaveAndViewCheckIn() {
+        let app = launch()
+
+        openBenchmarks(app)
+        // Save a check-in with the blank initial state.
+        let saveButton = app.buttons["Save check-in"]
+        XCTAssertTrue(saveButton.waitForExistence(timeout: 3))
+        saveButton.tap()
+        // Navigate to check-ins to verify it was saved.
+        app.buttons["Check-ins"].tap()
+        XCTAssertTrue(text(app, containing: "saved snapshot").waitForExistence(timeout: 3))
     }
 }

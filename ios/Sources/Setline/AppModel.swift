@@ -60,6 +60,7 @@ final class AppModel {
         if arguments.contains("--plan-demo") { selectedTab = 1 }
         if arguments.contains("--history-demo") { selectedTab = 2 }
         if arguments.contains("--exercises-demo") { selectedTab = 4 }
+        if arguments.contains("--benchmarks-demo") { selectedTab = 3 }
         if let index = arguments.firstIndex(of: "--exercise-detail-demo"),
            arguments.indices.contains(index + 1) {
             selectedTab = 4
@@ -73,7 +74,7 @@ final class AppModel {
         let demoFlags: Set<String> = [
             "--ui-demo", "--fresh-demo", "--evidence-demo", "--active-demo", "--rest-demo",
             "--plan-demo", "--history-demo", "--exercises-demo", "--exercise-detail-demo",
-            "--onboarding-demo",
+            "--onboarding-demo", "--benchmarks-demo",
         ]
         return arguments.contains { demoFlags.contains($0) }
     }
@@ -274,6 +275,88 @@ final class AppModel {
         await mutate { document in
             document.goals.removeAll { $0.id == goal.id }
         }
+    }
+
+    // MARK: - Benchmarks
+
+    func updateBenchmarkProfile(weight: Double?, height: Double?) async {
+        await mutate { document in
+            document.benchmarks.profile.weight = weight
+            document.benchmarks.profile.height = height
+        }
+    }
+
+    func updateBenchmarkNumber(_ metricID: String, field key: String, value: Double?) async {
+        await mutate { document in
+            var state = document.benchmarks.metrics[metricID] ?? .init()
+            if let value { state.numbers[key] = value } else { state.numbers.removeValue(forKey: key) }
+            document.benchmarks.metrics[metricID] = state
+            document.benchmarks.updated[metricID] = .now
+        }
+    }
+
+    func updateBenchmarkText(_ metricID: String, field key: String, value: String) async {
+        await mutate { document in
+            var state = document.benchmarks.metrics[metricID] ?? .init()
+            state.texts[key] = value
+            document.benchmarks.metrics[metricID] = state
+            document.benchmarks.updated[metricID] = .now
+        }
+    }
+
+    func updateBenchmarkFlag(_ metricID: String, field key: String, value: Bool) async {
+        await mutate { document in
+            var state = document.benchmarks.metrics[metricID] ?? .init()
+            state.flags[key] = value
+            document.benchmarks.metrics[metricID] = state
+            document.benchmarks.updated[metricID] = .now
+        }
+    }
+
+    func updateBenchmarkTarget(_ metricID: String, values: [String: Double]) async {
+        await mutate { document in
+            document.benchmarks.targets[metricID] = BenchmarkTargetState(values: values)
+        }
+        message = "Target updated. Previous check-ins keep their original targets."
+    }
+
+    func saveBenchmarkCheckIn(date: Date) async {
+        await mutate { document in
+            let checkIn = BenchmarkCheckIn(
+                date: date,
+                profile: document.benchmarks.profile,
+                metrics: document.benchmarks.metrics,
+                targets: document.benchmarks.targets,
+                updated: document.benchmarks.updated
+            )
+            document.benchmarks.history.insert(checkIn, at: 0)
+        }
+        message = "Check-in saved."
+    }
+
+    func clearBenchmarkMeasurements() async {
+        await mutate { document in
+            document.benchmarks.metrics = BenchmarksState.blankMetrics
+            document.benchmarks.updated = [:]
+        }
+        message = "Current measurements cleared. Check-ins and targets were kept."
+    }
+
+    /// Applies a single workout-history suggestion to the benchmark state,
+    /// marking it with the source date so the UI can show provenance.
+    func applyBenchmarkSuggestion(_ suggestion: BenchmarkSuggestion) async {
+        await mutate { document in
+            var state = document.benchmarks.metrics[suggestion.metricID] ?? .init()
+            for (key, value) in suggestion.numbers {
+                state.numbers[key] = value
+            }
+            for (key, value) in suggestion.texts {
+                state.texts[key] = value
+            }
+            document.benchmarks.metrics[suggestion.metricID] = state
+            document.benchmarks.updated[suggestion.metricID] = suggestion.sourceDate
+        }
+        message = "Filled from \(suggestion.sourceExerciseName) on \(suggestion.sourceDate.formatted(date: .abbreviated, time: .omitted))."
     }
 
     // MARK: - iCloud

@@ -14,6 +14,7 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 pageHeader("You", subtitle: "Device-first. Choose how your data follows you.")
+                benchmarksSection
                 storageSection
                 iCloudSection
                 significantHobbiesHubSection
@@ -141,6 +142,39 @@ struct SettingsView: View {
                 Text("Finish the active workout first. Setline never shares a workout you are still doing.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// A periodic capability scorecard — 15 checkpoints with editable targets,
+    /// test protocols, and check-in snapshots. Lives inside "You" because it is
+    /// an occasional assessment, not a daily training surface.
+    private var benchmarksSection: some View {
+        settingsSection("Benchmarks") {
+            NavigationLink {
+                BenchmarksView()
+            } label: {
+                HStack {
+                    Image(systemName: "checkmark.seal")
+                        .font(.title2)
+                        .frame(width: 44, height: 44)
+                        .background(SetlinePalette.lime)
+                        .clipShape(RoundedRectangle(cornerRadius: 9))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Capability scorecard")
+                            .font(.headline)
+                        let reached = BenchmarkCatalog.reachedCount(in: model.document.benchmarks)
+                        let recorded = BenchmarkCatalog.recordedCount(in: model.document.benchmarks)
+                        Text("\(reached) of \(BenchmarkCatalog.metrics.count) targets reached \u{00B7} \(recorded) starting points \u{00B7} \(model.document.benchmarks.history.count) check-ins")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(minHeight: 48)
             }
         }
     }
