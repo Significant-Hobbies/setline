@@ -171,6 +171,12 @@ footer nav {
   gap: 18px;
 }
 
+footer nav a.gh {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
 .fine {
   color: var(--ink-62);
   font-size: 0.85rem;
