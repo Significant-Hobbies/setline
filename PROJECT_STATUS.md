@@ -34,6 +34,14 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-07** — Installed development-signed `1.0.0 (7)` on the owner's
+  iPhone after `pnpm check` and the full native gate passed (80.6850% production
+  line coverage). Launch was blocked by the locked phone, so physical workout
+  use and signed-in continuity remain unqualified. Corrected README instructions
+  to remove the retired `site/` and GitHub Pages path, distinguish implemented
+  iCloud from unverified convergence, and retain JSON backup guidance.
+
+
 - 2026-09-05 — cleaned up the Benchmarks feature for product fit. Five changes:
   (1) Removed all prefilled personal data from the initial state — a new user
   now starts with a blank profile and blank measurements, with default targets

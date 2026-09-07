@@ -1,59 +1,60 @@
 # Setline
 
-Setline is an iPhone training tracker for following an authored programme,
-recording actual sets, controlling rest, and measuring each exercise against a
-target you set. It has no backend: everything runs and records on the device, and
-the versioned JSON export is the only way data moves.
+Setline is a native iPhone workout player. Follow an authored programme, record
+actual sets, control rest, and compare progress with targets you set. Active
+workouts run and save on the device without waiting for a network request.
 
-The iPhone app lives in [`ios/`](./ios). The public site is static files in
-The public landing is built and released from the shared `ios-landings`
-factory (`PRODUCT=setline`) onto Cloudflare Pages. This repo holds no landing
-source. The app's App Store privacy and support URLs point at that site.
+The app lives in [`ios/`](./ios). The public landing, privacy and support pages
+are owned by the shared `ios-landings` factory (`PRODUCT=setline`), at
+[setline.significanthobbies.com](https://setline.significanthobbies.com).
+This repository has no separate landing source or product-specific backend.
+
+## Using it
+
+Start with Today or an authored workout. Complete sets in programme order and
+record what happened. Skips, extra sets and Do later are explicit session
+changes; they do not silently rewrite the programme. Completed workouts appear
+in history, and You contains progress and periodic benchmark check-ins.
+
+The app includes the owner-authored dated 12-week programme, custom workout
+creation and duplication, one bounded 1–16 week custom programme, structured set
+targets, partial/drop segments, set and rest timing, and a movement catalogue.
+Load recommendations require an explicit choice and affect only the session.
+
+Keep a versioned JSON export as a backup. It includes workout state, templates,
+and the custom programme; import previews the replacement before applying it.
+Private iCloud continuity is implemented, but two-device convergence remains
+unverified on hardware. Optional Significant Hobbies Hub sync shares completed
+session summaries after local writes. Neither is required to run a workout.
+
+## Current installation evidence
+
+Version 1.0.0 build 7 was built, Apple Development-signed and installed on the
+owner's iPhone on 7 September 2026. The complete native gate passed, including
+unit/UI tests, Release compilation and 80.6850% production-line coverage.
+Physical use could not be verified while the phone was locked. This local
+installation does not establish TestFlight availability, public enrollment or
+working signed-in synchronization. See [project status](PROJECT_STATUS.md).
+
+## Local development and checks
 
 ```bash
-pnpm --dir site dev
-pnpm --dir site check
-```, and nothing the app does depends
-on it. There is no backend and no hosting account to maintain.
-
-Site: [setline.significanthobbies.com](https://setline.significanthobbies.com) —
-dark until its DNS record points at GitHub Pages ([#43](https://github.com/Significant-Hobbies/setline/issues/43)).
-
-## Local development
-
-The app:
-
-```bash
-./ios/scripts/check.sh          # xcodegen, simulator tests, release build
+pnpm install --frozen-lockfile
+pnpm check                     # repository contracts and code health
+pnpm quality:native            # generate, simulator tests, Release build, coverage
 ```
 
-The public site:
+For native-only iteration, `ios/scripts/check.sh` also accepts
+`SETLINE_SIMULATOR_DESTINATION` for an available iPhone simulator. Marketing
+changes belong in `../ios-landings/products/setline/`, following that
+repository's instructions.
 
-```bash
-pnpm install
-pnpm run check                  # static-surface contracts and code health
-python3 -m http.server -d public 8080
-```
+## Retained work
 
-## Checks
+Physical iPhone use, real iCloud convergence, and signed-in Hub continuity need
+qualification. Apple Health, Apple Watch, CrossFit session formats,
+range-of-motion assessments and on-device workout generation remain planned.
+Coaching and social features are outside the current workout execution scope.
 
-```bash
-pnpm run check                  # static surfaces and code health
-pnpm quality:native             # xcodegen, simulator tests, release build, coverage
-```
-
-The release includes the owner-authored dated 12-week programme, structured set
-targets, a bundled four-pillar movement catalogue, per-exercise measured current
-values against authored targets, multi-segment set recording with a shorthand
-parser, a set timer alongside rest, custom workout templates, one bounded
-multi-week custom programme, device-local continuity, versioned whole-state
-backup/restore, history, progress, and deterministic session-only progression
-recommendations.
-
-Deferred: iCloud sync across devices, Apple Health, Apple Watch, CrossFit
-session formats, range-of-motion assessments, on-device workout generation,
-coaching, and social features. Until iCloud sync lands, training lives only on
-the device that recorded it and the JSON export is the only backup.
-
-Source, product planning, and work tracking live in this repository. Fleet
-Workspace consumes only catalog and operational links.
+Source, product planning and GitHub Issues live in this repository. The private
+Fleet catalog records evidence and release limits without owning this app.
