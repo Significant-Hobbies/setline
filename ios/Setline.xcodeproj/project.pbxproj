@@ -46,6 +46,7 @@
 		AB34B33A9BE381FB529BAC90 /* PersonalSyncKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6211F2538331C41ABA958E8E /* PersonalSyncKit */; };
 		BA3E8659A0088F11E5AA254E /* BenchmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BE5E4D4EECF3427D5979CCA /* BenchmarksView.swift */; };
 		BE5FDC83C2B64F526F64979C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 824EFFB1023C857CE4F1FE1C /* RootView.swift */; };
+		C20BF009E36C2FF70A1357E8 /* SetlineSyncCommitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44D414639A072B1BF75C6DE /* SetlineSyncCommitTests.swift */; };
 		C66AD84C2D8FAD24149B2445 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F52F5D64B932696BAEDEE0AC /* PrivacyInfo.xcprivacy */; };
 		C7E1EDD15D038B815CB78D27 /* SetlineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608F81A574360691A58B8581 /* SetlineApp.swift */; };
 		D873F5E68F61DC19AB8B5D6B /* SetlinePlatformRecordTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9936C1B7553637337258AD18 /* SetlinePlatformRecordTests.swift */; };
@@ -151,6 +152,7 @@
 		952100975C36861293E504E0 /* CloudKitRecordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitRecordStoreTests.swift; sourceTree = "<group>"; };
 		95630F72644F50FB1E3FEA23 /* CloudKitRecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitRecordStore.swift; sourceTree = "<group>"; };
 		9936C1B7553637337258AD18 /* SetlinePlatformRecordTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlinePlatformRecordTests.swift; sourceTree = "<group>"; };
+		A44D414639A072B1BF75C6DE /* SetlineSyncCommitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineSyncCommitTests.swift; sourceTree = "<group>"; };
 		A9D3388CFC26F3C282170264 /* HubSyncStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubSyncStatusTests.swift; sourceTree = "<group>"; };
 		AD2130D9792A60D8E3EC5484 /* SetlineTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SetlineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0859DE334CC4D97FFE0DFDA /* Domain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
@@ -218,6 +220,7 @@
 				E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */,
 				E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */,
 				9936C1B7553637337258AD18 /* SetlinePlatformRecordTests.swift */,
+				A44D414639A072B1BF75C6DE /* SetlineSyncCommitTests.swift */,
 			);
 			name = SetlineTests;
 			path = Tests/SetlineTests;
@@ -577,6 +580,7 @@
 				025ECF89A98B12D3E73330F1 /* SetlineLocalSaveTests.swift in Sources */,
 				EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */,
 				D873F5E68F61DC19AB8B5D6B /* SetlinePlatformRecordTests.swift in Sources */,
+				C20BF009E36C2FF70A1357E8 /* SetlineSyncCommitTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -775,7 +779,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 8F7LXHTJZR;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -844,7 +848,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 8F7LXHTJZR;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -986,7 +990,7 @@
 			repositoryURL = "https://github.com/Significant-Hobbies/significanthobbies.git";
 			requirement = {
 				kind = revision;
-				revision = e350a86b2c255861f528d5a22bca1196d5a2898e;
+				revision = e52fc1cffbb86b4a04f10ec2799f5bb7ed024b17;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

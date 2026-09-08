@@ -570,6 +570,9 @@ public struct WorkoutSession: Codable, Equatable, Identifiable, Sendable {
     }
 
     public var id: UUID
+    /// Only imported Hub summaries carry this provenance. Nil includes native
+    /// and legacy records, which a summary must never replace or delete.
+    public var hubRecordID: String?
     public var templateID: UUID
     public var templateName: String
     public var startedAt: Date
@@ -585,9 +588,11 @@ public struct WorkoutSession: Codable, Equatable, Identifiable, Sendable {
     public init(
         id: UUID = UUID(),
         context: SessionContext,
-        state: SessionState
+        state: SessionState,
+        hubRecordID: String? = nil
     ) {
         self.id = id
+        self.hubRecordID = hubRecordID
         self.templateID = context.templateID
         self.templateName = context.templateName
         self.startedAt = context.startedAt

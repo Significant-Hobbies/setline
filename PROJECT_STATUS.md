@@ -34,6 +34,19 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-08** — Build 9 adopts the shared durable sync callback. The old
+  merge replaced a detailed native workout with its zero-step Hub summary;
+  a regression reproduced that loss. Native and untagged legacy history now
+  remain intact. Newly imported summaries carry optional provenance, can be
+  updated/deleted without duplicating entries, and are not re-uploaded under a
+  second identity. Both manual and completion sync use the same commit path,
+  and incoming commits defer during an active workout. Five new native tests
+  pass. The full gate passed 182 core tests, 22 app tests, 17 UI tests and one
+  explicit iCloud-credential skip, Release compilation and 80.8899% coverage
+  against the unchanged 80.60% floor. General `pnpm check` passed. Build 8 is
+  still the last verified phone installation; physical use and distribution
+  remain open in issue 77 and shared consumer work in Hub issue 155.
+
 - 2026-09-08 — isolate workout storage regression tests from the system notification permission dialog after CI 34213847193 timed out at first rest. The app retains its default RestNotifier; an injected recording notifier verifies rest scheduling and cancellation in the storage test.
 
 - **2026-09-08** — Build 8 save-integrity repair prepared. Three regressions
@@ -293,12 +306,11 @@ is not claimed as shipped. The versioned JSON export remains the backup.
   GitHub Pages. Superseded 2026-08-23; see the entry above.
 - Public landing plus the agent surfaces `index.md`, `llms.txt`,
   `sitemap.xml`, `robots.txt` and `/api/ai`, built and released from the
-  shared `ios-landings` factory onto Cloudflare Pages. The
-  canonical hostname is dark until its DNS record points at GitHub Pages.
+  shared `ios-landings` factory onto Cloudflare Pages at
+  `https://setline.significanthobbies.com`. A fresh 8 September check returned
+  HTTP 200 with the Setline product page. The GitHub Pages setup is retired.
 - [Public GitHub repository](https://github.com/Significant-Hobbies/setline) —
   canonical source, product planning, and issue owner.
-- `https://setline.significanthobbies.com` — canonical public surface, pending a
-  DNS record to GitHub Pages.
 - [Private Sites deployment](https://setline-workout.sarthak927.chatgpt.site) —
   owner-gated (401) survivor of the removed web app. It is not a rollback path
   for the iPhone app and nothing depends on it.

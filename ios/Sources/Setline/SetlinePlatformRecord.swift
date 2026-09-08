@@ -4,7 +4,8 @@ import PersonalSyncKit
 import SetlineCore
 
 enum SetlinePlatformRecord {
-  static func session(_ session: WorkoutSession, completedAt: Date) -> JSONValue {
+  static func session(_ session: WorkoutSession, completedAt: Date) -> JSONValue? {
+    guard session.hubRecordID == nil else { return nil }
     let minutes = max(0, Int(completedAt.timeIntervalSince(session.startedAt) / 60))
     return .object([
       "title": .string(session.templateName),
@@ -23,7 +24,8 @@ enum SetlinePlatformRecord {
     return WorkoutSession(
         id: stableUUID(change.id),
         context: .init(templateID: stableUUID("template:\(title)"), templateName: title, startedAt: occurred, completedAt: occurred.addingTimeInterval(TimeInterval(minutes * 60))),
-        state: .init(steps: [])
+        state: .init(steps: []),
+        hubRecordID: change.id
     )
   }
 

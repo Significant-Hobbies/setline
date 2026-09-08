@@ -147,7 +147,7 @@ struct HistoryView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 5) {
                 Text(session.templateName).font(.headline.weight(.black))
-                Text("\(session.completedWorkingSetCount) working · \(session.completedCount) completed · \(session.steps.count - session.completedCount) skipped")
+                Text(session.hubRecordID != nil ? "Hub summary · set details unavailable" : "\(session.completedWorkingSetCount) working · \(session.completedCount) completed · \(session.steps.count - session.completedCount) skipped")
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
                 if let week = session.programmeWeek {
@@ -192,12 +192,21 @@ struct SessionDetailView: View {
                 if let week = session.programmeWeek {
                     LabeledContent("Programme week", value: "\(week)")
                 }
-                LabeledContent("Working sets", value: "\(session.completedWorkingSetCount)")
+                if session.hubRecordID != nil {
+                    LabeledContent("Source", value: "Hub summary")
+                    LabeledContent("Set details", value: "Unavailable")
+                } else {
+                    LabeledContent("Working sets", value: "\(session.completedWorkingSetCount)")
+                }
                 if session.tonnage > 0 {
                     LabeledContent("Load moved", value: "\(session.tonnage.trimmedString) kg")
                 }
             }
             Section("Execution ledger") {
+                if session.hubRecordID != nil && session.steps.isEmpty {
+                    Text("This Hub summary does not include set-by-set records.")
+                        .foregroundStyle(.secondary)
+                }
                 ForEach(session.steps) { step in
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {

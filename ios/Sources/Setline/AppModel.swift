@@ -453,31 +453,17 @@ final class AppModel {
         defer { isPlatformSyncing = false }
         do {
             for session in document.history {
-                guard let completedAt = session.completedAt else { continue }
+                guard let completedAt = session.completedAt,
+                      let record = SetlinePlatformRecord.session(session, completedAt: completedAt) else { continue }
                 try await platform.sync.enqueue(
                     recordId: session.id.uuidString.lowercased(),
                     occurredAt: SetlinePlatformRecord.iso(session.startedAt),
-                    record: SetlinePlatformRecord.session(session, completedAt: completedAt)
+                    record: record
                 )
             }
             hubPendingCount = await platform.sync.pendingMutationCount()
-            let changes = try await platform.sync.synchronize()
-            await acquireLocalWrite()
-            defer { releaseLocalWrite() }
-            var next = document
-            for change in changes {
-                guard change.operation == .upsert,
-                      let session = SetlinePlatformRecord.session(from: change) else { continue }
-                if let index = next.history.firstIndex(where: { $0.id == session.id }) {
-                    next.history[index] = session
-                } else {
-                    next.history.append(session)
-                }
-            }
-            next.history.sort { $0.startedAt > $1.startedAt }
-            if next != document {
-                try await store.save(next)
-                document = next
+            try await platform.sync.synchronize { changes in
+                try await self.commitPlatformChanges(changes)
             }
             hubPendingCount = await platform.sync.pendingMutationCount()
             hubSyncSnapshot = hubSyncStatusStore.recordSuccess()
@@ -491,20 +477,47 @@ final class AppModel {
         }
     }
 
+    func commitPlatformChanges(_ changes: [SyncChange]) async throws {
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
+        guard hasLoadedDocument, document.activeSession == nil else {
+            throw SetlineHubCommitError.localDocumentUnavailable
+        }
+        var next = document
+        for change in changes {
+            if change.operation == .delete {
+                next.history.removeAll { $0.hubRecordID == change.id }
+                continue
+            }
+            guard change.operation == .upsert,
+                  let session = SetlinePlatformRecord.session(from: change) else { continue }
+            if let index = next.history.firstIndex(where: { $0.id == session.id }) {
+                guard next.history[index].hubRecordID == change.id else { continue }
+                next.history[index] = session
+            } else {
+                next.history.append(session)
+            }
+        }
+        next.history.sort { $0.startedAt > $1.startedAt }
+        if next != document {
+            try await store.save(next)
+            document = next
+        }
+    }
+
     private func enqueue(_ session: WorkoutSession) {
         guard let platform, account?.isSignedIn == true,
-              let completedAt = session.completedAt else { return }
+              let completedAt = session.completedAt,
+              let record = SetlinePlatformRecord.session(session, completedAt: completedAt) else { return }
         Task {
             do {
                 try await platform.sync.enqueue(
                     recordId: session.id.uuidString.lowercased(),
                     occurredAt: SetlinePlatformRecord.iso(session.startedAt),
-                    record: SetlinePlatformRecord.session(session, completedAt: completedAt)
+                    record: record
                 )
                 hubPendingCount = await platform.sync.pendingMutationCount()
-                _ = try await platform.sync.synchronize()
-                hubPendingCount = await platform.sync.pendingMutationCount()
-                hubSyncSnapshot = hubSyncStatusStore.recordSuccess()
+                await syncWithPlatform()
             } catch {
                 hubPendingCount = await platform.sync.pendingMutationCount()
                 hubSyncSnapshot = hubSyncStatusStore.recordFailure()
@@ -614,3 +627,5 @@ final class AppModel {
         )
     }
 }
+
+enum SetlineHubCommitError: Error { case localDocumentUnavailable }

@@ -15,10 +15,10 @@ final class SetlinePlatformRecordTests: XCTestCase {
     )
 
     guard
-      case .object(let record) = SetlinePlatformRecord.session(
+      let payload = SetlinePlatformRecord.session(
         session,
         completedAt: try XCTUnwrap(session.completedAt)
-      )
+      ), case .object(let record) = payload
     else {
       return XCTFail("Expected an object record")
     }
