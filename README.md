@@ -27,6 +27,11 @@ Private iCloud continuity is implemented, but two-device convergence remains
 unverified on hardware. Optional Significant Hobbies Hub sync shares completed
 session summaries after local writes. Neither is required to run a workout.
 
+In Settings, approve existing history for the displayed Hub account before its
+first sync. That approval persists locally; another account cannot upload those
+workouts or take over waiting changes. Workouts received through iCloud retain
+their recorded Hub owner. Finish an active workout before approving history.
+
 Hub downloads commit locally before their sync cursor advances. Native workout
 details are preserved when their summary returns from the Hub. Newly imported
 summaries are labelled explicitly, carry no invented set data, and are not

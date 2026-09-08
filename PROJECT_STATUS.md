@@ -34,6 +34,20 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-09** — Build 10 adds explicit, durable Hub account approval. Local
+  history and waiting sync changes require approval before adoption; history
+  already owned by another account is excluded from upload. Session ownership
+  survives the existing iCloud payload, and new offline workouts inherit the
+  approved owner. Downloads validate the current account around local commit;
+  active workouts refuse approval and incoming commits. Eight new core/app
+  regressions cover ownership, legacy decoding, iCloud payload round trips,
+  durable save failure/retry, account mismatch, and active-session preservation.
+  `pnpm run check` and the full native unit/UI/Release gate passed, with
+  81.1086% production coverage against the unchanged 80.60% floor. Build 9
+  remains the last verified phone installation at this checkpoint. Physical
+  approval, real account continuity and public distribution remain open in
+  issue 77; shared account-isolation work is tracked in Hub issue 156.
+
 - **2026-09-08** — Build 9 adopts the shared durable sync callback. The old
   merge replaced a detailed native workout with its zero-step Hub summary;
   a regression reproduced that loss. Native and untagged legacy history now

@@ -120,13 +120,24 @@ struct SettingsView: View {
             if let account = model.account {
                 if account.isSignedIn {
                     Label(account.session?.email ?? "Connected", systemImage: "checkmark.icloud")
+                    if let notice = model.hubAccountNotice {
+                        Text(notice).font(.footnote).foregroundStyle(SetlinePalette.coral)
+                    }
+                    if (model.document.hubAccountID == nil || model.hubAccountMatches) && (model.needsHubApproval || model.hubAccountNotice != nil) {
+                        Text("Connect unapproved workout history and waiting sync changes to the account above? Workouts already owned by another account stay separate.")
+                            .font(.footnote)
+                        Button("Approve history for this account") {
+                            Task { await model.approveHubAccount() }
+                        }
+                        .disabled(model.isPlatformSyncing || model.document.activeSession != nil)
+                    }
                     Button {
                         Task { await model.syncWithPlatform(announcing: true) }
                     } label: {
                         Label(hubSyncButtonTitle, systemImage: "arrow.triangle.2.circlepath")
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .disabled(model.isPlatformSyncing || model.document.activeSession != nil)
+                    .disabled(model.isPlatformSyncing || model.document.activeSession != nil || !model.hubAccountMatches)
                     Button("Sign out", role: .destructive) { Task { await account.signOut() } }
                 } else {
                     Text("Connect your private Significant Hobbies account to make these summaries visible in Hub. iCloud device continuity works separately.")

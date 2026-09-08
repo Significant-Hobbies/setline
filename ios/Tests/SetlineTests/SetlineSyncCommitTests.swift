@@ -6,6 +6,63 @@ import XCTest
 
 @MainActor
 final class SetlineSyncCommitTests: XCTestCase {
+    func testApprovedHistoryPersistsAndRejectsDifferentAccountDownloads() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), syncCoordinator: nil, platform: nil)
+        await model.load()
+        let approved = await model.approveLocalHubHistory(for: "a")
+        XCTAssertTrue(approved)
+        let persisted = try await store.load()
+        XCTAssertEqual(persisted.hubAccountID, "a")
+        do {
+            try await model.commitPlatformChanges([summary(id: "foreign-workout")], ownerID: "b")
+            XCTFail("Another account must not add history")
+        } catch SetlineHubOwnershipError.differentAccount {}
+        XCTAssertTrue(model.document.history.isEmpty)
+        try await model.commitPlatformChanges([summary(id: "a-workout")], ownerID: "a")
+        let reopened = try await store.load()
+        XCTAssertEqual(reopened.history.first?.hubAccountID, "a")
+        XCTAssertEqual(reopened.history.first?.hubRecordID, "a-workout")
+        XCTAssertTrue(try reopened.approvedHubHistory(for: "a").isEmpty, "Downloaded summaries must not be re-exported")
+    }
+
+    func testFailedApprovalSaveDoesNotClaimOwnershipAndCanRetry() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appending(path: "workouts.json")
+        let store = SetlineStore(fileURL: file)
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), syncCoordinator: nil, platform: nil)
+        await model.load()
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
+        let failed = await model.approveLocalHubHistory(for: "a")
+        XCTAssertFalse(failed)
+        XCTAssertNil(model.document.hubAccountID)
+        try FileManager.default.removeItem(at: file)
+        let retried = await model.approveLocalHubHistory(for: "a")
+        XCTAssertTrue(retried)
+        let reopened = try await store.load()
+        XCTAssertEqual(reopened.hubAccountID, "a")
+    }
+
+    func testActiveWorkoutBlocksApprovalWithoutChangingItsSavedState() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        var original = SetlineDocument.sample
+        try original.startWorkout(template: XCTUnwrap(original.templates.first))
+        try await store.save(original)
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), syncCoordinator: nil, platform: nil)
+        await model.load()
+        let rejected = await model.approveLocalHubHistory(for: "a")
+        XCTAssertFalse(rejected)
+        let persisted = try await store.load()
+        XCTAssertEqual(persisted, model.document)
+        XCTAssertNil(persisted.hubAccountID)
+        XCTAssertEqual(persisted.activeSession?.id, original.activeSession?.id)
+    }
+
     func testEchoedSummaryCannotReplaceDetailedNativeWorkout() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

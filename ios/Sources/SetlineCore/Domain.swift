@@ -573,6 +573,8 @@ public struct WorkoutSession: Codable, Equatable, Identifiable, Sendable {
     /// Only imported Hub summaries carry this provenance. Nil includes native
     /// and legacy records, which a summary must never replace or delete.
     public var hubRecordID: String?
+    /// Preserved inside the existing session payload when iCloud transports it.
+    public var hubAccountID: String?
     public var templateID: UUID
     public var templateName: String
     public var startedAt: Date
@@ -589,10 +591,12 @@ public struct WorkoutSession: Codable, Equatable, Identifiable, Sendable {
         id: UUID = UUID(),
         context: SessionContext,
         state: SessionState,
-        hubRecordID: String? = nil
+        hubRecordID: String? = nil,
+        hubAccountID: String? = nil
     ) {
         self.id = id
         self.hubRecordID = hubRecordID
+        self.hubAccountID = hubAccountID
         self.templateID = context.templateID
         self.templateName = context.templateName
         self.startedAt = context.startedAt
@@ -706,6 +710,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
     }
 
     public var schemaVersion: Int
+    public var hubAccountID: String?
     public var templates: [WorkoutTemplate]
     public var programme: ProgrammeSelection
     public var activeSession: WorkoutSession?
@@ -725,9 +730,11 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         history: [WorkoutSession] = [],
         goals: [ExerciseGoal] = [],
         benchmarks: BenchmarksState = .initial,
-        sync: SyncInfo = .init()
+        sync: SyncInfo = .init(),
+        hubAccountID: String? = nil
     ) {
         self.schemaVersion = schemaVersion
+        self.hubAccountID = hubAccountID
         self.templates = templates
         self.programme = programme
         self.activeSession = activeSession
@@ -744,6 +751,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        hubAccountID = try container.decodeIfPresent(String.self, forKey: .hubAccountID)
         templates = try container.decodeIfPresent([WorkoutTemplate].self, forKey: .templates) ?? []
         if let selection = try? container.decodeIfPresent(ProgrammeSelection.self, forKey: .programme) {
             programme = selection
@@ -995,7 +1003,8 @@ public extension SetlineDocument {
         }
         activeSession = WorkoutSession(
             context: .init(templateID: template.id, templateName: template.name, startedAt: date),
-            state: .init(steps: steps, programmeWeek: programmeWeek, programmeDayIndex: programmeDayIndex)
+            state: .init(steps: steps, programmeWeek: programmeWeek, programmeDayIndex: programmeDayIndex),
+            hubAccountID: hubAccountID
         )
     }
 

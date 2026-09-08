@@ -38,6 +38,15 @@ final class AppModel {
     private let syncCoordinator: SetlineCore.SyncCoordinator?
     private let platform: PersonalPlatformConnection?
     private let hubSyncStatusStore: HubSyncStatusStore
+    private(set) var hubAccountNotice: String?
+    var hubAccountMatches: Bool {
+        guard let owner = document.hubAccountID else { return false }
+        return account?.session?.userId == owner
+    }
+    var needsHubApproval: Bool {
+        document.hubAccountID == nil || document.history.contains { $0.hubAccountID == nil }
+    }
+
     let account: PersonalAccountModel?
 
     init(
@@ -209,7 +218,7 @@ final class AppModel {
     func finishWorkout() async {
         guard await mutate({ try $0.finishWorkout() }) else { return }
         await syncRestAlert()
-        if let completed = document.history.first { enqueue(completed) }
+        if platform != nil { Task { await syncWithPlatform() } }
         if document.activeSession == nil { isWorkoutPresented = false }
     }
 
@@ -445,6 +454,25 @@ final class AppModel {
         hubPendingCount = await platform.sync.pendingMutationCount()
     }
 
+    func approveLocalHubHistory(for userID: String) async -> Bool {
+        await mutate { try $0.approveHubHistory(for: userID) }
+    }
+
+    func approveHubAccount() async {
+        guard !isPlatformSyncing, document.activeSession == nil, let platform else { return }
+        do {
+            guard let verified = try await platform.identity.verifiedSyncAccount(),
+                  account?.session?.userId == verified.userID else { return }
+            guard await approveLocalHubHistory(for: verified.userID) else { return }
+            try await platform.identity.requireCurrentAccount(verified)
+            try await platform.sync.bindAccount(verified, adoptingUnownedData: true)
+            hubAccountNotice = nil
+            await syncWithPlatform(announcing: true)
+        } catch {
+            hubAccountNotice = "Could not approve this Hub connection. Local training and waiting changes are preserved."
+        }
+    }
+
     func syncWithPlatform(announcing: Bool = false) async {
         guard hasLoadedDocument else { return }
         guard let platform, account?.isSignedIn == true,
@@ -452,24 +480,40 @@ final class AppModel {
         isPlatformSyncing = true
         defer { isPlatformSyncing = false }
         do {
-            for session in document.history {
+            guard let owner = document.hubAccountID else { throw SetlineHubOwnershipError.approvalRequired }
+            guard account?.session?.userId == owner else { throw SetlineHubOwnershipError.differentAccount }
+            guard let verified = try await platform.identity.verifiedSyncAccount(),
+                  verified.userID == owner else { throw SetlineHubOwnershipError.differentAccount }
+            try await platform.sync.bindAccount(verified)
+            hubAccountNotice = nil
+            for session in try document.approvedHubHistory(for: owner) {
                 guard let completedAt = session.completedAt,
                       let record = SetlinePlatformRecord.session(session, completedAt: completedAt) else { continue }
                 try await platform.sync.enqueue(
                     recordId: session.id.uuidString.lowercased(),
                     occurredAt: SetlinePlatformRecord.iso(session.startedAt),
-                    record: record
+                    record: record, account: verified
                 )
             }
             hubPendingCount = await platform.sync.pendingMutationCount()
-            try await platform.sync.synchronize { changes in
-                try await self.commitPlatformChanges(changes)
+            try await platform.sync.synchronize(account: verified) { changes in
+                try await platform.identity.requireCurrentAccount(verified)
+                try await self.commitPlatformChanges(changes, ownerID: verified.userID)
+                try await platform.identity.requireCurrentAccount(verified)
             }
             hubPendingCount = await platform.sync.pendingMutationCount()
+            try await platform.identity.requireCurrentAccount(verified)
+            guard account?.session?.userId == owner else { throw SetlineHubOwnershipError.differentAccount }
             hubSyncSnapshot = hubSyncStatusStore.recordSuccess()
             if announcing { message = "Significant Hobbies Hub is up to date." }
         } catch {
             hubPendingCount = await platform.sync.pendingMutationCount()
+            if let ownership = error as? SetlineHubOwnershipError {
+                hubAccountNotice = ownership.localizedDescription
+            } else if error is PersonalSyncOwnershipError {
+                hubAccountNotice = "Approve the connection to resume, or sign in to the account that owns the waiting changes."
+            }
+            guard hubAccountMatches else { return }
             hubSyncSnapshot = hubSyncStatusStore.recordFailure()
             if announcing {
                 message = "Hub sync needs a retry. Pending summaries stay on this iPhone."
@@ -477,22 +521,25 @@ final class AppModel {
         }
     }
 
-    func commitPlatformChanges(_ changes: [SyncChange]) async throws {
+    func commitPlatformChanges(_ changes: [SyncChange], ownerID: String? = nil) async throws {
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         guard hasLoadedDocument, document.activeSession == nil else {
             throw SetlineHubCommitError.localDocumentUnavailable
         }
+        guard document.hubAccountID == ownerID else { throw SetlineHubOwnershipError.differentAccount }
         var next = document
         for change in changes {
             if change.operation == .delete {
-                next.history.removeAll { $0.hubRecordID == change.id }
+                next.history.removeAll { $0.hubRecordID == change.id && $0.hubAccountID == ownerID }
                 continue
             }
             guard change.operation == .upsert,
-                  let session = SetlinePlatformRecord.session(from: change) else { continue }
+                  var session = SetlinePlatformRecord.session(from: change) else { continue }
+            session.hubAccountID = ownerID
             if let index = next.history.firstIndex(where: { $0.id == session.id }) {
-                guard next.history[index].hubRecordID == change.id else { continue }
+                guard next.history[index].hubRecordID == change.id,
+                      next.history[index].hubAccountID == ownerID else { continue }
                 next.history[index] = session
             } else {
                 next.history.append(session)
@@ -502,26 +549,6 @@ final class AppModel {
         if next != document {
             try await store.save(next)
             document = next
-        }
-    }
-
-    private func enqueue(_ session: WorkoutSession) {
-        guard let platform, account?.isSignedIn == true,
-              let completedAt = session.completedAt,
-              let record = SetlinePlatformRecord.session(session, completedAt: completedAt) else { return }
-        Task {
-            do {
-                try await platform.sync.enqueue(
-                    recordId: session.id.uuidString.lowercased(),
-                    occurredAt: SetlinePlatformRecord.iso(session.startedAt),
-                    record: record
-                )
-                hubPendingCount = await platform.sync.pendingMutationCount()
-                await syncWithPlatform()
-            } catch {
-                hubPendingCount = await platform.sync.pendingMutationCount()
-                hubSyncSnapshot = hubSyncStatusStore.recordFailure()
-            }
         }
     }
 
