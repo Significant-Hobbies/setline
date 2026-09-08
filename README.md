@@ -41,10 +41,10 @@ tests; they do not establish physical signed-in convergence.
 
 ## Current installation evidence
 
-Version 1.0.0 build 9 was built from the CI-verified source, checked with
-codesign, and installed on the owner's iPhone on 8 September 2026. iOS rejected
-its launch because the phone was locked. Physical workout use and signed-in
-synchronization remain unverified; installation does not establish TestFlight
+Version 1.0.0 build 10 was built from CI-verified source `6c1b1f4`, checked with
+codesign, installed and successfully launched on the owner's iPhone on
+9 September 2026. Physical workout use and signed-in
+synchronization remain unverified; launch does not establish TestFlight
 availability or public enrollment. The current installation and actual-use
 checklist lives in [issue 77](https://github.com/Significant-Hobbies/setline/issues/77).
 

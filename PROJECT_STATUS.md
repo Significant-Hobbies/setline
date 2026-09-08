@@ -34,6 +34,14 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-09** — Build 10 source `6c1b1f4` passed hosted CI 34265090575,
+  including native quality. Its signed Release app passed strict/deep signature
+  verification, installed and launched successfully on the owner's iPhone
+  (process 18770). The previous locked-device launch blocker cleared for this
+  attempt. Physical UI inspection was unavailable because the computer-use
+  native pipe failed to start; a real workout, approval and signed-in continuity
+  remain unqualified in issue 77.
+
 - **2026-09-09** — Build 10 adds explicit, durable Hub account approval. Local
   history and waiting sync changes require approval before adoption; history
   already owned by another account is excluded from upload. Session ownership
