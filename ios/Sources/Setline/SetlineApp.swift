@@ -12,6 +12,7 @@ struct SetlineApp: App {
                 .environment(model)
                 .task {
                     await model.load()
+                    await model.restoreAccountIfIdle()
                     // Local data first, always. Syncing follows the load rather than
                     // gating it, so a workout starts instantly with no signal.
                     await model.syncWithiCloud()
@@ -22,6 +23,7 @@ struct SetlineApp: App {
                     // likely to be waiting.
                     guard phase == .active else { return }
                     Task {
+                        await model.restoreAccountIfIdle()
                         await model.syncWithiCloud()
                         await model.syncWithPlatform()
                     }

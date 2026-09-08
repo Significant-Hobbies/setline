@@ -5,6 +5,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
+    var recoveryOnly = false
     @Environment(AppModel.self) private var model
     @State private var isImporterPresented = false
     @State private var showResetConfirmation = false
@@ -13,20 +14,31 @@ struct SettingsView: View {
         @Bindable var model = model
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                pageHeader("You", subtitle: "Device-first. Choose how your data follows you.")
-                benchmarksSection
-                storageSection
-                iCloudSection
-                significantHobbiesHubSection
+                pageHeader(
+                    recoveryOnly ? "Restore your programme" : "You",
+                    subtitle: recoveryOnly
+                        ? "Your saved file could not be opened and has not been changed. Try again or restore a JSON backup."
+                        : "Device-first. Choose how your data follows you."
+                )
+                if recoveryOnly {
+                    Button("Try opening again") { Task { await model.load() } }
+                } else {
+                    benchmarksSection
+                    storageSection
+                    iCloudSection
+                    significantHobbiesHubSection
+                }
                 settingsSection("Your data") {
-                    ShareLink(
-                        item: SetlineExportPayload(document: model.document),
-                        preview: SharePreview("Setline data")
-                    ) {
-                        Label("Export complete Setline data", systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    if !recoveryOnly {
+                        ShareLink(
+                            item: SetlineExportPayload(document: model.document),
+                            preview: SharePreview("Setline data")
+                        ) {
+                            Label("Export complete Setline data", systemImage: "square.and.arrow.up")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(minHeight: 48)
                     }
-                    .frame(minHeight: 48)
                     Button {
                         isImporterPresented = true
                     } label: {
@@ -41,7 +53,7 @@ struct SettingsView: View {
                     .frame(minHeight: 48)
                 }
                 settingsSection("About") {
-                    LabeledContent("Version", value: "1.0.0 (2)")
+                    LabeledContent("Version", value: appVersion)
                     Link("Privacy", destination: URL(string: "https://setline.significanthobbies.com/privacy")!)
                         .frame(minHeight: 44)
                     Link("Support", destination: URL(string: "https://setline.significanthobbies.com")!)
@@ -53,6 +65,8 @@ struct SettingsView: View {
         .setlineBackground()
         .navigationBarHidden(true)
         .task {
+            guard !recoveryOnly else { return }
+            await model.restoreAccountIfIdle()
             await model.refreshSyncAvailability()
             await model.refreshHubSyncStatus()
         }
@@ -74,6 +88,12 @@ struct SettingsView: View {
             Button("Reset local data", role: .destructive) { Task { await model.resetLocalData() } }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    private var appVersion: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+        return "\(version) (\(build))"
     }
 
     private var significantHobbiesHubSection: some View {

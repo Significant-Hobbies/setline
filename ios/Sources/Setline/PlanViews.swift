@@ -303,6 +303,9 @@ struct TemplateEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let message = model.message {
+                    Section { Label(message, systemImage: "exclamationmark.triangle") }
+                }
                 Section("Template") {
                     TextField("Name", text: $draft.name)
                     TextField("Short description", text: $draft.detail, axis: .vertical)
@@ -342,6 +345,8 @@ struct TemplateEditorView: View {
                     }
                 }
             }
+            .disabled(model.isSaving)
+            .interactiveDismissDisabled(model.isSaving)
             .navigationTitle(draft.name.isEmpty ? "New template" : "Edit template")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -351,11 +356,10 @@ struct TemplateEditorView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         Task {
-                            await model.saveTemplate(linked(draft))
-                            dismiss()
+                            if await model.saveTemplate(linked(draft)) { dismiss() }
                         }
                     }
-                    .disabled(!isValid)
+                    .disabled(!isValid || model.isSaving)
                 }
             }
         }

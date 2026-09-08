@@ -144,6 +144,22 @@ final class SetlineUITests: XCTestCase {
         row.tap()
     }
 
+    func testUnreadableDocumentShowsBackupRecoveryInsteadOfAnEmptyWorkout() {
+        let app = launch(["--recovery-demo"])
+        let alert = app.alerts["Setline"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.buttons["OK"].tap()
+        XCTAssertTrue(app.staticTexts["Restore your programme"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Try opening again"].exists)
+        XCTAssertTrue(app.buttons["Preview an import"].exists)
+        XCTAssertFalse(app.buttons["Export complete Setline data"].exists)
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Unreadable document recovery"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
     func testStartsWorkoutAndShowsTimestampRest() {
         let app = launch()
 

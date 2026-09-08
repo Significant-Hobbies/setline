@@ -12,6 +12,9 @@ import SetlineCore
 final class AppModel {
     private(set) var document: SetlineDocument = .initial
     var isLoading = true
+    private(set) var hasLoadedDocument = false
+    private(set) var isSaving = false
+    private var localWriteWaiters: [CheckedContinuation<Void, Never>] = []
     var isOnboardingPresented = false
     private(set) var isExistingOwnerOrientation = false
     var isWorkoutPresented = false
@@ -74,16 +77,19 @@ final class AppModel {
         let demoFlags: Set<String> = [
             "--ui-demo", "--fresh-demo", "--evidence-demo", "--active-demo", "--rest-demo",
             "--plan-demo", "--history-demo", "--exercises-demo", "--exercise-detail-demo",
-            "--onboarding-demo", "--benchmarks-demo",
+            "--onboarding-demo", "--benchmarks-demo", "--recovery-demo",
         ]
         return arguments.contains { demoFlags.contains($0) }
     }
 
     func load() async {
+        isLoading = true
         defer { isLoading = false }
         let arguments = ProcessInfo.processInfo.arguments
         do {
-            if arguments.contains("--evidence-demo") {
+            if arguments.contains("--recovery-demo") {
+                throw CocoaError(.fileReadCorruptFile)
+            } else if arguments.contains("--evidence-demo") {
                 document = .demoWithEvidence
             } else if arguments.contains("--ui-demo") {
                 // A fixed, date-independent fixture so interface tests do not
@@ -107,13 +113,19 @@ final class AppModel {
                     completed: UserDefaults.standard.bool(forKey: Self.onboardingCompletionKey)
                 )
             try startDemoSessionIfRequested(arguments)
-            await account?.restore()
-            await refreshHubSyncStatus()
-            await syncWithPlatform()
+            hasLoadedDocument = true
         } catch {
-            document = .initial
-            message = error.localizedDescription
+            hasLoadedDocument = false
+            message = "Your programme could not be opened. The saved file has not been changed. Try again before editing."
         }
+    }
+
+    /// Optional account validation may use the network; it must not gate local
+    /// launch or recovery of a workout that is already in progress.
+    func restoreAccountIfIdle() async {
+        guard hasLoadedDocument, document.activeSession == nil else { return }
+        await account?.restore()
+        await refreshHubSyncStatus()
     }
 
     static let onboardingCompletionKey = "setline.illustrated-onboarding.seen.v1"
@@ -195,7 +207,7 @@ final class AppModel {
     }
 
     func finishWorkout() async {
-        await mutate { try $0.finishWorkout() }
+        guard await mutate({ try $0.finishWorkout() }) else { return }
         await syncRestAlert()
         if let completed = document.history.first { enqueue(completed) }
         if document.activeSession == nil { isWorkoutPresented = false }
@@ -212,12 +224,14 @@ final class AppModel {
     // MARK: - Planning
 
     func duplicateTemplate(_ template: WorkoutTemplate) async {
-        await mutate { try $0.duplicateTemplate(template.id) }
+        let committed = await mutate { try $0.duplicateTemplate(template.id) }
+        guard committed else { return }
         message = "Independent copy created."
     }
 
-    func saveTemplate(_ template: WorkoutTemplate) async {
-        await mutate { document in
+    @discardableResult
+    func saveTemplate(_ template: WorkoutTemplate) async -> Bool {
+        let committed = await mutate { document in
             var saved = template
             saved.isBundled = false
             if let index = document.templates.firstIndex(where: { $0.id == saved.id }) {
@@ -226,7 +240,9 @@ final class AppModel {
                 document.templates.append(saved)
             }
         }
+        guard committed else { return false }
         message = "Template saved."
+        return true
     }
 
     func assignTemplate(_ templateID: UUID?, to weekday: Int) async {
@@ -260,15 +276,18 @@ final class AppModel {
         await mutate { $0.programme = selection }
     }
 
-    func saveGoal(_ goal: ExerciseGoal) async {
-        await mutate { document in
+    @discardableResult
+    func saveGoal(_ goal: ExerciseGoal) async -> Bool {
+        let committed = await mutate { document in
             if let index = document.goals.firstIndex(where: { $0.id == goal.id }) {
                 document.goals[index] = goal
             } else {
                 document.goals.append(goal)
             }
         }
+        guard committed else { return false }
         message = "Target saved."
+        return true
     }
 
     func deleteGoal(_ goal: ExerciseGoal) async {
@@ -314,14 +333,15 @@ final class AppModel {
     }
 
     func updateBenchmarkTarget(_ metricID: String, values: [String: Double]) async {
-        await mutate { document in
+        let committed = await mutate { document in
             document.benchmarks.targets[metricID] = BenchmarkTargetState(values: values)
         }
+        guard committed else { return }
         message = "Target updated. Previous check-ins keep their original targets."
     }
 
     func saveBenchmarkCheckIn(date: Date) async {
-        await mutate { document in
+        let committed = await mutate { document in
             let checkIn = BenchmarkCheckIn(
                 date: date,
                 profile: document.benchmarks.profile,
@@ -331,21 +351,23 @@ final class AppModel {
             )
             document.benchmarks.history.insert(checkIn, at: 0)
         }
+        guard committed else { return }
         message = "Check-in saved."
     }
 
     func clearBenchmarkMeasurements() async {
-        await mutate { document in
+        let committed = await mutate { document in
             document.benchmarks.metrics = BenchmarksState.blankMetrics
             document.benchmarks.updated = [:]
         }
+        guard committed else { return }
         message = "Current measurements cleared. Check-ins and targets were kept."
     }
 
     /// Applies a single workout-history suggestion to the benchmark state,
     /// marking it with the source date so the UI can show provenance.
     func applyBenchmarkSuggestion(_ suggestion: BenchmarkSuggestion) async {
-        await mutate { document in
+        let committed = await mutate { document in
             var state = document.benchmarks.metrics[suggestion.metricID] ?? .init()
             for (key, value) in suggestion.numbers {
                 state.numbers[key] = value
@@ -356,6 +378,7 @@ final class AppModel {
             document.benchmarks.metrics[suggestion.metricID] = state
             document.benchmarks.updated[suggestion.metricID] = suggestion.sourceDate
         }
+        guard committed else { return }
         message = "Filled from \(suggestion.sourceExerciseName) on \(suggestion.sourceDate.formatted(date: .abbreviated, time: .omitted))."
     }
 
@@ -375,6 +398,7 @@ final class AppModel {
     /// session, but re-entering the document underneath a running set is a needless
     /// risk for no benefit.
     func syncWithiCloud(announcing: Bool = false) async {
+        guard hasLoadedDocument else { return }
         guard let syncCoordinator, !isSyncing, document.activeSession == nil else { return }
         isSyncing = true
         defer { isSyncing = false }
@@ -389,7 +413,14 @@ final class AppModel {
         }
 
         do {
-            let (merged, outcome) = try await syncCoordinator.sync(document)
+            let base = document
+            let (merged, outcome) = try await syncCoordinator.sync(base)
+            await acquireLocalWrite()
+            defer { releaseLocalWrite() }
+            guard document == base else {
+                if announcing { message = "Your programme changed while iCloud was syncing. Sync again when idle." }
+                return
+            }
             if !merged.hasSameContent(as: document) || merged.lastSyncedAt != document.lastSyncedAt {
                 try await store.save(merged)
                 document = merged
@@ -415,6 +446,7 @@ final class AppModel {
     }
 
     func syncWithPlatform(announcing: Bool = false) async {
+        guard hasLoadedDocument else { return }
         guard let platform, account?.isSignedIn == true,
               !isPlatformSyncing, document.activeSession == nil else { return }
         isPlatformSyncing = true
@@ -430,6 +462,8 @@ final class AppModel {
             }
             hubPendingCount = await platform.sync.pendingMutationCount()
             let changes = try await platform.sync.synchronize()
+            await acquireLocalWrite()
+            defer { releaseLocalWrite() }
             var next = document
             for change in changes {
                 guard change.operation == .upsert,
@@ -500,12 +534,15 @@ final class AppModel {
 
     func confirmImport() async {
         guard let importPreview else { return }
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
         do {
             try await store.replace(with: importPreview)
             // The imported file is now this device's truth, but everything it does
             // not contain must not be read as deleted elsewhere.
             try? await syncCoordinator?.forgetBookkeeping()
             document = importPreview
+            hasLoadedDocument = true
             self.importPreview = nil
             isImportConfirmationPresented = false
             message = "Setline data replaced."
@@ -515,26 +552,52 @@ final class AppModel {
     }
 
     func resetLocalData() async {
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
         do {
             try await store.reset()
             // Resetting this device must not propagate as a deletion of the same
             // training from iCloud and every other device.
             try? await syncCoordinator?.forgetBookkeeping()
             document = .initial
+            hasLoadedDocument = true
             message = "Local data reset."
         } catch {
             message = error.localizedDescription
         }
     }
 
-    private func mutate(_ operation: (inout SetlineDocument) throws -> Void) async {
+    private func acquireLocalWrite() async {
+        if isSaving {
+            await withCheckedContinuation { localWriteWaiters.append($0) }
+        } else {
+            isSaving = true
+        }
+    }
+
+    private func releaseLocalWrite() {
+        if localWriteWaiters.isEmpty { isSaving = false }
+        else { localWriteWaiters.removeFirst().resume() }
+    }
+
+    @discardableResult
+    private func mutate(_ operation: (inout SetlineDocument) throws -> Void) async -> Bool {
+        guard hasLoadedDocument else {
+            message = "Your programme could not be opened. Reopen it before saving; the existing file has not been changed."
+            return false
+        }
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
         do {
             var next = document
             try operation(&next)
             try await store.save(next)
             document = next
+            message = nil
+            return true
         } catch {
             message = error.localizedDescription
+            return false
         }
     }
 

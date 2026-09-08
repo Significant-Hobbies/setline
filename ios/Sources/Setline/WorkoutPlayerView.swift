@@ -28,6 +28,16 @@ struct WorkoutPlayerView: View {
                 ContentUnavailableView("Workout complete", systemImage: "checkmark.seal.fill")
             }
         }
+        .disabled(model.isSaving)
+        .safeAreaInset(edge: .top) {
+            if let message = model.message {
+                Label(message, systemImage: "exclamationmark.triangle")
+                    .font(.footnote)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(SetlinePalette.chalk)
+            }
+        }
         .interactiveDismissDisabled(model.document.activeSession != nil)
         .confirmationDialog("Finish this workout?", isPresented: $showFinishConfirmation) {
             Button("Finish and save") { Task { await model.finishWorkout() } }

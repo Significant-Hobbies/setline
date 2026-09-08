@@ -529,6 +529,9 @@ private struct GoalEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let message = model.message {
+                    Section { Label(message, systemImage: "exclamationmark.triangle") }
+                }
                 Section("Movement") {
                     LabeledContent("Exercise", value: exerciseName)
                     Picker("Measure", selection: $metric) {
@@ -564,6 +567,8 @@ private struct GoalEditorView: View {
                     TextField("Optional", text: $note, axis: .vertical)
                 }
             }
+            .disabled(model.isSaving)
+            .interactiveDismissDisabled(model.isSaving)
             .navigationTitle(existing == nil ? "New target" : "Edit target")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -590,8 +595,7 @@ private struct GoalEditorView: View {
             note: note.isEmpty ? nil : note
         )
         Task {
-            await model.saveGoal(goal)
-            dismiss()
+            if await model.saveGoal(goal) { dismiss() }
         }
     }
 }

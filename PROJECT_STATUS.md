@@ -34,6 +34,20 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-08** — Build 8 save-integrity repair prepared. Three regressions
+  reproduced false template-save success, lost concurrent benchmark changes,
+  and an unreadable file overwritten by the initial document. Local writes now
+  serialize, callers acknowledge committed outcomes, and failed editors retain
+  their drafts. Failed workout recording/finish preserves the active session;
+  retry/reload preserves recorded sets, rest and authored templates. Incoming
+  iCloud results cannot replace a document changed during the request. Backup
+  recovery remains available after an unreadable load, and local launch no
+  longer waits for optional account-network validation. Six focused storage
+  regressions, `pnpm check`, and the full native gate passed: 182 core tests,
+  17 app tests, 17 UI tests, one explicit iCloud-credential skip, a Release build
+  and 80.9537% coverage against the unchanged 80.60% floor. Physical
+  readiness is tracked in [issue 77](https://github.com/Significant-Hobbies/setline/issues/77).
+
 - **2026-09-07** — Installed development-signed `1.0.0 (7)` on the owner's
   iPhone after `pnpm check` and the full native gate passed (80.6850% production
   line coverage). Launch was blocked by the locked phone, so physical workout

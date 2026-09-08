@@ -12,6 +12,8 @@ struct RootView: View {
                 ProgressView("Loading your programme…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .setlineBackground()
+            } else if !model.hasLoadedDocument {
+                NavigationStack { SettingsView(recoveryOnly: true) }
             } else if model.isOnboardingPresented {
                 SetlineOnboardingView()
             } else {

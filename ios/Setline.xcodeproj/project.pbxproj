@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		025ECF89A98B12D3E73330F1 /* SetlineLocalSaveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */; };
 		06B31DF75BFAA837FA9FAAA6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6BF346E7B39E1FEE8CD50C7C /* Assets.xcassets */; };
 		0C260E4D0C6C142C45B3AC6D /* HistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C887472FBEDF36FD127C32 /* HistoryViews.swift */; };
 		0FA5FD50B707EF422848A2E6 /* Targets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B888AC3A36F08B6334AE20CA /* Targets.swift */; };
@@ -165,6 +166,7 @@
 		D638AFB5C0FF38C44F3DE880 /* SimulatorICloudSignInTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorICloudSignInTests.swift; sourceTree = "<group>"; };
 		DFAE6EB21BC26F97140F4FEE /* SecondaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryViews.swift; sourceTree = "<group>"; };
 		E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineOnboardingTests.swift; sourceTree = "<group>"; };
+		E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineLocalSaveTests.swift; sourceTree = "<group>"; };
 		F52F5D64B932696BAEDEE0AC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FD83BEAE219A731573D018EC /* SetlinePlatformRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlinePlatformRecord.swift; sourceTree = "<group>"; };
 		FE1B0D957F93EC0E3681ADE9 /* BenchmarkTargetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkTargetEditor.swift; sourceTree = "<group>"; };
@@ -213,6 +215,7 @@
 			isa = PBXGroup;
 			children = (
 				A9D3388CFC26F3C282170264 /* HubSyncStatusTests.swift */,
+				E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */,
 				E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */,
 				9936C1B7553637337258AD18 /* SetlinePlatformRecordTests.swift */,
 			);
@@ -571,6 +574,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				89B22987796BA062333DE325 /* HubSyncStatusTests.swift in Sources */,
+				025ECF89A98B12D3E73330F1 /* SetlineLocalSaveTests.swift in Sources */,
 				EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */,
 				D873F5E68F61DC19AB8B5D6B /* SetlinePlatformRecordTests.swift in Sources */,
 			);
@@ -771,7 +775,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 8F7LXHTJZR;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -840,7 +844,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 8F7LXHTJZR;
 				ENABLE_NS_ASSERTIONS = NO;
