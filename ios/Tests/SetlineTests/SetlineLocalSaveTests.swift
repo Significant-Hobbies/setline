@@ -64,7 +64,8 @@ final class SetlineLocalSaveTests: XCTestCase {
         let template = try XCTUnwrap(initial.templates.first)
         try initial.startWorkout(templateID: template.id)
         try await store.save(initial)
-        let model = AppModel(store: store, syncCoordinator: nil, platform: nil)
+        let notifier = RecordingRestNotifier()
+        let model = AppModel(store: store, restNotifier: notifier, syncCoordinator: nil, platform: nil)
         await model.load()
         model.isWorkoutPresented = true
         let previous = model.document.activeSession
@@ -85,10 +86,13 @@ final class SetlineLocalSaveTests: XCTestCase {
         let reloaded = try await store.load()
         XCTAssertEqual(reloaded.activeSession?.steps.first?.segments, segments)
         XCTAssertNotNil(reloaded.activeSession?.rest)
+        XCTAssertEqual(notifier.rest, model.document.activeSession?.rest)
+        XCTAssertEqual(notifier.nextStep, reloaded.activeSession?.currentStep)
         XCTAssertEqual(reloaded.templates.first, template)
         await model.finishWorkout()
         let finished = try await store.load()
         XCTAssertNil(finished.activeSession)
+        XCTAssertNil(notifier.rest)
         XCTAssertFalse(model.isWorkoutPresented)
         XCTAssertEqual(finished.history.first?.steps.first?.segments, segments)
         XCTAssertEqual(finished.templates.first, template)
@@ -150,4 +154,15 @@ final class SetlineLocalSaveTests: XCTestCase {
         XCTAssertNotNil(exported)
     }
 
+}
+
+@MainActor
+private final class RecordingRestNotifier: RestNotifying {
+    private(set) var rest: RestState?
+    private(set) var nextStep: WorkoutStep?
+
+    func update(for rest: RestState?, nextStep: WorkoutStep?) async {
+        self.rest = rest
+        self.nextStep = nextStep
+    }
 }

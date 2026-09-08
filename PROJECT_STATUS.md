@@ -34,6 +34,8 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- 2026-09-08 — isolate workout storage regression tests from the system notification permission dialog after CI 34213847193 timed out at first rest. The app retains its default RestNotifier; an injected recording notifier verifies rest scheduling and cancellation in the storage test.
+
 - **2026-09-08** — Build 8 save-integrity repair prepared. Three regressions
   reproduced false template-save success, lost concurrent benchmark changes,
   and an unreadable file overwritten by the initial document. Local writes now

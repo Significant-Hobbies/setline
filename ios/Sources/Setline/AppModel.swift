@@ -34,7 +34,7 @@ final class AppModel {
     private(set) var hubSyncSnapshot: HubSyncSnapshot
 
     private let store: SetlineStore
-    private let restNotifier: RestNotifier
+    private let restNotifier: any RestNotifying
     private let syncCoordinator: SetlineCore.SyncCoordinator?
     private let platform: PersonalPlatformConnection?
     private let hubSyncStatusStore: HubSyncStatusStore
@@ -42,7 +42,7 @@ final class AppModel {
 
     init(
         store: SetlineStore = SetlineStore(),
-        restNotifier: RestNotifier = RestNotifier(),
+        restNotifier: any RestNotifying = RestNotifier(),
         syncCoordinator: SetlineCore.SyncCoordinator? = SetlineCore.SyncCoordinator(store: CloudKitRecordStore()),
         platform: PersonalPlatformConnection? = AppModel.makePlatformConnection(),
         hubSyncStatusStore: HubSyncStatusStore = HubSyncStatusStore()

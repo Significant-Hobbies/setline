@@ -1,6 +1,11 @@
 import SetlineCore
 import UserNotifications
 
+@MainActor
+protocol RestNotifying {
+    func update(for rest: RestState?, nextStep: WorkoutStep?) async
+}
+
 /// Fires a local notification when an authored rest period ends.
 ///
 /// Without this the rest timer only exists while Setline is on screen, which is
@@ -15,7 +20,7 @@ import UserNotifications
 /// data-race error on others. Resolving it inside a synchronous or nonisolated
 /// scope keeps a non-Sendable value from ever crossing an isolation boundary.
 @MainActor
-final class RestNotifier {
+final class RestNotifier: RestNotifying {
     private static let identifier = "setline.rest.complete"
 
     private var hasRequestedAuthorisation = false
