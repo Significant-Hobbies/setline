@@ -36,15 +36,12 @@ tests; they do not establish physical signed-in convergence.
 
 ## Current installation evidence
 
-Version 1.0.0 build 8 was Apple Development-signed and installed on the
-owner's iPhone on 8 September 2026. Its launch was blocked by the locked phone;
-that device state has not been rechecked. Build 9 adds durable Hub downloads
-and native-history protection, and passed the complete local native gate:
-204 unit tests, 17 UI tests, Release compilation and 80.8899% coverage, with
-one explicit iCloud-credential test skipped. Build 9 has not been installed
-on hardware. Neither local tests nor the earlier installation establish
-TestFlight availability, public enrollment or working signed-in synchronization.
-See [project status](PROJECT_STATUS.md).
+Version 1.0.0 build 9 was built from the CI-verified source, checked with
+codesign, and installed on the owner's iPhone on 8 September 2026. iOS rejected
+its launch because the phone was locked. Physical workout use and signed-in
+synchronization remain unverified; installation does not establish TestFlight
+availability or public enrollment. The current installation and actual-use
+checklist lives in [issue 77](https://github.com/Significant-Hobbies/setline/issues/77).
 
 ## Local development and checks
 
