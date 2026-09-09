@@ -70,3 +70,32 @@ Coaching and social features are outside the current workout execution scope.
 
 Source, product planning and GitHub Issues live in this repository. The private
 Fleet catalog records evidence and release limits without owning this app.
+
+### Missing Hub summary recovery (9 September 2026)
+
+The decoder now accepts the Hub contract’s date-only and fractional-second
+`occurredOn` values. A native coordinator regression reproduced the previous
+loss: the cursor advanced while a valid summary never reached saved history.
+
+In Settings, **Recover missing Hub summaries** checks the approved account’s
+history through PersonalSyncKit `629d8e7`, including equal versions already
+acknowledged by an older app. Existing local workouts and summaries are kept;
+a removal during the request is not undone. Active workouts defer the operation.
+Recovery cannot recreate set details that were never part of the Hub summary.
+
+All pages must arrive and the local document must be saved before replay cursor
+bookkeeping. Failed saves, interrupted pagination and cancellation remain
+retryable. The shared limit is 100 pages of at most 500 changes, with no partial
+history acknowledged. This action is opt-in and does not reset a live cursor.
+Actual signed-in recovery, physical workout use and two-device iCloud convergence
+remain in [issue 77](https://github.com/Significant-Hobbies/setline/issues/77).
+The previously installed build 10 is distinct from this uninstalled source repair.
+General quality passes with existing limits unchanged. Its development-only
+ESLint dependency now resolves js-yaml 4.3.2, clearing the newly published high
+advisory without adding a runtime dependency.
+
+The final local XcodeBuildMCP gate passed 232 tests (17 UI), with the existing
+iCloud-credential test skipped. Production coverage is 80.6953%
+(11,675/14,468 lines), above the unchanged 80.60% floor.
+
+Unsigned Release compilation also passed through XcodeBuildMCP on stable Xcode 26.6.

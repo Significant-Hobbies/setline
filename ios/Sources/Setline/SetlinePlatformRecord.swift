@@ -30,7 +30,17 @@ enum SetlinePlatformRecord {
   }
 
   static func iso(_ date: Date) -> String { ISO8601DateFormatter().string(from: date) }
-  private static func date(_ text: String) -> Date? { ISO8601DateFormatter().date(from: text) }
+  private static func date(_ text: String) -> Date? {
+    if text.count == 10 {
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions = [.withFullDate]
+      formatter.timeZone = TimeZone(secondsFromGMT: 0)
+      return formatter.date(from: text)
+    }
+    let fractional = ISO8601DateFormatter()
+    fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return fractional.date(from: text) ?? ISO8601DateFormatter().date(from: text)
+  }
 
   private static func stableUUID(_ value: String) -> UUID {
     if let uuid = UUID(uuidString: value) { return uuid }

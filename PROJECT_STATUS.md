@@ -34,6 +34,23 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-09** — reproduced valid fractional/date-only Hub summaries silently
+  dropped while the sync cursor advanced. The decoder now accepts the server
+  contract, and Settings offers an opt-in missing-summary recovery using shared
+  PersonalSyncKit `629d8e7`. It replays equal acknowledged versions without
+  replacing detailed native workouts or existing summaries, protects removals
+  made during downloads, and defers while a workout is active. Eleven focused
+  native sync regressions pass, including old cursor/version/fingerprint state,
+  failed-save retry, disk reopen and prior ownership/native-history safeguards.
+  The final local suite passed 232 tests (17 UI), with the existing iCloud
+  credential test skipped; production coverage is 80.6953%, above the unchanged
+  80.60% floor. Unsigned Release compilation also passed on stable Xcode 26.6.
+  General quality passes with unchanged complexity/duplication thresholds. The
+  new development-only js-yaml advisory was cleared by refreshing ESLint’s
+  compatible transitive lock entry to 4.3.2 and removing resolved exceptions.
+  No live cursor, phone records or provider configuration changed. Actual
+  signed-in recovery and physical workout acceptance remain in issue 77.
+
 - **2026-09-09** — Build 10 source `6c1b1f4` passed hosted CI 34265090575,
   including native quality. Its signed Release app passed strict/deep signature
   verification, installed and launched successfully on the owner's iPhone

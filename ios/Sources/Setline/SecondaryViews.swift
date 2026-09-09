@@ -138,6 +138,12 @@ struct SettingsView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .disabled(model.isPlatformSyncing || model.document.activeSession != nil || !model.hubAccountMatches)
+                    Button("Recover missing Hub summaries") {
+                        Task { await model.syncWithPlatform(announcing: true, recoverMissingRecords: true) }
+                    }
+                    .disabled(model.isPlatformSyncing || model.document.activeSession != nil || !model.hubAccountMatches)
+                    Text("Checks this account’s history for summaries an older app may have missed. Existing local workouts are kept. Unavailable set details cannot be recovered from a summary.")
+                        .font(.footnote).foregroundStyle(.secondary)
                     Button("Sign out", role: .destructive) { Task { await account.signOut() } }
                 } else {
                     Text("Connect your private Significant Hobbies account to make these summaries visible in Hub. iCloud device continuity works separately.")

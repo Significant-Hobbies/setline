@@ -64,8 +64,6 @@ const baselines = {
 };
 const acceptedHighAdvisories = new Set([
   "GHSA-3jxr-9vmj-r5cp",
-  "GHSA-52cp-r559-cp3m",
-  "GHSA-5p4m-2wfm-xmqj",
   "GHSA-mh99-v99m-4gvg",
   "GHSA-rgw5-rvv9-x895",
 ]);

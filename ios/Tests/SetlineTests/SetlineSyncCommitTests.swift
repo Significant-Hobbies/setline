@@ -6,6 +6,30 @@ import XCTest
 
 @MainActor
 final class SetlineSyncCommitTests: XCTestCase {
+    func testHubAcceptedDatesPersistBeforeCursorAcknowledgement() async throws {
+        for date in ["2026-09-08T06:00:00Z", "2026-09-08T06:00:00.123Z", "2026-09-08T06:00:00.1+05:30", "2026-09-08"] {
+            let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+            defer { try? FileManager.default.removeItem(at: root) }
+            let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+            let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), syncCoordinator: nil, platform: nil)
+            await model.load()
+            let response = JSONValue.object(["changes": .array([summaryPayload(id: "dated-walk", occurredOn: date)]), "cursor": .number(1), "hasMore": .bool(false)])
+            let transport = SetlineDownloadTransport(response: try JSONEncoder().encode(response))
+            let cursorFile = root.appending(path: "cursor.json")
+            let coordinator = try PersonalSyncKit.SyncCoordinator(
+                client: transport, outbox: MutationOutbox(fileURL: root.appending(path: "outbox.json")),
+                cursors: SyncCursorStore(fileURL: cursorFile), versions: SyncVersionStore(fileURL: root.appending(path: "versions.json")),
+                fingerprints: SyncFingerprintStore(fileURL: root.appending(path: "fingerprints.json")))
+            try await coordinator.synchronize(domain: .setline, deviceId: "test", bearerToken: "synthetic") { changes in
+                try await model.commitPlatformChanges(changes)
+            }
+            let reopened = try await store.load()
+            XCTAssertEqual(reopened.history.map(\.hubRecordID), ["dated-walk"], date)
+            let cursor = try await SyncCursorStore(fileURL: cursorFile).cursor(for: .setline)
+            XCTAssertEqual(cursor, 1)
+        }
+    }
+
     func testApprovedHistoryPersistsAndRejectsDifferentAccountDownloads() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -21,6 +45,10 @@ final class SetlineSyncCommitTests: XCTestCase {
             XCTFail("Another account must not add history")
         } catch SetlineHubOwnershipError.differentAccount {}
         XCTAssertTrue(model.document.history.isEmpty)
+        do {
+            try await model.commitPlatformChanges([summary(id: "foreign-workout")], ownerID: "b", recoveryBaseline: model.document)
+            XCTFail("Recovery cannot cross account ownership")
+        } catch SetlineHubOwnershipError.differentAccount {}
         try await model.commitPlatformChanges([summary(id: "a-workout")], ownerID: "a")
         let reopened = try await store.load()
         XCTAssertEqual(reopened.history.first?.hubAccountID, "a")
@@ -79,11 +107,13 @@ final class SetlineSyncCommitTests: XCTestCase {
         await model.load()
         let change = try summary(id: session.id.uuidString, title: session.templateName)
         try await model.commitPlatformChanges([change])
+        try await model.commitPlatformChanges([change], recoveryBaseline: original)
         let reopened = try await store.load()
         XCTAssertEqual(reopened.history, original.history, "A Hub summary cannot erase recorded sets, order, rest or programme context")
         XCTAssertEqual(model.document.history, original.history)
         let deletion = try summary(id: session.id.uuidString, operation: "delete")
         try await model.commitPlatformChanges([deletion])
+        try await model.commitPlatformChanges([deletion], recoveryBaseline: original)
         XCTAssertEqual(model.document.history, original.history)
     }
 
@@ -148,6 +178,50 @@ final class SetlineSyncCommitTests: XCTestCase {
         XCTAssertEqual(committedCursor, 1)
     }
 
+    func testRecoveryRestoresEqualAcknowledgedVersionAfterFailedSave() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appending(path: "workouts.json")
+        let store = SetlineStore(fileURL: file)
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), syncCoordinator: nil, platform: nil)
+        await model.load()
+        let response = JSONValue.object(["changes": .array([summaryPayload(id: "hub-walk", occurredOn: "2026-09-08T06:00:00.123Z")]), "cursor": .number(1), "hasMore": .bool(false)])
+        let transport = SetlineDownloadTransport(response: try JSONEncoder().encode(response))
+        let cursorFile = root.appending(path: "cursor.json")
+        let coordinator = try PersonalSyncKit.SyncCoordinator(
+            client: transport,
+            outbox: MutationOutbox(fileURL: root.appending(path: "outbox.json")),
+            cursors: SyncCursorStore(fileURL: cursorFile),
+            versions: SyncVersionStore(fileURL: root.appending(path: "versions.json")),
+            fingerprints: SyncFingerprintStore(fileURL: root.appending(path: "fingerprints.json"))
+        )
+        // Exact legacy failure state: cursor, version and fingerprint were saved,
+        // but the app silently skipped this valid fractional-date summary.
+        try await coordinator.synchronize(domain: .setline, deviceId: "test", bearerToken: "synthetic") { _ in }
+        let baseline = model.document
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
+        do {
+            try await coordinator.synchronize(domain: .setline, deviceId: "test", bearerToken: "synthetic", replayFromStart: true) { changes in
+                try await model.commitPlatformChanges(changes, recoveryBaseline: baseline)
+            }
+            XCTFail("Failed app writes must not acknowledge downloads")
+        } catch {
+            XCTAssertTrue(model.document.history.isEmpty)
+        }
+        let cursor = try await SyncCursorStore(fileURL: cursorFile).cursor(for: .setline)
+        XCTAssertEqual(cursor, 1)
+        try FileManager.default.removeItem(at: file)
+        try await coordinator.synchronize(domain: .setline, deviceId: "test", bearerToken: "synthetic", replayFromStart: true) { changes in
+            try await model.commitPlatformChanges(changes, recoveryBaseline: baseline)
+        }
+        let reopened = try await store.load()
+        XCTAssertEqual(reopened.history.map(\.templateName), ["Imported walk"])
+        let calls = await transport.requestedCursors
+        XCTAssertEqual(calls, [0, 0, 0])
+        let committedCursor = try await SyncCursorStore(fileURL: cursorFile).cursor(for: .setline)
+        XCTAssertEqual(committedCursor, 1)
+    }
+
     func testDownloadCommitDefersWhileWorkoutIsActive() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -161,10 +235,31 @@ final class SetlineSyncCommitTests: XCTestCase {
             try await model.commitPlatformChanges([summary(id: "hub-walk")])
             XCTFail("Downloads must defer when a workout started during the request")
         } catch SetlineHubCommitError.localDocumentUnavailable {}
+        do {
+            try await model.commitPlatformChanges([summary(id: "hub-walk")], recoveryBaseline: original)
+            XCTFail("Recovery also defers during an active workout")
+        } catch SetlineHubCommitError.localDocumentUnavailable {}
         XCTAssertEqual(model.document.activeSession, original.activeSession)
         XCTAssertTrue(model.document.history.isEmpty)
         let disk = try await store.load()
         XCTAssertEqual(disk.activeSession, original.activeSession)
+    }
+
+    func testRecoveryRetainsExistingSummaryAndConcurrentRemoval() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), syncCoordinator: nil, platform: nil)
+        await model.load()
+        try await model.commitPlatformChanges([summary(id: "walk", title: "Current details")])
+        let baseline = model.document
+        try await model.commitPlatformChanges([summary(id: "walk", title: "Old details")], recoveryBaseline: baseline)
+        XCTAssertEqual(model.document.history.first?.templateName, "Current details")
+        try await model.commitPlatformChanges([summary(id: "walk", operation: "delete")])
+        try await model.commitPlatformChanges([summary(id: "walk")], recoveryBaseline: baseline)
+        XCTAssertTrue(model.document.history.isEmpty, "Recovery cannot undo a removal during its request")
+        let reopened = try await store.load()
+        XCTAssertTrue(reopened.history.isEmpty)
     }
 
     func testLegacyWorkoutWithoutProvenanceRemainsNativeOrUnknown() throws {
@@ -182,13 +277,13 @@ final class SetlineSyncCommitTests: XCTestCase {
         try JSONDecoder().decode(SyncChange.self, from: JSONEncoder().encode(summaryPayload(id: id, title: title, operation: operation)))
     }
 
-    private func summaryPayload(id: String, title: String = "Imported walk", operation: String = "upsert") -> JSONValue {
+    private func summaryPayload(id: String, title: String = "Imported walk", operation: String = "upsert", occurredOn: String = "2026-09-08T06:00:00Z") -> JSONValue {
         .object([
             "cursor": .number(1), "changeId": .string("change-1"), "domain": .string("setline"),
             "id": .string(id), "operation": .string(operation), "version": .number(1),
             "occurredAt": .string("2026-09-08"), "recordedAt": .string("2026-09-08"),
             "originDeviceId": .string("synthetic"), "record": .object([
-                "title": .string(title), "occurredOn": .string("2026-09-08T06:00:00Z"),
+                "title": .string(title), "occurredOn": .string(occurredOn),
                 "minutes": .number(25), "notes": .string("Imported summary"),
             ]),
         ])

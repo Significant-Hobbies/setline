@@ -473,7 +473,7 @@ final class AppModel {
         }
     }
 
-    func syncWithPlatform(announcing: Bool = false) async {
+    func syncWithPlatform(announcing: Bool = false, recoverMissingRecords: Bool = false) async {
         guard hasLoadedDocument else { return }
         guard let platform, account?.isSignedIn == true,
               !isPlatformSyncing, document.activeSession == nil else { return }
@@ -486,26 +486,23 @@ final class AppModel {
                   verified.userID == owner else { throw SetlineHubOwnershipError.differentAccount }
             try await platform.sync.bindAccount(verified)
             hubAccountNotice = nil
-            for session in try document.approvedHubHistory(for: owner) {
-                guard let completedAt = session.completedAt,
-                      let record = SetlinePlatformRecord.session(session, completedAt: completedAt) else { continue }
-                try await platform.sync.enqueue(
-                    recordId: session.id.uuidString.lowercased(),
-                    occurredAt: SetlinePlatformRecord.iso(session.startedAt),
-                    record: record, account: verified
-                )
-            }
+            try await enqueueApprovedHubHistory(using: platform.sync, account: verified)
             hubPendingCount = await platform.sync.pendingMutationCount()
-            try await platform.sync.synchronize(account: verified) { changes in
+            let recoveryBaseline = recoverMissingRecords ? document : nil
+            try await platform.sync.synchronize(account: verified, replayFromStart: recoverMissingRecords) { changes in
                 try await platform.identity.requireCurrentAccount(verified)
-                try await self.commitPlatformChanges(changes, ownerID: verified.userID)
+                try await self.commitPlatformChanges(changes, ownerID: verified.userID, recoveryBaseline: recoveryBaseline)
                 try await platform.identity.requireCurrentAccount(verified)
             }
             hubPendingCount = await platform.sync.pendingMutationCount()
             try await platform.identity.requireCurrentAccount(verified)
             guard account?.session?.userId == owner else { throw SetlineHubOwnershipError.differentAccount }
             hubSyncSnapshot = hubSyncStatusStore.recordSuccess()
-            if announcing { message = "Significant Hobbies Hub is up to date." }
+            if announcing {
+                message = recoverMissingRecords
+                    ? "Checked Hub history for missing summaries. Existing local workouts were kept."
+                    : "Significant Hobbies Hub is up to date."
+            }
         } catch {
             hubPendingCount = await platform.sync.pendingMutationCount()
             if let ownership = error as? SetlineHubOwnershipError {
@@ -521,15 +518,19 @@ final class AppModel {
         }
     }
 
-    func commitPlatformChanges(_ changes: [SyncChange], ownerID: String? = nil) async throws {
+    func commitPlatformChanges(_ changes: [SyncChange], ownerID: String? = nil, recoveryBaseline: SetlineDocument? = nil) async throws {
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         guard hasLoadedDocument, document.activeSession == nil else {
             throw SetlineHubCommitError.localDocumentUnavailable
         }
         guard document.hubAccountID == ownerID else { throw SetlineHubOwnershipError.differentAccount }
+        if let baseline = recoveryBaseline, baseline.hubAccountID != ownerID {
+            throw SetlineHubOwnershipError.differentAccount
+        }
         var next = document
         for change in changes {
+            guard shouldApplyRecoveryChange(change, baseline: recoveryBaseline) else { continue }
             if change.operation == .delete {
                 next.history.removeAll { $0.hubRecordID == change.id && $0.hubAccountID == ownerID }
                 continue
@@ -550,6 +551,29 @@ final class AppModel {
             try await store.save(next)
             document = next
         }
+    }
+
+    private func enqueueApprovedHubHistory(using sync: PersonalSyncRuntime, account: PersonalSyncAccount) async throws {
+        for session in try document.approvedHubHistory(for: account.userID) {
+            guard let completedAt = session.completedAt,
+                  let record = SetlinePlatformRecord.session(session, completedAt: completedAt) else { continue }
+            try await sync.enqueue(
+                recordId: session.id.uuidString.lowercased(),
+                occurredAt: SetlinePlatformRecord.iso(session.startedAt),
+                record: record, account: account
+            )
+        }
+    }
+
+    private func shouldApplyRecoveryChange(_ change: SyncChange, baseline: SetlineDocument?) -> Bool {
+        guard let baseline else { return true }
+        let original = baseline.history.first { $0.hubRecordID == change.id }
+        let current = document.history.first { $0.hubRecordID == change.id }
+        // Fill gaps without replacing local summaries or undoing a removal
+        // made while the request was waiting. Native history is guarded below.
+        if change.operation == .upsert { return current == nil && original == nil }
+        if change.operation == .delete { return current == original }
+        return false
     }
 
     // MARK: - Data transfer
