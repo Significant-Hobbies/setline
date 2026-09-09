@@ -93,5 +93,15 @@
     "remainingUUIDFixtureDirectories": 0,
     "appStop": "Nothing to terminate; app already stopped",
     "simulatorSlot": "Returned to Calorie agent after terminal Release build"
+  },
+  "hostedCI": {
+    "run": 34334618829,
+    "source": "af7071d5db4aeacb91c52184b343a971b68cadbd",
+    "conclusion": "success",
+    "passed": 239,
+    "uiPassed": 18,
+    "existingCredentialSkip": 1,
+    "release": "passed",
+    "coveragePercent": 81.8057
   }
 }

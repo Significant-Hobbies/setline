@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-09",
+  "source": "af7071d5db4aeacb91c52184b343a971b68cadbd",
+  "source_ci": 34334618829,
+  "source_ci_conclusion": "success",
+  "bundle": "com.significanthobbies.setline",
+  "team": "8F7LXHTJZR",
+  "version": "1.0.0",
+  "build": "10",
+  "signature": "codesign --verify --deep --strict passed before and after artifact copy",
+  "archive_sha256": "1a672dd0371e13c396dd1b6851b8028ce99321e726227d280e5b1a492b2eef2c",
+  "executable_sha256": "ed3f12a84c0d38ff3916de0bdf62a24b10bd6f4a139efad2de7e9cda61be2b27",
+  "installation": "SUCCEEDED; first attempt; no warnings/errors",
+  "availability_before_install": {
+    "state": "connected",
+    "isAvailable": true,
+    "osVersion": "27.0"
+  },
+  "launched": false,
+  "account_sync_or_recovery_triggered": false,
+  "uninstalled_or_reset": false,
+  "provisioning_updates_requested": false,
+  "previous_artifact_retained": "ios/build/owner-ready-20260909-c4f9616"
+}

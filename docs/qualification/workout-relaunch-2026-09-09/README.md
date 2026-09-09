@@ -55,3 +55,17 @@ Unsigned Release compilation passes. Production coverage is 11,842/14,532 lines
 After the terminal run, no Setline app remained running and a scoped scan found
 zero remaining `setline-ui-*` fixture directories. The simulator slot was returned
 to the other native lane.
+
+## Exact-source CI and phone installation
+
+[CI 34334618829](https://github.com/Significant-Hobbies/setline/actions/runs/34334618829)
+passed at `af7071d5db4aeacb91c52184b343a971b68cadbd`: 239 tests (18 UI),
+one existing credential skip, Release build and 81.8057% production coverage.
+A fresh signed device Release build then passed strict/deep signature verification.
+The same-bundle version 1.0.0 build 10 update installed on the connected iPhone on
+the first attempt. **The app was not launched; account recovery/sync was not run.**
+The [installation receipt](device-install-receipt.json) records exact artifact
+hashes. Both the new signed app and previous `c4f9616` signed artifact are retained
+locally under `ios/build/owner-ready-20260909-{af7071d,c4f9616}/`.
+This supersedes the unchanged-installation statement at the simulator checkpoint
+above; installation still does not establish physical workout acceptance.

@@ -34,6 +34,14 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-09** — exact workout-relaunch source `af7071d` passed hosted CI
+  34334618829 (239 tests, 18 UI, existing credential skip, Release and 81.8057%
+  coverage). Signed device Release and strict/deep signature verification passed;
+  the same-bundle build 10 installed successfully on the connected iPhone without
+  launch, recovery, sync, uninstall or reset. Previous `c4f9616` and new signed
+  artifacts are retained locally. [Artifact/install receipt](docs/qualification/workout-relaunch-2026-09-09/device-install-receipt.json).
+  Physical workout/account/iCloud acceptance and public distribution remain open.
+
 - **2026-09-09** — the actual synthetic simulator workout survived interruption,
   adjusted rest, resume, finish and a second reopen with exact recorded segments.
   The journey reproduced an off-by-one history label: one-based performed positions
