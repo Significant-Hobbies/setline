@@ -34,6 +34,19 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-09** — added two actual AppModel account/sync caller tests using
+  memory-only identities and isolated transport. A response held across A-to-B
+  switching cannot commit A's summary/cursor or publish success. A workout can
+  start and record a set while a download waits; history/cursor commits defer
+  while active. Offline finish, reopen and explicit recovery retain native set
+  details alongside one imported summary. No product defect was reproduced.
+  PersonalSyncKit `31f6b4e` adds only an explicit composition initializer; default
+  behavior is unchanged. Installed build 10/source `c4f9616` and physical account
+  qualification remain separate from these synthetic tests.
+  General quality and 234 native tests (17 UI) pass, with the existing iCloud
+  credential skip; production coverage is 81.2483% against the unchanged 80.60% floor.
+  Unsigned Release compilation also passes on stable Xcode 26.6.
+
 - **2026-09-09** — reproduced valid fractional/date-only Hub summaries silently
   dropped while the sync cursor advanced. The decoder now accepts the server
   contract, and Settings offers an opt-in missing-summary recovery using shared

@@ -89,7 +89,8 @@ retryable. The shared limit is 100 pages of at most 500 changes, with no partial
 history acknowledged. This action is opt-in and does not reset a live cursor.
 Actual signed-in recovery, physical workout use and two-device iCloud convergence
 remain in [issue 77](https://github.com/Significant-Hobbies/setline/issues/77).
-The previously installed build 10 is distinct from this uninstalled source repair.
+Build 10 from recovery source `c4f9616` was installed on 9 September; installation
+did not qualify a physical workout or signed-in recovery.
 General quality passes with existing limits unchanged. Its development-only
 ESLint dependency now resolves js-yaml 4.3.2, clearing the newly published high
 advisory without adding a runtime dependency.
@@ -99,3 +100,25 @@ iCloud-credential test skipped. Production coverage is 80.6953%
 (11,675/14,468 lines), above the unchanged 80.60% floor.
 
 Unsigned Release compilation also passed through XcodeBuildMCP on stable Xcode 26.6.
+
+### Actual caller isolation proof (9 September 2026)
+
+Two additional tests invoke `AppModel.approveHubAccount`, account restoration and
+`syncWithPlatform` with memory-only synthetic identities and an isolated URL
+session. Switching from A to B during a held response preserves A's queue and
+document, rejects its downloaded summary/cursor, and records no successful sync.
+Starting a workout and recording a set while a pull is held remains fully local;
+the released response cannot commit history, cursor or success during that workout.
+After an offline finish and reopen, explicit recovery preserves the native set
+segments and imports exactly one tagged Hub summary. No new product defect was
+reproduced by these scenarios.
+
+The shared `31f6b4e` pin adds an explicit composition initializer for isolated
+testing; default production connection behavior is unchanged. Installed build 10
+from `c4f9616` remains unchanged. Real account/provider handoff, physical workouts,
+iCloud convergence and public distribution remain in issue 77.
+
+General quality passes. The full native suite passes 234 tests (17 UI), with the
+existing iCloud-credential test skipped. Production coverage is 81.2483%
+(11,755/14,468 lines), above the unchanged 80.60% floor.
+Unsigned Release compilation also passes on stable Xcode 26.6.

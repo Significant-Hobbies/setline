@@ -57,6 +57,7 @@
 		DE3965B3C510317036E55636 /* HubOwnershipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6914D3215D48B189742A68F6 /* HubOwnershipTests.swift */; };
 		DEE8DD0CE56008BF90B164DB /* SyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC052D7878745A06AC98A7E9 /* SyncEngineTests.swift */; };
 		E5FAA9DE6E6F5CCBE9E4343F /* Goals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02194DFCF1365CCD34525231 /* Goals.swift */; };
+		E626F70B38623615066FAC91 /* SetlineCallerSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD0F45743D45AA79513293AE /* SetlineCallerSyncTests.swift */; };
 		E85DFE444A157EC32C671B9B /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B839442BFCCB000A563CD704 /* AppModel.swift */; };
 		EC589E605EEE16DA5E0F613E /* SetlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */; };
 		EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */; };
@@ -174,6 +175,7 @@
 		E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineLocalSaveTests.swift; sourceTree = "<group>"; };
 		E92046B812E9A5C73CDF886A /* HubOwnership.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubOwnership.swift; sourceTree = "<group>"; };
 		F52F5D64B932696BAEDEE0AC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		FD0F45743D45AA79513293AE /* SetlineCallerSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineCallerSyncTests.swift; sourceTree = "<group>"; };
 		FD83BEAE219A731573D018EC /* SetlinePlatformRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlinePlatformRecord.swift; sourceTree = "<group>"; };
 		FE1B0D957F93EC0E3681ADE9 /* BenchmarkTargetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkTargetEditor.swift; sourceTree = "<group>"; };
 		FEE9CEC1CE889DCD183F4CF7 /* SetlineUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineUITests.swift; sourceTree = "<group>"; };
@@ -221,6 +223,7 @@
 			isa = PBXGroup;
 			children = (
 				A9D3388CFC26F3C282170264 /* HubSyncStatusTests.swift */,
+				FD0F45743D45AA79513293AE /* SetlineCallerSyncTests.swift */,
 				E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */,
 				E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */,
 				9936C1B7553637337258AD18 /* SetlinePlatformRecordTests.swift */,
@@ -585,6 +588,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				89B22987796BA062333DE325 /* HubSyncStatusTests.swift in Sources */,
+				E626F70B38623615066FAC91 /* SetlineCallerSyncTests.swift in Sources */,
 				025ECF89A98B12D3E73330F1 /* SetlineLocalSaveTests.swift in Sources */,
 				EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */,
 				D873F5E68F61DC19AB8B5D6B /* SetlinePlatformRecordTests.swift in Sources */,
@@ -998,7 +1002,7 @@
 			repositoryURL = "https://github.com/Significant-Hobbies/significanthobbies.git";
 			requirement = {
 				kind = revision;
-				revision = 629d8e7be44295044e60c950395ec3232541a373;
+				revision = 31f6b4eaa6d748b0fddd41ea66ed098655e9a541;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
