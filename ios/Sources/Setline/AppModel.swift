@@ -34,6 +34,7 @@ final class AppModel {
     private(set) var hubSyncSnapshot: HubSyncSnapshot
 
     private let store: SetlineStore
+    private let defaults: UserDefaults
     private let restNotifier: any RestNotifying
     private let syncCoordinator: SetlineCore.SyncCoordinator?
     private let platform: PersonalPlatformConnection?
@@ -54,9 +55,11 @@ final class AppModel {
         restNotifier: any RestNotifying = RestNotifier(),
         syncCoordinator: SetlineCore.SyncCoordinator? = SetlineCore.SyncCoordinator(store: CloudKitRecordStore()),
         platform: PersonalPlatformConnection? = AppModel.makePlatformConnection(),
-        hubSyncStatusStore: HubSyncStatusStore = HubSyncStatusStore()
+        hubSyncStatusStore: HubSyncStatusStore = HubSyncStatusStore(),
+        defaults: UserDefaults = .standard
     ) {
         self.store = store
+        self.defaults = defaults
         self.restNotifier = restNotifier
         self.hubSyncStatusStore = hubSyncStatusStore
         hubSyncSnapshot = hubSyncStatusStore.load()
@@ -96,6 +99,13 @@ final class AppModel {
         defer { isLoading = false }
         let arguments = ProcessInfo.processInfo.arguments
         do {
+            #if DEBUG
+            if try PersistentUIFixture(arguments: arguments)?.cleanup == true {
+                hasLoadedDocument = false
+                return // Cleanup cannot load, seed, synchronize or enable mutations.
+            }
+            try await PersistentUIFixture.seedIfRequested(store: store, arguments: arguments)
+            #endif
             if arguments.contains("--recovery-demo") {
                 throw CocoaError(.fileReadCorruptFile)
             } else if arguments.contains("--evidence-demo") {
@@ -119,7 +129,7 @@ final class AppModel {
             isOnboardingPresented = showsDemo
                 || SetlineOnboardingPolicy.shouldPresent(
                     document: document,
-                    completed: UserDefaults.standard.bool(forKey: Self.onboardingCompletionKey)
+                    completed: defaults.bool(forKey: Self.onboardingCompletionKey)
                 )
             try startDemoSessionIfRequested(arguments)
             hasLoadedDocument = true
@@ -140,7 +150,7 @@ final class AppModel {
     static let onboardingCompletionKey = "setline.illustrated-onboarding.seen.v1"
 
     func completeOnboarding(openPlan: Bool = false) {
-        UserDefaults.standard.set(true, forKey: Self.onboardingCompletionKey)
+        defaults.set(true, forKey: Self.onboardingCompletionKey)
         isOnboardingPresented = false
         isExistingOwnerOrientation = false
         selectedTab = openPlan ? 1 : 0

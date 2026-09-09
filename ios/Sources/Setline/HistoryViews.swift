@@ -214,7 +214,7 @@ struct SessionDetailView: View {
                             Spacer()
                             Text(step.status.rawValue.uppercased()).font(.caption.weight(.black))
                         }
-                        Text("\(step.label) · \(step.stepType.title) · planned #\(step.authoredPosition + 1) · performed \(step.performedPosition.map { "#\($0 + 1)" } ?? "—")")
+                        Text("\(step.label) · \(step.stepType.title) · planned #\(step.authoredPosition + 1) · performed \(step.performedPosition.map { "#\($0)" } ?? "—")")
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                         Text("Target: \(step.target.displayString)").font(.subheadline)

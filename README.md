@@ -122,3 +122,24 @@ General quality passes. The full native suite passes 234 tests (17 UI), with the
 existing iCloud-credential test skipped. Production coverage is 81.2483%
 (11,755/14,468 lines), above the unchanged 80.60% floor.
 Unsigned Release compilation also passes on stable Xcode 26.6.
+
+
+### Workout interruption and detailed history (9 September 2026)
+
+An actual isolated simulator workout now proves recording, adjusted rest,
+termination/relaunch, resume, finish and a second reopen with exact set values
+and authored/performed order. This exposed and fixed a display-only off-by-one:
+performed positions were stored correctly as one-based but displayed with another
+increment. Existing saves need no migration.
+
+The DEBUG-only UUID fixture persists across relaunch without using owner data,
+cloud, account clients or notifications. It refuses malformed paths/reset modes,
+never reseeds an existing file, and cleans only its own directory/defaults.
+Five focused UI/fixture tests pass. The [before/after receipt](docs/qualification/workout-relaunch-2026-09-09/README.md)
+retains the real failed screenshot, saved values and corrected reopened history.
+Physical workouts, real account recovery, iCloud convergence and distribution
+remain in issue 77; installed build 10/source `c4f9616` was not changed.
+
+The full required native gate passes 239 tests (18 UI), with the existing
+credential test skipped; unsigned Release passes and coverage is 81.4891%
+(11,842/14,532), above the unchanged 80.60% floor. General quality also passes.

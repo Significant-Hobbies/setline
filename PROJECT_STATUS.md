@@ -34,6 +34,20 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-09** — the actual synthetic simulator workout survived interruption,
+  adjusted rest, resume, finish and a second reopen with exact recorded segments.
+  The journey reproduced an off-by-one history label: one-based performed positions
+  were incremented twice. The view now renders the stored position directly;
+  authored ordering and saved data are unchanged. A DEBUG-only persistent UUID
+  fixture isolates storage/defaults and disables cloud/platform/notifications.
+  Five focused tests pass, including malformed-file preservation and scoped cleanup.
+  The full native gate passes 239 tests (18 UI), with one existing credential skip;
+  unsigned Release passes and production coverage is 81.4891% (floor 80.60%).
+  [Before/after evidence](docs/qualification/workout-relaunch-2026-09-09/README.md)
+  distinguishes the actual UI failure from the first attempt's separate unit-host
+  bootstrap failure. Physical workouts, account recovery and distribution remain
+  unqualified; no owner installation changed.
+
 - **2026-09-09** — added two actual AppModel account/sync caller tests using
   memory-only identities and isolated transport. A response held across A-to-B
   switching cannot commit A's summary/cursor or publish success. A workout can

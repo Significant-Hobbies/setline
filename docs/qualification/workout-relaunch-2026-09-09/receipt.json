@@ -1,0 +1,97 @@
+{
+  "date": "2026-09-09",
+  "baseline": "168a5544f7801fb28ea2b9316a525bf9b8773980",
+  "scope": "Synthetic local iOS simulator workout; no owner store, account, cloud or physical device",
+  "before": {
+    "uiFailure": "First completed step rendered performed #2 instead of #1; second rendered #3 instead of #2",
+    "savedWorkout": {
+      "templateName": "Lower strength",
+      "steps": [
+        {
+          "authoredPosition": 0,
+          "performedPosition": 1,
+          "status": "complete",
+          "segments": [
+            {
+              "hadPain": false,
+              "id": "650CEE27-EEAD-4458-A175-E8339EFBB8C9",
+              "reachedFailure": false,
+              "repetitions": 5,
+              "weight": 40
+            },
+            {
+              "hadPain": false,
+              "id": "E065B04B-729B-4574-B4DB-7CC55D3D0968",
+              "reachedFailure": false,
+              "repetitions": 2,
+              "weight": 30
+            }
+          ]
+        },
+        {
+          "authoredPosition": 1,
+          "performedPosition": 2,
+          "status": "complete",
+          "segments": [
+            {
+              "hadPain": false,
+              "id": "0A533853-04AD-473B-BA15-093E0A664E77",
+              "reachedFailure": false,
+              "repetitions": 4,
+              "weight": 55
+            }
+          ]
+        },
+        {
+          "authoredPosition": 2,
+          "performedPosition": null,
+          "status": "skipped",
+          "segments": []
+        }
+      ]
+    },
+    "separateInfrastructureFailure": "The initial unit host exited before test bootstrap; those fixture tests did not execute. This was separate from the actual rendered history assertion failure."
+  },
+  "fix": "Render the existing one-based performedPosition directly. Authored position remains zero-based plus one. No stored-data migration.",
+  "focused": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 71.3,
+    "checks": [
+      "UUID/path/orphan-cleanup validation",
+      "Existing malformed bytes never reseeded",
+      "Seed once; mismatched store rejected",
+      "Cleanup removes only UUID directory/defaults and cannot reseed",
+      "Authored workout, two distinct recorded sets, adjusted rest, termination/relaunch, resume, finish, second reopen, exact values and performed/authored order; third set has no fabricated result"
+    ]
+  },
+  "limits": [
+    "Synthetic fixture does not qualify physical workout use",
+    "No real account or recovery request",
+    "No two-device iCloud convergence",
+    "No distribution or owner-device update"
+  ],
+  "fullNativeGate": {
+    "command": "pnpm quality:native",
+    "xcode": "26.6",
+    "passed": 239,
+    "uiPassed": 18,
+    "skipped": 1,
+    "skipReason": "Existing iCloud credential test",
+    "failed": 0,
+    "unsignedReleaseBuild": "passed",
+    "coverage": {
+      "coveredLines": 11842,
+      "executableLines": 14532,
+      "percent": 81.4891,
+      "unchangedFloorPercent": 80.6
+    }
+  },
+  "generalCheck": "pnpm run check passed",
+  "cleanup": {
+    "remainingUUIDFixtureDirectories": 0,
+    "appStop": "Nothing to terminate; app already stopped",
+    "simulatorSlot": "Returned to Calorie agent after terminal Release build"
+  }
+}

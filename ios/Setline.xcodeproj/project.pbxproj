@@ -62,6 +62,7 @@
 		EC589E605EEE16DA5E0F613E /* SetlineCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */; };
 		EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */; };
 		F5D0CC71C826F541575E7D99 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E8358BE39000A0F7E1BB90 /* Persistence.swift */; };
+		F6CE55F86C0AB13C47AA5BFF /* PersistentUIFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0903001D1E060A30E0E771A /* PersistentUIFixtureTests.swift */; };
 		FEEC73426B437E36444A4A6D /* SyncCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CF090DBE8EAAA9150C57DA /* SyncCoordinatorTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -169,6 +170,7 @@
 		CC052D7878745A06AC98A7E9 /* SyncEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngineTests.swift; sourceTree = "<group>"; };
 		CE77BBBECF6D7ED1F7E8047E /* SetEntryParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetEntryParser.swift; sourceTree = "<group>"; };
 		CF7339CB0E30692A20212B02 /* BenchmarkCheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkCheckInView.swift; sourceTree = "<group>"; };
+		D0903001D1E060A30E0E771A /* PersistentUIFixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentUIFixtureTests.swift; sourceTree = "<group>"; };
 		D638AFB5C0FF38C44F3DE880 /* SimulatorICloudSignInTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorICloudSignInTests.swift; sourceTree = "<group>"; };
 		DFAE6EB21BC26F97140F4FEE /* SecondaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryViews.swift; sourceTree = "<group>"; };
 		E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineOnboardingTests.swift; sourceTree = "<group>"; };
@@ -223,6 +225,7 @@
 			isa = PBXGroup;
 			children = (
 				A9D3388CFC26F3C282170264 /* HubSyncStatusTests.swift */,
+				D0903001D1E060A30E0E771A /* PersistentUIFixtureTests.swift */,
 				FD0F45743D45AA79513293AE /* SetlineCallerSyncTests.swift */,
 				E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */,
 				E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */,
@@ -588,6 +591,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				89B22987796BA062333DE325 /* HubSyncStatusTests.swift in Sources */,
+				F6CE55F86C0AB13C47AA5BFF /* PersistentUIFixtureTests.swift in Sources */,
 				E626F70B38623615066FAC91 /* SetlineCallerSyncTests.swift in Sources */,
 				025ECF89A98B12D3E73330F1 /* SetlineLocalSaveTests.swift in Sources */,
 				EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */,

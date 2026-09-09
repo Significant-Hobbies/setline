@@ -178,6 +178,86 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Start next early"].exists)
     }
 
+    func testRecordedWorkoutSurvivesInterruptionRelaunchAndFinish() {
+        let identifier = UUID().uuidString
+        let app = launch(["--ui-persistent-fixture", identifier])
+        addTeardownBlock { @MainActor in
+            app.terminate()
+            app.launchArguments += ["--ui-fixture-cleanup"]
+            app.launch()
+            XCTAssertTrue(app.staticTexts["Restore your programme"].waitForExistence(timeout: 5))
+            XCTAssertFalse(app.tabBars.firstMatch.exists)
+            app.terminate()
+        }
+        XCTAssertTrue(app.buttons["Start workout"].waitForExistence(timeout: 5))
+        app.buttons["Start workout"].tap()
+        XCTAssertTrue(app.staticTexts["Front squat"].waitForExistence(timeout: 3))
+        recordShorthand(app, "5x40, 2x30")
+        app.buttons["+30 sec"].tap()
+        let cadence = text(app, containing: "Authored 60s · adjusted 90s")
+        XCTAssertTrue(cadence.waitForExistence(timeout: 5))
+        let remaining = app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@", "seconds remaining")).firstMatch
+        XCTAssertTrue(remaining.waitForExistence(timeout: 3))
+        let beforeRemaining = Int(remaining.label.components(separatedBy: " ").first ?? "")
+        XCTAssertNotNil(beforeRemaining)
+        keepWorkoutScreenshot(app, named: "Setline rest before interruption")
+
+        app.terminate()
+        app.launch() // Same UUID; normal disk load, never --ui-demo.
+        let resume = app.buttons["Resume workout"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 5))
+        resume.tap()
+        XCTAssertTrue(cadence.waitForExistence(timeout: 5))
+        XCTAssertTrue(remaining.waitForExistence(timeout: 3))
+        let afterRemaining = Int(remaining.label.components(separatedBy: " ").first ?? "")
+        XCTAssertNotNil(afterRemaining)
+        XCTAssertLessThanOrEqual(afterRemaining ?? 999, beforeRemaining ?? -1, "Relaunch must not reset wall-clock rest")
+        keepWorkoutScreenshot(app, named: "Setline rest resumed from disk")
+        let next = app.buttons["Start next early"].exists ? app.buttons["Start next early"] : app.buttons["Start next set"]
+        XCTAssertTrue(next.waitForExistence(timeout: 3))
+        next.tap()
+        recordShorthand(app, "4x55")
+        app.buttons["Finish"].tap()
+        app.buttons["Finish and save"].tap()
+        openHistorySession(app, named: "Lower strength")
+        assertInterruptedWorkoutReceipt(app)
+        keepWorkoutScreenshot(app, named: "Setline detailed workout after finish")
+
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Resume workout"].exists)
+        openHistorySession(app, named: "Lower strength")
+        assertInterruptedWorkoutReceipt(app)
+        keepWorkoutScreenshot(app, named: "Setline detailed workout reopened")
+    }
+
+    private func recordShorthand(_ app: XCUIApplication, _ value: String) {
+        let typeIt = app.buttons["Type it"]
+        if typeIt.exists { typeIt.tap() }
+        let entry = app.textFields["Shorthand set entry"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 5))
+        entry.tap()
+        entry.typeText(value)
+        app.buttons["Apply to segments"].tap()
+        recordSetAndWaitForRest(app)
+    }
+
+    private func assertInterruptedWorkoutReceipt(_ app: XCUIApplication) {
+        XCTAssertTrue(scrollUntil(app, text(app, containing: "Recorded: 5 × 40 kg + 2 × 30 kg"), scanning: .up))
+        XCTAssertTrue(text(app, containing: "planned #1 · performed #1").exists)
+        XCTAssertTrue(scrollUntil(app, text(app, containing: "Recorded: 4 × 55 kg"), scanning: .down))
+        XCTAssertTrue(text(app, containing: "planned #2 · performed #2").exists)
+        XCTAssertTrue(scrollUntil(app, text(app, containing: "planned #3 · performed —"), scanning: .down), "Unperformed authored work must not acquire a fabricated result")
+    }
+
+    private func keepWorkoutScreenshot(_ app: XCUIApplication, named name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testSetTimerRunsIndependentlyOfRest() {
         let app = launch()
 
