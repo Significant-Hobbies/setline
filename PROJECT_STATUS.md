@@ -34,6 +34,24 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-22** — capability assessment & progressive training landed in four
+  commits (`0d5e34b`, `d4f4008`, `00d6992`, `a57a3e8`, `76c755d`), tracked in
+  #92/#93. A 15-card mobility curriculum records per-slot results; a shared
+  capability layer derives four-axis scores (strength, endurance, mobility,
+  balance & control) from history, benchmarks, and mobility state — missing
+  evidence stays visibly missing. The You tab's Capability profile shows the
+  ability diamond, statuses, and rationale; a coordinated custom programme is
+  generated within the user's day budget; pain reports block progression and
+  exclude the movement; too-hard/too-easy feedback adjusts one variable;
+  curriculum checkpoints judge against authored values, not editable targets;
+  population comparisons disclose their source or read "Benchmark
+  unavailable". 216 core and 21 UI tests pass locally. Note: an in-flight
+  mirror-sync refactor in the worktree still fails two
+  `SetlineCallerSyncTests` and the JS `native-config` check (deleted
+  `CloudKitRecordStore`); those failures predate this work. The simulator
+  CloudKit launch trap is guarded in the working tree but rides with the
+  refactor's own commit.
+
 - **2026-09-09** — exact workout-relaunch source `af7071d` passed hosted CI
   34334618829 (239 tests, 18 UI, existing credential skip, Release and 81.8057%
   coverage). Signed device Release and strict/deep signature verification passed;
