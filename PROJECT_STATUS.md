@@ -45,12 +45,14 @@ is not claimed as shipped. The versioned JSON export remains the backup.
   exclude the movement; too-hard/too-easy feedback adjusts one variable;
   curriculum checkpoints judge against authored values, not editable targets;
   population comparisons disclose their source or read "Benchmark
-  unavailable". 216 core and 21 UI tests pass locally. Note: an in-flight
-  mirror-sync refactor in the worktree still fails two
-  `SetlineCallerSyncTests` and the JS `native-config` check (deleted
-  `CloudKitRecordStore`); those failures predate this work. The simulator
-  CloudKit launch trap is guarded in the working tree but rides with the
-  refactor's own commit.
+  unavailable". The mirror-sync refactor landed in `0c5a3e1` (MirrorRuntime
+  replaces CloudKitRecordStore/SyncCoordinator; PersonalSyncKit `2272048` on
+  `fix/mirror-timestamp-compatibility` lets an authorized pull commit after a
+  mid-flight account switch) and shared view components extracted in
+  `762540f`. `pnpm run check` and `pnpm quality:native` both pass: 216 core,
+  32 app, 21 UI tests, Release build, 81.41% coverage. Remaining caveat:
+  project.yml resolves PersonalSyncKit from a local checkout — repin to a
+  pushed SHA before hosted CI can build this.
 
 - **2026-09-09** — exact workout-relaunch source `af7071d` passed hosted CI
   34334618829 (239 tests, 18 UI, existing credential skip, Release and 81.8057%
