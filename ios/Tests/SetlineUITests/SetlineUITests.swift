@@ -483,4 +483,35 @@ final class SetlineUITests: XCTestCase {
         app.buttons["Check-ins"].tap()
         XCTAssertTrue(text(app, containing: "saved snapshot").waitForExistence(timeout: 3))
     }
+
+    /// Navigates to the Mobility view, which lives inside the You tab.
+    private func openMobility(_ app: XCUIApplication) {
+        app.tabBars.buttons["You"].tap()
+        XCTAssertTrue(app.staticTexts["MOBILITY"].waitForExistence(timeout: 3))
+        app.staticTexts["Movement baseline"].tap()
+    }
+
+    func testMobilityCardRecordsACheckResult() {
+        let app = launch()
+
+        openMobility(app)
+        XCTAssertTrue(text(app, containing: "Supine overhead reach").waitForExistence(timeout: 5))
+        XCTAssertTrue(text(app, containing: "Neck movement check").exists)
+
+        let card = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS[c] %@", "Supine overhead reach")
+        ).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 3))
+        card.tap()
+
+        // Each side records independently, so the picker is labelled per slot.
+        let leftResult = app.buttons["Active shoulder flexion Left result"]
+        XCTAssertTrue(leftResult.waitForExistence(timeout: 5))
+        leftResult.tap()
+        app.buttons["Completed as shown"].tap()
+
+        // Recording a result reveals the setup, assistance, and symptom fields.
+        XCTAssertTrue(app.staticTexts["SETUP"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["SYMPTOMS"].exists)
+    }
 }

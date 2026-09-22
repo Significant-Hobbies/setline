@@ -401,6 +401,66 @@ final class AppModel {
         message = "Filled from \(suggestion.sourceExerciseName) on \(suggestion.sourceDate.formatted(date: .abbreviated, time: .omitted))."
     }
 
+    // MARK: - Mobility
+
+    /// Records one check result on one side. Re-recording a slot moves the
+    /// previous result into the card's superseded series, so a changed setup
+    /// never silently rewrites the baseline.
+    func recordMobilityCheck(
+        cardID: String,
+        checkID: String,
+        side: BodySide?,
+        record: MobilityCheckRecord
+    ) async {
+        await mutate { document in
+            var cardState = document.mobility.cards[cardID] ?? .init()
+            cardState.record(record, checkID: checkID, side: side)
+            document.mobility.cards[cardID] = cardState
+            document.mobility.updated[cardID] = .now
+        }
+    }
+
+    /// Adds or removes a card from the practise set, capped at
+    /// `MobilityEngine.maxPractising`. Returns false when the cap blocked it.
+    @discardableResult
+    func toggleMobilityPractice(cardID: String) async -> Bool {
+        if document.mobility.practising.contains(cardID) {
+            await mutate { document in
+                document.mobility.practising.removeAll { $0 == cardID }
+            }
+            return true
+        }
+        guard document.mobility.practising.count < MobilityEngine.maxPractising else { return false }
+        await mutate { document in
+            document.mobility.practising.append(cardID)
+        }
+        message = "Added to your practice set. Practise a few tracks rather than the whole library."
+        return true
+    }
+
+    /// Saves a dated snapshot of the whole curriculum as it stands.
+    func saveMobilityAssessment(date: Date) async {
+        let committed = await mutate { document in
+            let snapshot = MobilityAssessment(
+                date: date,
+                cards: document.mobility.cards,
+                practising: document.mobility.practising
+            )
+            document.mobility.history.insert(snapshot, at: 0)
+        }
+        guard committed else { return }
+        message = "Assessment snapshot saved."
+    }
+
+    func clearMobilityRecords() async {
+        let committed = await mutate { document in
+            document.mobility.cards = [:]
+            document.mobility.updated = [:]
+        }
+        guard committed else { return }
+        message = "Current mobility records cleared. Snapshots and your practice set were kept."
+    }
+
     // MARK: - iCloud
 
     /// Reads iCloud's state without syncing, so Settings can be honest on arrival.

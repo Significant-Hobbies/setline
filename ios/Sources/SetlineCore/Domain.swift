@@ -717,6 +717,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
     public var history: [WorkoutSession]
     public var goals: [ExerciseGoal]
     public var benchmarks: BenchmarksState
+    public var mobility: MobilityState
     public var syncState: SyncState
     public var lastSyncedAt: Date?
 
@@ -730,6 +731,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         history: [WorkoutSession] = [],
         goals: [ExerciseGoal] = [],
         benchmarks: BenchmarksState = .initial,
+        mobility: MobilityState = .initial,
         sync: SyncInfo = .init(),
         hubAccountID: String? = nil
     ) {
@@ -741,13 +743,15 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         self.history = history
         self.goals = goals
         self.benchmarks = benchmarks
+        self.mobility = mobility
         self.syncState = sync.syncState
         self.lastSyncedAt = sync.lastSyncedAt
     }
 
     /// Reads both the version 1 envelope, whose `programme` was a bare custom
-    /// programme, and the current selection-based envelope. Benchmarks are
-    /// optional so documents written before the feature existed decode cleanly.
+    /// programme, and the current selection-based envelope. Benchmarks and
+    /// mobility are optional so documents written before those features
+    /// existed decode cleanly.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
@@ -764,6 +768,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         history = try container.decodeIfPresent([WorkoutSession].self, forKey: .history) ?? []
         goals = try container.decodeIfPresent([ExerciseGoal].self, forKey: .goals) ?? []
         benchmarks = try container.decodeIfPresent(BenchmarksState.self, forKey: .benchmarks) ?? .initial
+        mobility = try container.decodeIfPresent(MobilityState.self, forKey: .mobility) ?? .initial
         syncState = try container.decodeIfPresent(SyncState.self, forKey: .syncState) ?? .deviceOnly
         lastSyncedAt = try container.decodeIfPresent(Date.self, forKey: .lastSyncedAt)
     }

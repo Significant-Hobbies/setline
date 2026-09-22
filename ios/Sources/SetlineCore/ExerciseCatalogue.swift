@@ -629,6 +629,184 @@ public enum ExerciseCatalogue {
             anatomy: .init(primaryMuscles: [.shoulders, .thoracicSpine], equipment: [.bands]),
             config: .init(defaultRest: RestRange(15), goalMetrics: [.maxRepetitions, .rangeOfMotion])
         ),
+        // Mobility-curriculum practice movements. These back the assessment
+        // cards' practice options; slugs are referenced from MobilityCatalog.
+        ExerciseDefinition(
+            slug: "supine-table-slide",
+            name: "Supine table slide",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.shoulders], equipment: [.bench], isUnilateral: true),
+            config: .init(defaultRest: RestRange(30), cue: "Let the arm slide with support; do not arch the back to gain reach.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "standing-overhead-reach",
+            name: "Standing overhead reach",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.shoulders, .thoracicSpine], isUnilateral: true),
+            config: .init(defaultRest: RestRange(30), cue: "Reach actively through the range you established lying down; keep the ribs controlled.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "supported-shoulder-rotation",
+            name: "Supported shoulder rotation",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.shoulders], isUnilateral: true),
+            config: .init(aliases: ["towel-supported rotations"], defaultRest: RestRange(30), cue: "Upper arm stays on its support; turn the forearm without rolling the trunk.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "seated-trunk-rotation",
+            name: "Seated trunk rotation",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.thoracicSpine, .trunk], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Turn the chest while the knees and pelvis stay facing forward.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "seated-pelvic-tilt",
+            name: "Seated pelvic tilts",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.lowerBack, .trunk]),
+            config: .init(defaultRest: RestRange(15), cue: "Rock the pelvis forward and back slowly; stay within a comfortable range.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "cat-camel",
+            name: "Cat-camel",
+            pillars: [.mobility, .flexibility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.thoracicSpine, .lowerBack]),
+            config: .init(aliases: ["cat-cow", "cat stretch"], defaultRest: RestRange(15), cue: "Round and extend the back slowly; keep hands and knees in place.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "supine-knee-to-chest",
+            name: "Supine knee-to-chest",
+            pillars: [.mobility, .flexibility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.hipFlexors, .glutes], isUnilateral: true),
+            config: .init(aliases: ["knee to chest"], defaultRest: RestRange(15), cue: "Bring one bent knee toward the chest without rolling the pelvis to gain distance.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "supine-knee-extension",
+            name: "Supine active knee extension",
+            pillars: [.mobility, .flexibility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.hamstrings], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Hold the thigh still; straighten the knee only as far as is comfortable.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "seated-hip-rotation",
+            name: "Seated hip rotations",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.glutes, .hipFlexors], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Keep the thigh still and move the foot sideways; do not lean to gain range.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "supported-split-stance",
+            name: "Supported split-stance shift",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.hipFlexors, .glutes], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Shift forward gently with the pelvis controlled; do not arch the lower back.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "lateral-heel-slide",
+            name: "Sideways heel slide",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.adductors], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Slide the heel sideways with the kneecap up; keep the pelvis still.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "adductor-rock-back",
+            name: "Supported adductor rock-back",
+            pillars: [.mobility, .flexibility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.adductors], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Start narrow and supported; rock back only within a comfortable stretch.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "supported-lateral-lunge",
+            name: "Supported lateral lunge",
+            pillars: [.mobility, .strength],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.adductors, .quadriceps], isUnilateral: true),
+            config: .init(defaultRest: RestRange(30), cue: "Use hand support; this is a separate skill from the heel-slide measurement.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "neck-mobility",
+            name: "Neck movements",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.trunk], secondaryMuscles: []),
+            config: .init(defaultRest: RestRange(15), cue: "Small comfortable turns, tilts and nods with the torso still. Never force end range.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "elbow-flexion-extension",
+            name: "Elbow bend and straighten",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.biceps], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Bend and straighten without forcing; do not push into hyperextension.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "forearm-rotations",
+            name: "Forearm palm turns",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.forearms], isUnilateral: true),
+            config: .init(aliases: ["palm up palm down"], defaultRest: RestRange(15), cue: "Elbow bent beside the trunk; turn the palm up and down without moving the shoulder.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "wrist-mobility",
+            name: "Supported wrist movements",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.forearms], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Forearm supported; move the wrist each direction without forearm substitution.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "finger-mobility",
+            name: "Finger and thumb movements",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.forearms], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Open, close and spread the hand; touch the thumb to each fingertip without forcing.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "heel-slides",
+            name: "Heel slides",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.quadriceps, .hamstrings], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Slide the heel toward you and back out; keep the leg aligned.", goalMetrics: [.maxRepetitions, .rangeOfMotion])
+        ),
+        ExerciseDefinition(
+            slug: "ankle-mobility",
+            name: "Unloaded ankle movements",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.ankles], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Point, pull and turn the foot with the lower leg still.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "toe-mobility",
+            name: "Toe movements",
+            pillars: [.mobility],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.ankles], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Bend and straighten the toes; practise lifting the big toe on its own.", goalMetrics: [.maxRepetitions])
+        ),
+        ExerciseDefinition(
+            slug: "supported-floor-transfer",
+            name: "Supported floor transfer",
+            pillars: [.mobility, .strength],
+            kind: .mobility,
+            anatomy: .init(primaryMuscles: [.fullBody]),
+            config: .init(defaultRest: RestRange(30), cue: "Use stable furniture and a comfortable route down and up. Skip when balance or symptoms make it unsuitable.", goalMetrics: [.maxRepetitions])
+        ),
     ]
 
     // MARK: - Stamina

@@ -24,6 +24,7 @@ struct SettingsView: View {
                     Button("Try opening again") { Task { await model.load() } }
                 } else {
                     benchmarksSection
+                    mobilitySection
                     storageSection
                     iCloudSection
                     significantHobbiesHubSection
@@ -203,6 +204,38 @@ struct SettingsView: View {
                         let reached = BenchmarkCatalog.reachedCount(in: model.document.benchmarks)
                         let recorded = BenchmarkCatalog.recordedCount(in: model.document.benchmarks)
                         Text("\(reached) of \(BenchmarkCatalog.metrics.count) targets reached \u{00B7} \(recorded) starting points \u{00B7} \(model.document.benchmarks.history.count) check-ins")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(minHeight: 48)
+            }
+        }
+    }
+
+    /// A head-to-toe movement baseline — 15 assessment cards plus two optional
+    /// functional benchmarks. Lives inside "You" for the same reason as
+    /// Benchmarks: an occasional assessment, not a daily training surface.
+    private var mobilitySection: some View {
+        settingsSection("Mobility") {
+            NavigationLink {
+                MobilityView()
+            } label: {
+                HStack {
+                    Image(systemName: "figure.cooldown")
+                        .font(.title2)
+                        .frame(width: 44, height: 44)
+                        .background(SetlinePalette.blue)
+                        .clipShape(RoundedRectangle(cornerRadius: 9))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Movement baseline")
+                            .font(.headline)
+                        let coverage = MobilityEngine.coverage(in: model.document.mobility)
+                        Text("\(coverage.cardsStarted) of 15 cards started · \(model.document.mobility.practising.count) in practice · \(model.document.mobility.history.count) snapshots")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
