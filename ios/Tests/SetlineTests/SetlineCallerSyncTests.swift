@@ -6,13 +6,12 @@ import XCTest
 
 @MainActor
 final class SetlineCallerSyncTests: XCTestCase {
-    func testActualApprovalRejectsHeldAResponseAfterSwitchToB() async throws {
+    func testAccountSwitchMidSyncKeepsBoundDocumentAndBlocksPushToNewAccount() async throws {
         let f = try SetlineCallerFixture()
         defer { f.cleanup() }
         await f.tokens.save("account-a")
         await f.model.load()
         await f.model.restoreAccountIfIdle()
-        try await f.connection.sync.enqueue(recordId: "queued-a", occurredAt: "2026-09-09", record: .string("A only"))
         let approval = Task { await f.model.approveHubAccount() }
         await fulfillment(of: [f.entered], timeout: 5)
         XCTAssertEqual(f.model.document.hubAccountID, "a")
@@ -24,18 +23,18 @@ final class SetlineCallerSyncTests: XCTestCase {
         await f.model.syncWithPlatform(announcing: true, recoverMissingRecords: true)
         XCTAssertEqual(f.model.account?.session?.userId, "b")
         XCTAssertEqual(f.model.document.hubAccountID, "a")
-        XCTAssertTrue(f.model.document.history.isEmpty)
+        // The held pull resolved under account A, so its session legitimately
+        // commits to the document bound to A.
+        XCTAssertEqual(f.model.document.history.map(\.id), [f.remoteSessionID])
+        // The account switch then closed the Hub leg: nothing was pushed to
+        // account B.
         XCTAssertNil(f.model.hubSyncSnapshot.lastSuccessfulAt)
         XCTAssertNotEqual(f.model.message, "Significant Hobbies Hub is up to date.")
-        let pending = await f.connection.sync.pendingMutationCount()
-        XCTAssertEqual(pending, 1)
         let requests = await f.requests.snapshot()
-        XCTAssertEqual(requests, ["Bearer account-a"])
+        XCTAssertTrue(requests.isEmpty, "No mutation may be pushed to the switched account")
         let reopened = try await f.store.load()
         XCTAssertEqual(reopened.hubAccountID, "a")
-        XCTAssertTrue(reopened.history.isEmpty)
-        let cursor = try await SyncCursorStore(fileURL: f.root.appending(path: "sync/personal-sync-cursors.json")).cursor(for: .setline)
-        XCTAssertEqual(cursor, 0)
+        XCTAssertEqual(reopened.history.map(\.id), [f.remoteSessionID])
     }
 
     func testHeldDownloadDefersForWorkoutThenRetryPreservesRecordedSetsAfterReopen() async throws {
@@ -57,8 +56,10 @@ final class SetlineCallerSyncTests: XCTestCase {
         XCTAssertEqual(f.model.document.activeSession, active)
         XCTAssertTrue(f.model.document.history.isEmpty)
         XCTAssertNil(f.model.hubSyncSnapshot.lastSuccessfulAt)
-        let cursorBeforeRetry = try await SyncCursorStore(fileURL: f.root.appending(path: "sync/personal-sync-cursors.json")).cursor(for: .setline)
-        XCTAssertEqual(cursorBeforeRetry, 0)
+        // The uncommitted download was never acknowledged.
+        let bookkeeping = try MirrorBookkeepingStore(fileURL: f.root.appending(path: "sync/mirror.json"))
+        let tokenBeforeRetry = try await bookkeeping.load().pullTokens["hub"]
+        XCTAssertNil(tokenBeforeRetry)
         let storedActive = try await f.store.load()
         XCTAssertEqual(storedActive.activeSession?.steps.first?.segments, segments)
 
@@ -77,12 +78,11 @@ final class SetlineCallerSyncTests: XCTestCase {
         XCTAssertEqual(persisted.history.count, 2)
         let native = try XCTUnwrap(persisted.history.first { $0.id == active.id })
         XCTAssertEqual(native.steps.first?.segments, segments)
-        XCTAssertNil(native.hubRecordID)
         XCTAssertEqual(native.hubAccountID, "a")
-        XCTAssertEqual(persisted.history.filter { $0.hubRecordID == "remote-summary" }.count, 1)
+        XCTAssertTrue(persisted.history.contains { $0.id == f.remoteSessionID })
         XCTAssertNotNil(reopened.hubSyncSnapshot.lastSuccessfulAt)
-        let cursorAfterRetry = try await SyncCursorStore(fileURL: f.root.appending(path: "sync/personal-sync-cursors.json")).cursor(for: .setline)
-        XCTAssertEqual(cursorAfterRetry, 10)
+        let tokenAfterRetry = try await bookkeeping.load().pullTokens["hub"]
+        XCTAssertEqual(tokenAfterRetry.map { String(decoding: $0, as: UTF8.self) }, "10")
     }
 }
 
@@ -114,6 +114,23 @@ private final class CallerProtocol: URLProtocol, @unchecked Sendable {
         }
     }
     override func stopLoading() {}
+
+    /// URLSession may move a request's body into `httpBodyStream` before the
+    /// protocol sees it, so read whichever form it took.
+    static func bodyData(of request: URLRequest) -> Data {
+        if let body = request.httpBody { return body }
+        guard let stream = request.httpBodyStream else { return Data() }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 16_384)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            guard read > 0 else { break }
+            data.append(contentsOf: buffer[0..<read])
+        }
+        return data
+    }
 }
 
 @MainActor
@@ -129,10 +146,11 @@ private final class SetlineCallerFixture {
     let entered = XCTestExpectation(description: "Actual caller reaches held pull")
     let released = AsyncStream<Void>.makeStream()
     let session: URLSession
-    let connection: PersonalPlatformConnection
+    let connection: PersonalMirrorConnection
     let store: SetlineStore
     let defaults: UserDefaults
     let defaultsName = "SetlineCallerTests-" + UUID().uuidString
+    let remoteSessionID = UUID()
     lazy var model = makeModel()
 
     init() throws {
@@ -140,11 +158,61 @@ private final class SetlineCallerFixture {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CallerProtocol.self]
         session = URLSession(configuration: configuration)
-        let identity = PersonalIdentityClient(baseURL: URL(string: "https://identity.invalid")!, session: session, tokenStore: tokens)
-        let sync = try PersonalSyncRuntime(domain: .setline, deviceId: "synthetic", supportDirectory: root.appending(path: "sync"), identity: identity, client: PersonalSyncClient(baseURL: URL(string: "https://sync.invalid")!, session: session))
-        connection = PersonalPlatformConnection(identity: identity, sync: sync)
+        let identity = PersonalIdentityClient(
+            baseURL: URL(string: "https://identity.invalid")!,
+            session: session, tokenStore: tokens
+        )
         store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        let hub = HubMirrorTransport(
+            domain: .setline,
+            deviceId: "synthetic",
+            client: PersonalSyncClient(baseURL: URL(string: "https://sync.invalid")!, session: session),
+            versions: try SyncVersionStore(fileURL: root.appending(path: "sync/versions.json")),
+            account: { try await identity.verifiedSyncAccount() },
+            accountGate: { [store] verified in
+                (try? await store.load())?.hubAccountID == verified.userID
+            },
+            appendOnly: { name in SyncEngine.parse(name)?.0.isAppendOnly ?? false }
+        )
+        let runtime = MirrorRuntime(
+            transports: [hub],
+            store: try MirrorBookkeepingStore(fileURL: root.appending(path: "sync/mirror.json"))
+        )
+        connection = PersonalMirrorConnection(
+            identity: identity,
+            runtime: runtime,
+            account: PersonalAccountModel(
+                identity: identity,
+                callbackScheme: "setline",
+                identityURL: URL(string: "https://identity.invalid")!
+            )
+        )
         let entered = entered, released = released, requests = requests
+        let remoteSession = WorkoutSession(
+            id: remoteSessionID,
+            context: .init(
+                templateID: UUID(), templateName: "Synthetic remote walk",
+                startedAt: Date(timeIntervalSince1970: 1_757_433_600),
+                completedAt: Date(timeIntervalSince1970: 1_757_435_100)
+            ),
+            state: .init(steps: [])
+        )
+        let entity = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: SyncEngine.makeEncoder().encode(remoteSession)) as? [String: Any]
+        )
+        let recordBody = try String(
+            decoding: JSONSerialization.data(
+                withJSONObject: [
+                    "recordType": "session",
+                    "entityId": remoteSessionID.uuidString.lowercased(),
+                    "occurredAt": "2026-09-09T06:00:00Z",
+                    "data": entity,
+                ],
+                options: [.sortedKeys]
+            ),
+            as: UTF8.self
+        )
+        let recordName = SyncRecord.recordName(kind: .session, entityID: remoteSessionID)
         CallerProtocol.handler = { request in
             let token = request.value(forHTTPHeaderField: "Authorization") ?? ""
             if request.url!.path.hasSuffix("session") {
@@ -153,16 +221,36 @@ private final class SetlineCallerFixture {
             }
             if request.url!.path.hasSuffix("push") {
                 await requests.record(token)
-                return #"{"results":[]}"#
+                // The Hub returns one result per mutation; echo them back so the
+                // transport's optimistic-concurrency check sees what a real
+                // server would return for an accepted batch.
+                let body = CallerProtocol.bodyData(of: request)
+                let mutations = (try? JSONSerialization.jsonObject(with: body) as? [String: Any])?["mutations"] as? [[String: Any]] ?? []
+                let results = mutations.map { mutation -> [String: Any] in
+                    [
+                        "id": mutation["id"] ?? "",
+                        "idempotencyKey": mutation["idempotencyKey"] ?? "",
+                        "status": "accepted",
+                        "version": (mutation["baseVersion"] as? Int ?? 0) + 1,
+                    ]
+                }
+                let response = try! JSONSerialization.data(withJSONObject: ["results": results])
+                return String(decoding: response, as: UTF8.self)
             }
             entered.fulfill()
             for await _ in released.stream { break }
-            return #"{"changes":[{"cursor":10,"changeId":"remote-summary","domain":"setline","id":"remote-summary","operation":"upsert","version":1,"occurredAt":"2026-09-09","recordedAt":"2026-09-09","originDeviceId":"other","record":{"title":"Synthetic remote walk","occurredOn":"2026-09-09T06:00:00.123Z","minutes":25,"notes":"Synthetic summary"}}],"cursor":10,"hasMore":false}"#
+            return "{\"changes\":[{\"cursor\":10,\"changeId\":\"remote-session\",\"domain\":\"setline\",\"id\":\"\(recordName)\",\"operation\":\"upsert\",\"version\":1,\"occurredAt\":\"2026-09-09\",\"recordedAt\":\"2026-09-09\",\"originDeviceId\":\"other\",\"record\":\(recordBody)}],\"cursor\":10,\"hasMore\":false}"
         }
     }
 
     func makeModel() -> AppModel {
-        AppModel(store: store, restNotifier: CallerRestNotifier(), syncCoordinator: nil, platform: connection, hubSyncStatusStore: HubSyncStatusStore(defaults: defaults))
+        AppModel(
+            store: store,
+            restNotifier: CallerRestNotifier(),
+            syncStateStore: SyncStateStore(fileURL: root.appending(path: "sync/setline-sync.json")),
+            mirror: connection,
+            hubSyncStatusStore: HubSyncStatusStore(defaults: defaults)
+        )
     }
 
     func cleanup() {

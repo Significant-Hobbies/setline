@@ -13,7 +13,7 @@ final class SetlineLocalSaveTests: XCTestCase {
         let blocker = root.appending(path: "blocked")
         try Data("not a directory".utf8).write(to: blocker)
         let store = SetlineStore(fileURL: blocker.appending(path: "workouts.json"))
-        let model = AppModel(store: store, syncCoordinator: nil, platform: nil)
+        let model = AppModel(store: store, mirror: nil)
         await model.load()
         var draft = TwelveWeekProgramme.template(for: .lower, week: 1)
         draft.id = UUID()
@@ -32,7 +32,7 @@ final class SetlineLocalSaveTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
-        let model = AppModel(store: store, syncCoordinator: nil, platform: nil)
+        let model = AppModel(store: store, mirror: nil)
         await model.load()
         async let first: Void = model.updateBenchmarkNumber("synthetic", field: "first", value: 11)
         async let second: Void = model.updateBenchmarkNumber("synthetic", field: "second", value: 22)
@@ -49,7 +49,7 @@ final class SetlineLocalSaveTests: XCTestCase {
         let file = root.appending(path: "workouts.json")
         let original = Data("unreadable retained workout history".utf8)
         try original.write(to: file)
-        let model = AppModel(store: SetlineStore(fileURL: file), syncCoordinator: nil, platform: nil)
+        let model = AppModel(store: SetlineStore(fileURL: file), mirror: nil)
         await model.load()
         await model.updateBenchmarkNumber("synthetic", field: "first", value: 11)
         XCTAssertEqual(try Data(contentsOf: file), original)
@@ -65,7 +65,7 @@ final class SetlineLocalSaveTests: XCTestCase {
         try initial.startWorkout(templateID: template.id)
         try await store.save(initial)
         let notifier = RecordingRestNotifier()
-        let model = AppModel(store: store, restNotifier: notifier, syncCoordinator: nil, platform: nil)
+        let model = AppModel(store: store, restNotifier: notifier, mirror: nil)
         await model.load()
         model.isWorkoutPresented = true
         let previous = model.document.activeSession
@@ -103,7 +103,7 @@ final class SetlineLocalSaveTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: root) }
         let file = root.appending(path: "workouts.json")
         let store = SetlineStore(fileURL: file)
-        let model = AppModel(store: store, syncCoordinator: nil, platform: nil)
+        let model = AppModel(store: store, mirror: nil)
         await model.load()
         try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
         let goal = ExerciseGoal(exerciseName: "Bench press", metric: .topSetLoad, targetValue: 80)
@@ -131,7 +131,7 @@ final class SetlineLocalSaveTests: XCTestCase {
         let original = Data("unreadable retained document".utf8)
         try original.write(to: file)
         let store = SetlineStore(fileURL: file)
-        let model = AppModel(store: store, syncCoordinator: nil, platform: nil)
+        let model = AppModel(store: store, mirror: nil)
         await model.load()
         XCTAssertFalse(model.hasLoadedDocument)
         await model.prepareImport(Data("invalid backup".utf8))

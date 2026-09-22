@@ -42,7 +42,7 @@ extension AppModel {
                 let defaults = try fixture.defaultsForLaunch()
                 return AppModel(
                     store: SetlineStore(fileURL: fixture.fileURL),
-                    restNotifier: FixtureRestNotifier(), syncCoordinator: nil, platform: nil,
+                    restNotifier: FixtureRestNotifier(), mirror: nil,
                     hubSyncStatusStore: HubSyncStatusStore(defaults: defaults), defaults: defaults
                 )
             }

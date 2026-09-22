@@ -218,7 +218,7 @@ public enum SyncEngine {
 
     // MARK: - Helpers
 
-    static func parse(_ recordName: String) -> (SyncRecordKind, UUID)? {
+    public static func parse(_ recordName: String) -> (SyncRecordKind, UUID)? {
         guard let separator = recordName.firstIndex(of: "-") else { return nil }
         let rawKind = String(recordName[recordName.startIndex..<separator])
         let rawID = String(recordName[recordName.index(after: separator)...])
@@ -236,7 +236,7 @@ public enum SyncEngine {
     /// not decode back to the value it came from, so a record would look edited
     /// every time it made the trip and two edits inside one second would tie on
     /// timestamp and fall through to an arbitrary tie-break.
-    static func makeEncoder() -> JSONEncoder {
+    public static func makeEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .custom { date, encoder in
             var container = encoder.singleValueContainer()
@@ -248,7 +248,7 @@ public enum SyncEngine {
         return encoder
     }
 
-    static func makeDecoder() -> JSONDecoder {
+    public static func makeDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let seconds = try decoder.singleValueContainer().decode(Double.self)
