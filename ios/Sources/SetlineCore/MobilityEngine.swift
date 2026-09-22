@@ -126,4 +126,47 @@ public enum MobilityEngine {
     public static func practiceExercises(for card: MobilityCardDefinition) -> [ExerciseDefinition] {
         card.practiceSlugs.compactMap { ExerciseCatalogue.definition(slug: $0) }
     }
+
+    /// A workout template built from the current practice set: each selected
+    /// card contributes its entry-point exercise (the first practice slug),
+    /// in the user's selection order. Returns nil when nothing is selected or
+    /// no card resolves to a practice movement.
+    ///
+    /// The template is derived, never stored — change the practice set and the
+    /// next session reflects it. Sets are authored as mobility work, so they
+    /// deliberately do not count as working sets for strength metrics.
+    public static func practiceTemplate(in state: MobilityState) -> WorkoutTemplate? {
+        let cards = state.practising.compactMap { MobilityCatalog.card(for: $0) }
+        guard !cards.isEmpty else { return nil }
+        let exercises = cards.compactMap { card -> Exercise? in
+            guard let slug = card.practiceSlugs.first,
+                  let definition = ExerciseCatalogue.definition(slug: slug) else { return nil }
+            let set = PlannedSet(
+                label: "Practice",
+                kind: .mobility,
+                target: SetTarget(
+                    repTarget: .init(repsLow: 8),
+                    perSide: definition.isUnilateral
+                ),
+                rest: definition.defaultRest,
+                config: .init(stepType: .mobility)
+            )
+            return Exercise(
+                name: definition.name,
+                cue: definition.cue.isEmpty ? card.easyPractice : definition.cue,
+                sets: [set, set],
+                definitionSlug: definition.slug,
+                pillars: definition.pillars
+            )
+        }
+        guard !exercises.isEmpty else { return nil }
+        return WorkoutTemplate(
+            name: "Mobility practice",
+            detail: "Entry-point practice for the cards you selected",
+            isBundled: false,
+            exercises: exercises,
+            notes: ["Built from your mobility practice set. Practise the demonstrated range; do not chase extra range."],
+            expectedMinutes: nil
+        )
+    }
 }

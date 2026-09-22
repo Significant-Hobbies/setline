@@ -179,6 +179,22 @@ final class MobilityTests: XCTestCase {
         XCTAssertNotNil(MobilityEngine.retestDueDate(in: state))
     }
 
+    func testPracticeTemplateBuildsFromSelection() {
+        var state = MobilityState()
+        XCTAssertNil(MobilityEngine.practiceTemplate(in: state), "No selection, no session")
+
+        state.practising = ["M10", "M03"]
+        let template = MobilityEngine.practiceTemplate(in: state)
+        XCTAssertEqual(template?.name, "Mobility practice")
+        // Selection order is preserved; each card contributes its entry-point
+        // exercise as mobility sets that never count as working sets.
+        XCTAssertEqual(template?.exercises.map(\.name), ["Knee-to-wall ankle rocks", "Seated trunk rotation"])
+        XCTAssertEqual(template?.exercises.first?.sets.count, 2)
+        XCTAssertTrue(template?.exercises.first?.sets.allSatisfy { $0.stepType == .mobility } ?? false)
+        XCTAssertEqual(template?.exercises.first?.definitionSlug, "knee-to-wall-ankle-rocks")
+        XCTAssertEqual(template?.workingSetCount, 0)
+    }
+
     // MARK: - Document and persistence
 
     func testDocumentDecodesWithoutMobility() throws {

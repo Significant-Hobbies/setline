@@ -452,6 +452,24 @@ final class AppModel {
         message = "Assessment snapshot saved."
     }
 
+    /// Starts a practice session derived from the mobility practice set and
+    /// hands it to the existing session player. Returns false when the set is
+    /// empty or a workout is already underway.
+    @discardableResult
+    func startMobilityPractice() async -> Bool {
+        guard document.activeSession == nil,
+              let template = MobilityEngine.practiceTemplate(in: document.mobility)
+        else { return false }
+        await startWorkout(template)
+        selectedTab = 0
+        return true
+    }
+
+    /// The most recent practice session, for the retest loop's visibility.
+    var lastMobilityPractice: WorkoutSession? {
+        document.history.first { $0.templateName == "Mobility practice" }
+    }
+
     func clearMobilityRecords() async {
         let committed = await mutate { document in
             document.mobility.cards = [:]

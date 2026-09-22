@@ -128,6 +128,18 @@ struct MobilityView: View {
         if !practising.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 SectionLabel(text: "Your practice set")
+                Button {
+                    Task { await model.startMobilityPractice() }
+                } label: {
+                    Label("Start practice session", systemImage: "play.fill")
+                }
+                .buttonStyle(ActionSlabStyle())
+                .disabled(model.document.activeSession != nil)
+                if let lastPractice = model.lastMobilityPractice {
+                    Text("Last practised \(lastPractice.startedAt.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 ForEach(practising) { card in
                     NavigationLink {
                         MobilityCardView(card: card)
