@@ -234,7 +234,6 @@ struct CapabilityAxisRow: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(score.score)")
                     .font(.system(size: 28, weight: .black, design: .rounded).monospacedDigit())
@@ -242,14 +241,8 @@ struct CapabilityAxisRow: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
             }
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
-        .foregroundStyle(SetlinePalette.ink)
-        .padding(.vertical, 12)
-        .frame(minHeight: 44)
-        .accessibilityElement(children: .combine)
+        .rowChrome()
     }
 
     private var statusColor: Color {

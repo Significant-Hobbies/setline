@@ -57,24 +57,7 @@ struct MobilityView: View {
     // MARK: - Subview navigation
 
     private var subviewNav: some View {
-        HStack(spacing: 0) {
-            ForEach(MobilitySubview.allCases, id: \.self) { subview in
-                Button {
-                    activeView = subview
-                } label: {
-                    Text(subview.label)
-                        .font(.subheadline.weight(activeView == subview ? .black : .semibold))
-                        .foregroundStyle(activeView == subview ? SetlinePalette.ink : SetlinePalette.ink.opacity(0.5))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(activeView == subview ? SetlinePalette.lime : .clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-            }
-        }
-        .padding(3)
-        .background(SetlinePalette.steel.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 11))
+        SubviewNav(active: $activeView, label: \.label)
     }
 
     // MARK: - Cards
@@ -94,31 +77,10 @@ struct MobilityView: View {
     private var statsRow: some View {
         let coverage = MobilityEngine.coverage(in: model.document.mobility)
         return HStack(spacing: 10) {
-            mobilityStat("\(coverage.cardsStarted)", "/ 15", "Cards started", SetlinePalette.lime)
-            mobilityStat("\(coverage.recorded)", "/ \(coverage.total)", "Checks recorded", SetlinePalette.blue)
-            mobilityStat("\(model.document.mobility.practising.count)", "/ \(MobilityEngine.maxPractising)", "Practising", SetlinePalette.paper)
+            MetricStatTile(value: "\(coverage.cardsStarted)", suffix: "/ 15", label: "Cards started", background: SetlinePalette.lime)
+            MetricStatTile(value: "\(coverage.recorded)", suffix: "/ \(coverage.total)", label: "Checks recorded", background: SetlinePalette.blue)
+            MetricStatTile(value: "\(model.document.mobility.practising.count)", suffix: "/ \(MobilityEngine.maxPractising)", label: "Practising", background: SetlinePalette.paper)
         }
-    }
-
-    private func mobilityStat(_ value: String, _ suffix: String?, _ label: String, _ bg: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
-                if let suffix {
-                    Text(suffix)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Text(label)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(bg)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     /// The chosen practice set — a few tracks, not the whole library.
@@ -227,15 +189,10 @@ struct MobilityView: View {
     }
 
     private var bottomNote: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle")
-                .font(.body)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
-            Text("A starting point for practice, not a diagnosis or a percentage of normal mobility. A blank check is unknown, and a symptom stop is a reason to pause — never a score of zero.")
-                .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.72))
-        }
-        .padding(.top, 8)
+        InfoNote(
+            icon: "info.circle",
+            text: "A starting point for practice, not a diagnosis or a percentage of normal mobility. A blank check is unknown, and a symptom stop is a reason to pause — never a score of zero."
+        )
     }
 
     // MARK: - Snapshots
@@ -256,10 +213,7 @@ struct MobilityView: View {
                     MobilitySnapshotRow(snapshot: snapshot)
                 }
             }
-            Text("A snapshot is a logging date, not proof that every check was performed that day. Untested checks stay untested inside it.")
-                .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.72))
-                .padding(.top, 8)
+            InfoNote(text: "A snapshot is a logging date, not proof that every check was performed that day. Untested checks stay untested inside it.")
         }
     }
 
@@ -313,21 +267,11 @@ struct MobilityView: View {
                 }
             }
         }
-        .padding(16)
-        .background(SetlinePalette.paper)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .paperCard()
     }
 
     private func guideCard(_ title: String, body: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline.weight(.black))
-            Text(body)
-                .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.75))
-        }
-        .padding(16)
-        .background(SetlinePalette.paper)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        GuideCard(title: title, text: body)
     }
 }
 
@@ -374,15 +318,8 @@ struct MobilityCardRow: View {
                         .lineLimit(2)
                 }
             }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
-        .foregroundStyle(SetlinePalette.ink)
-        .padding(.vertical, 12)
-        .frame(minHeight: 44)
-        .accessibilityElement(children: .combine)
+        .rowChrome()
     }
 }
 

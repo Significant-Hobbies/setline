@@ -58,6 +58,128 @@ struct ActionSlabStyle: ButtonStyle {
     }
 }
 
+/// The segmented subview switcher shared by the assessment surfaces
+/// (Benchmarks, Mobility, Capability).
+struct SubviewNav<Item: CaseIterable & Hashable>: View where Item.AllCases: RandomAccessCollection {
+    @Binding var active: Item
+    var label: (Item) -> String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(Item.allCases), id: \.self) { item in
+                Button {
+                    active = item
+                } label: {
+                    Text(label(item))
+                        .font(.subheadline.weight(active == item ? .black : .semibold))
+                        .foregroundStyle(active == item ? SetlinePalette.ink : SetlinePalette.ink.opacity(0.5))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(active == item ? SetlinePalette.lime : .clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+        }
+        .padding(3)
+        .background(SetlinePalette.steel.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 11))
+    }
+}
+
+/// The big-number stat tile used at the top of assessment surfaces.
+struct MetricStatTile: View {
+    var value: String
+    var suffix: String?
+    var label: String
+    var background: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
+                if let suffix {
+                    Text(suffix)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text(label)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(background)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+/// An icon plus a cautionary footnote — the "what this is not" line that
+/// closes an assessment surface.
+struct InfoNote: View {
+    var icon: String?
+    var text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.body)
+                    .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+            }
+            Text(text)
+                .font(.footnote)
+                .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+        }
+        .padding(.top, 8)
+    }
+}
+
+/// A titled prose card — the Guide tab's repeating unit.
+struct GuideCard: View {
+    var title: String
+    var text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.headline.weight(.black))
+            Text(text)
+                .font(.footnote)
+                .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+        }
+        .paperCard()
+    }
+}
+
+/// The trailing chevron and row chrome shared by tappable list rows.
+struct RowChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        HStack {
+            content
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .foregroundStyle(SetlinePalette.ink)
+        .padding(.vertical, 12)
+        .frame(minHeight: 44)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct PaperCard: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(16)
+            .background(SetlinePalette.paper)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
 extension View {
     func setlineBackground() -> some View { modifier(SetlineBackground()) }
+    func rowChrome() -> some View { modifier(RowChrome()) }
+    func paperCard() -> some View { modifier(PaperCard()) }
 }

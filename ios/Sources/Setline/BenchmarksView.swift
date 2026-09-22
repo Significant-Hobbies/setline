@@ -66,24 +66,7 @@ struct BenchmarksView: View {
     // MARK: - Subview navigation
 
     private var subviewNav: some View {
-        HStack(spacing: 0) {
-            ForEach(BenchmarkSubview.allCases, id: \.self) { subview in
-                Button {
-                    activeView = subview
-                } label: {
-                    Text(subview.label)
-                        .font(.subheadline.weight(activeView == subview ? .black : .semibold))
-                        .foregroundStyle(activeView == subview ? SetlinePalette.ink : SetlinePalette.ink.opacity(0.5))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(activeView == subview ? SetlinePalette.lime : .clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-            }
-        }
-        .padding(3)
-        .background(SetlinePalette.steel.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 11))
+        SubviewNav(active: $activeView, label: \.label)
     }
 
     // MARK: - Overview
@@ -250,31 +233,10 @@ struct BenchmarksView: View {
         let recorded = BenchmarkCatalog.recordedCount(in: model.document.benchmarks)
         let history = model.document.benchmarks.history.count
         return HStack(spacing: 10) {
-            benchmarkStat("\(reached)", "/ \(BenchmarkCatalog.metrics.count)", "Targets reached", SetlinePalette.lime)
-            benchmarkStat("\(recorded)", "/ \(BenchmarkCatalog.metrics.count)", "Starting points", SetlinePalette.blue)
-            benchmarkStat("\(history)", nil, "Saved check-ins", SetlinePalette.paper)
+            MetricStatTile(value: "\(reached)", suffix: "/ \(BenchmarkCatalog.metrics.count)", label: "Targets reached", background: SetlinePalette.lime)
+            MetricStatTile(value: "\(recorded)", suffix: "/ \(BenchmarkCatalog.metrics.count)", label: "Starting points", background: SetlinePalette.blue)
+            MetricStatTile(value: "\(history)", label: "Saved check-ins", background: SetlinePalette.paper)
         }
-    }
-
-    private func benchmarkStat(_ value: String, _ suffix: String?, _ label: String, _ bg: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
-                if let suffix {
-                    Text(suffix)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Text(label)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(bg)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var focusStrip: some View {
@@ -353,15 +315,10 @@ struct BenchmarksView: View {
     }
 
     private var bottomNote: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle")
-                .font(.body)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
-            Text("Ambitious goals, not certified percentiles. An easy attempt is a lower bound, a blank is unknown, and an estimated lift is not a tested maximum.")
-                .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.72))
-        }
-        .padding(.top, 8)
+        InfoNote(
+            icon: "info.circle",
+            text: "Ambitious goals, not certified percentiles. An easy attempt is a lower bound, a blank is unknown, and an estimated lift is not a tested maximum."
+        )
     }
 
     // MARK: - Check-ins
@@ -388,10 +345,7 @@ struct BenchmarksView: View {
                     BenchmarkCheckInRow(checkIn: checkIn)
                 }
             }
-            Text("Check-in dates are logging dates, not proof that every test was performed on that day. A snapshot carries forward unchanged results.")
-                .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.72))
-                .padding(.top, 8)
+            InfoNote(text: "Check-in dates are logging dates, not proof that every test was performed on that day. A snapshot carries forward unchanged results.")
         }
     }
 
@@ -425,14 +379,6 @@ struct BenchmarksView: View {
     }
 
     private func guideCard(_ title: String, body: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline.weight(.black))
-            Text(body)
-                .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.75))
-        }
-        .padding(16)
-        .background(SetlinePalette.paper)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        GuideCard(title: title, text: body)
     }
 }

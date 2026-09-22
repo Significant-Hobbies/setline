@@ -185,36 +185,48 @@ struct SettingsView: View {
         }
     }
 
+    /// One iconed navigation row — the You tab's recurring "assessment
+    /// surface" entry shape.
+    private func settingsLinkRow<Destination: View>(
+        icon: String, color: Color, title: String, subtitle: String,
+        @ViewBuilder destination: () -> Destination
+    ) -> some View {
+        NavigationLink {
+            destination()
+        } label: {
+            HStack {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .frame(width: 44, height: 44)
+                    .background(color)
+                    .clipShape(RoundedRectangle(cornerRadius: 9))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.headline)
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(minHeight: 48)
+        }
+    }
+
     /// The four-axis capability profile: scores, priorities, and the
     /// coordinated programme. Lives inside "You" with the other assessment
     /// surfaces rather than competing with the daily workout flow.
     private var capabilitySection: some View {
-        settingsSection("Capability") {
-            NavigationLink {
-                CapabilityView()
-            } label: {
-                HStack {
-                    Image(systemName: "diamond")
-                        .font(.title2)
-                        .frame(width: 44, height: 44)
-                        .background(SetlinePalette.coral)
-                        .clipShape(RoundedRectangle(cornerRadius: 9))
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Capability profile")
-                            .font(.headline)
-                        let plan = CapabilityEngine.plan(in: model.document)
-                        let priorities = plan.priorities.map(\.title).joined(separator: " + ")
-                        Text(priorities.isEmpty ? "Four axes, one programme" : "Priorities: \(priorities)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 48)
-            }
+        let plan = CapabilityEngine.plan(in: model.document)
+        let priorities = plan.priorities.map(\.title).joined(separator: " + ")
+        return settingsSection("Capability") {
+            settingsLinkRow(
+                icon: "diamond", color: SetlinePalette.coral, title: "Capability profile",
+                subtitle: priorities.isEmpty ? "Four axes, one programme" : "Priorities: \(priorities)"
+            ) { CapabilityView() }
         }
     }
 
@@ -222,32 +234,13 @@ struct SettingsView: View {
     /// test protocols, and check-in snapshots. Lives inside "You" because it is
     /// an occasional assessment, not a daily training surface.
     private var benchmarksSection: some View {
-        settingsSection("Benchmarks") {
-            NavigationLink {
-                BenchmarksView()
-            } label: {
-                HStack {
-                    Image(systemName: "checkmark.seal")
-                        .font(.title2)
-                        .frame(width: 44, height: 44)
-                        .background(SetlinePalette.lime)
-                        .clipShape(RoundedRectangle(cornerRadius: 9))
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Capability scorecard")
-                            .font(.headline)
-                        let reached = BenchmarkCatalog.reachedCount(in: model.document.benchmarks)
-                        let recorded = BenchmarkCatalog.recordedCount(in: model.document.benchmarks)
-                        Text("\(reached) of \(BenchmarkCatalog.metrics.count) targets reached \u{00B7} \(recorded) starting points \u{00B7} \(model.document.benchmarks.history.count) check-ins")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 48)
-            }
+        let reached = BenchmarkCatalog.reachedCount(in: model.document.benchmarks)
+        let recorded = BenchmarkCatalog.recordedCount(in: model.document.benchmarks)
+        return settingsSection("Benchmarks") {
+            settingsLinkRow(
+                icon: "checkmark.seal", color: SetlinePalette.lime, title: "Capability scorecard",
+                subtitle: "\(reached) of \(BenchmarkCatalog.metrics.count) targets reached · \(recorded) starting points · \(model.document.benchmarks.history.count) check-ins"
+            ) { BenchmarksView() }
         }
     }
 
@@ -255,31 +248,12 @@ struct SettingsView: View {
     /// functional benchmarks. Lives inside "You" for the same reason as
     /// Benchmarks: an occasional assessment, not a daily training surface.
     private var mobilitySection: some View {
-        settingsSection("Mobility") {
-            NavigationLink {
-                MobilityView()
-            } label: {
-                HStack {
-                    Image(systemName: "figure.cooldown")
-                        .font(.title2)
-                        .frame(width: 44, height: 44)
-                        .background(SetlinePalette.blue)
-                        .clipShape(RoundedRectangle(cornerRadius: 9))
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Movement baseline")
-                            .font(.headline)
-                        let coverage = MobilityEngine.coverage(in: model.document.mobility)
-                        Text("\(coverage.cardsStarted) of 15 cards started · \(model.document.mobility.practising.count) in practice · \(model.document.mobility.history.count) snapshots")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 48)
-            }
+        let coverage = MobilityEngine.coverage(in: model.document.mobility)
+        return settingsSection("Mobility") {
+            settingsLinkRow(
+                icon: "figure.cooldown", color: SetlinePalette.blue, title: "Movement baseline",
+                subtitle: "\(coverage.cardsStarted) of 15 cards started · \(model.document.mobility.practising.count) in practice · \(model.document.mobility.history.count) snapshots"
+            ) { MobilityView() }
         }
     }
 
