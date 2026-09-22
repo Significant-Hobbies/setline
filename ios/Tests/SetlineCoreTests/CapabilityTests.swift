@@ -183,8 +183,9 @@ final class CapabilityTests: XCTestCase {
     }
 
     func testFocusAxisBecomesSpecialize() {
-        let document = SetlineDocument.initial
-        let plan = CapabilityEngine.plan(in: document, focusAxes: [.mobility])
+        var document = SetlineDocument.initial
+        document.capability.focusAxes = [.mobility]
+        let plan = CapabilityEngine.plan(in: document)
         let mobility = plan.axes.first { $0.axis == .mobility }
         XCTAssertEqual(mobility?.status, .specialize)
         XCTAssertEqual(mobility?.priorityRank, 1, "A selected focus outranks everything")
@@ -197,9 +198,91 @@ final class CapabilityTests: XCTestCase {
             ExerciseGoal(exerciseName: "Run", metric: .longestDistanceMetres, targetValue: 10_000),
             ExerciseGoal(exerciseName: "Cat-camel", metric: .maxRepetitions, targetValue: 10),
         ]
-        let plan = CapabilityEngine.plan(in: document, focusAxes: [.balanceControl])
+        document.capability.focusAxes = [.balanceControl]
+        let plan = CapabilityEngine.plan(in: document)
         XCTAssertLessThanOrEqual(plan.priorities.count, 2)
         XCTAssertEqual(plan.priorities.first, .balanceControl)
+    }
+
+    // MARK: - Pain blocking
+
+    func testPainReportBlocksProgressionAndMarksResult() {
+        var document = SetlineDocument.initial
+        document.capability.painReports["S-pullups"] = .now
+        let result = CapabilityEngine.resolve(
+            CapabilityAssessmentCatalog.assessment(for: "S-pullups")!,
+            in: document
+        )
+        XCTAssertTrue(result.isPainBlocked)
+        // The axis template must not include the painful movement.
+        let template = CapabilityEngine.axisTemplate(.strength, in: document)
+        XCTAssertFalse(template?.exercises.contains { $0.definitionSlug == "pull-up" } ?? true)
+    }
+
+    // MARK: - Sessions and programmes
+
+    func testAxisTemplateUsesUnmetCheckpoints() {
+        let document = SetlineDocument.initial
+        let template = CapabilityEngine.axisTemplate(.strength, in: document)
+        XCTAssertEqual(template?.name, "Strength practice")
+        XCTAssertEqual(template?.exercises.count, 4, "All four strength checkpoints are unmet")
+        XCTAssertEqual(template?.exercises.first?.definitionSlug, "pull-up")
+    }
+
+    func testAxisTemplateExcludesPassedCheckpoints() {
+        var document = SetlineDocument.initial
+        document.benchmarks.metrics["pullups"] = .init(numbers: ["reps": 15])
+        let template = CapabilityEngine.axisTemplate(.strength, in: document)
+        XCTAssertEqual(template?.exercises.count, 3)
+        XCTAssertFalse(template?.exercises.contains { $0.definitionSlug == "pull-up" } ?? true)
+    }
+
+    func testGenerateProgrammeSchedulesWithinDayBudget() {
+        var document = SetlineDocument.initial
+        document.capability.availableDays = 2
+        let generated = CapabilityEngine.generateProgramme(in: document)
+        XCTAssertEqual(generated?.templates.count, 2, "Two days means two sessions")
+        let programme = generated?.programme
+        XCTAssertEqual(programme?.days.count, 7)
+        XCTAssertEqual(programme?.days.filter { $0.templateID != nil }.count, 2)
+        XCTAssertEqual(programme?.name, "Capability block")
+    }
+
+    func testGenerateProgrammeReusesMobilityPracticeSet() {
+        var document = SetlineDocument.initial
+        document.mobility.practising = ["M10"]
+        let generated = CapabilityEngine.generateProgramme(in: document)
+        XCTAssertTrue(generated?.templates.contains { $0.name == "Mobility practice" } ?? false)
+    }
+
+    // MARK: - Projections
+
+    func testProjectedScoreAddsNextCheckpointOnly() {
+        let document = SetlineDocument.initial
+        XCTAssertEqual(CapabilityEngine.projectedScore(.strength, in: document), 25, "One of four equal-weight checkpoints")
+    }
+
+    func testGoalMarkerTracksGoalRelevantCheckpoints() {
+        var document = SetlineDocument.initial
+        XCTAssertNil(CapabilityEngine.goalProjectedScore(.strength, in: document))
+        document.goals = [
+            ExerciseGoal(exerciseName: "Strict pull-up", metric: .maxRepetitions, targetValue: 15)
+        ]
+        XCTAssertEqual(CapabilityEngine.goalProjectedScore(.strength, in: document), 25)
+    }
+
+    // MARK: - Persistence
+
+    func testDocumentDecodesWithoutCapability() throws {
+        let document = SetlineDocument.initial
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        var json = try JSONSerialization.jsonObject(with: encoder.encode(document)) as! [String: Any]
+        json.removeValue(forKey: "capability")
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(SetlineDocument.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertEqual(decoded.capability, .initial)
     }
 }
 

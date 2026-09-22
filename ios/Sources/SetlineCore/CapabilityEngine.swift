@@ -9,6 +9,23 @@ public struct AssessmentResult: Equatable, Sendable {
     /// missing slot contributes nothing rather than counting as failure.
     public let fraction: Double?
     public let isPassed: Bool
+    /// The user reported pain on this assessment — automatic progression is
+    /// blocked until cleared, regardless of what the evidence shows.
+    public var isPainBlocked: Bool
+
+    public init(
+        assessment: CapabilityAssessment,
+        evidence: CapabilityEvidence,
+        fraction: Double?,
+        isPassed: Bool,
+        isPainBlocked: Bool = false
+    ) {
+        self.assessment = assessment
+        self.evidence = evidence
+        self.fraction = fraction
+        self.isPassed = isPassed
+        self.isPainBlocked = isPainBlocked
+    }
 
     public var isAssessed: Bool { evidence.kind != .missing }
 }
@@ -93,14 +110,17 @@ public enum CapabilityEngine {
         _ assessment: CapabilityAssessment,
         in document: SetlineDocument
     ) -> AssessmentResult {
+        var result: AssessmentResult
         switch assessment.source {
         case let .benchmark(id):
-            return resolveBenchmark(assessment, benchmarkID: id, in: document)
+            result = resolveBenchmark(assessment, benchmarkID: id, in: document)
         case let .mobilityCard(id):
-            return resolveMobilityCard(assessment, cardID: id, in: document)
+            result = resolveMobilityCard(assessment, cardID: id, in: document)
         case let .loggedMetric(exercise, metric):
-            return resolveLoggedMetric(assessment, exercise: exercise, metric: metric, in: document)
+            result = resolveLoggedMetric(assessment, exercise: exercise, metric: metric, in: document)
         }
+        result.isPainBlocked = document.capability.painReports[assessment.id] != nil
+        return result
     }
 
     /// A benchmark is passed when its record reaches the target. When nothing
@@ -251,6 +271,43 @@ public enum CapabilityEngine {
         AbilityAxis.allCases.map { axisScore($0, in: document) }
     }
 
+    /// What the axis scores if its next unmet checkpoint is passed — the
+    /// dashed outline on the dashboard. Returns the current score when the
+    /// axis is already complete.
+    public static func projectedScore(_ axis: AbilityAxis, in document: SetlineDocument) -> Int {
+        let score = axisScore(axis, in: document)
+        guard let next = score.results.first(where: { !$0.isPassed }) else { return score.score }
+        let totalWeight = score.results.reduce(0) { $0 + $1.assessment.weight }
+        guard totalWeight > 0 else { return score.score }
+        let demonstrated = score.demonstrated + next.assessment.weight / totalWeight
+        return Int((min(1, demonstrated) * 100).rounded())
+    }
+
+    /// The score the axis reaches if the checkpoints a user's goals touch are
+    /// passed — the diamond's target marker. A goal counts a checkpoint when
+    /// its exercise matches the checkpoint's practice movement. Nil when no
+    /// goal points at this axis at all.
+    public static func goalProjectedScore(_ axis: AbilityAxis, in document: SetlineDocument) -> Int? {
+        let goalSlugs = Set(document.goals.compactMap { ExerciseCatalogue.match(name: $0.exerciseName)?.slug })
+        guard goalRelevantAxes(in: document).contains(axis) else { return nil }
+        let score = axisScore(axis, in: document)
+        let totalWeight = score.results.reduce(0) { $0 + $1.assessment.weight }
+        guard totalWeight > 0 else { return nil }
+        var demonstrated = score.demonstrated
+        var matched = false
+        for result in score.results where !result.isPassed {
+            guard let slug = result.assessment.practiceSlug, goalSlugs.contains(slug) else { continue }
+            demonstrated += result.assessment.weight / totalWeight
+            matched = true
+        }
+        // A goal on the axis but not on any specific checkpoint still shows a
+        // marker at the next-checkpoint projection.
+        if !matched, let next = score.results.first(where: { !$0.isPassed }) {
+            demonstrated += next.assessment.weight / totalWeight
+        }
+        return Int((min(1, demonstrated) * 100).rounded())
+    }
+
     // MARK: - Prioritization
 
     /// Decides each axis's status and picks one or two priorities.
@@ -258,10 +315,8 @@ public enum CapabilityEngine {
     /// Ranking is deterministic: user-selected focus axes first, then axes a
     /// user's exercise goals point at, then axes still missing a baseline, then
     /// lowest demonstrated share. The lowest score never wins on its own.
-    public static func plan(
-        in document: SetlineDocument,
-        focusAxes: Set<AbilityAxis> = []
-    ) -> CapabilityPlan {
+    public static func plan(in document: SetlineDocument) -> CapabilityPlan {
+        let focusAxes = document.capability.focusAxes
         let scores = profile(in: document)
         let goalAxes = goalRelevantAxes(in: document)
         let plans = scores.map { score -> AxisPlan in
@@ -323,7 +378,9 @@ public enum CapabilityEngine {
             return "A focus you selected; it carries a larger share of training time by choice.\(goalNote)"
         case .build:
             let remaining = score.results.count { !$0.isPassed }
-            return "\(remaining) checkpoint\(remaining == 1 ? "" : "s") unfinished.\(goalNote)"
+            let blocked = score.results.count { $0.isPainBlocked }
+            let painNote = blocked > 0 ? " Pain reported on \(blocked) — progression paused there." : ""
+            return "\(remaining) checkpoint\(remaining == 1 ? "" : "s") unfinished.\(goalNote)\(painNote)"
         }
     }
 
@@ -359,6 +416,121 @@ public enum CapabilityEngine {
             score.assessed == 0 ? 0 : 1,
             score.demonstrated
         )
+    }
+
+    // MARK: - Sessions and programmes
+
+    /// How many practice exercises a generated axis session carries.
+    public static let maximumAxisSessionExercises = 4
+
+    /// A workout template practising one axis's unmet checkpoints, built from
+    /// the catalogue exercises each checkpoint links to. Pain-blocked
+    /// checkpoints are excluded — reported pain stops automatic progression
+    /// for that movement. Mobility reuses the practice set when one exists.
+    ///
+    /// Sets are working sets so qualifying performances feed the evidence
+    /// layer back; mobility-derived exercises stay mobility sets.
+    public static func axisTemplate(
+        _ axis: AbilityAxis,
+        in document: SetlineDocument
+    ) -> WorkoutTemplate? {
+        if axis == .mobility, !document.mobility.practising.isEmpty {
+            return MobilityEngine.practiceTemplate(in: document.mobility)
+        }
+        let exercises = axisScore(axis, in: document).results
+            .filter { !$0.isPassed && !$0.isPainBlocked }
+            .prefix(maximumAxisSessionExercises)
+            .compactMap { result -> Exercise? in
+                guard let slug = result.assessment.practiceSlug,
+                      let definition = ExerciseCatalogue.definition(slug: slug) else { return nil }
+                return Exercise(
+                    name: definition.name,
+                    cue: result.assessment.easierVariation,
+                    sets: axisSets(for: definition),
+                    definitionSlug: definition.slug,
+                    pillars: definition.pillars
+                )
+            }
+        guard !exercises.isEmpty else { return nil }
+        return WorkoutTemplate(
+            name: "\(axis.title) practice",
+            detail: "Unmet checkpoints, easiest first",
+            isBundled: false,
+            exercises: exercises
+        )
+    }
+
+    /// Authored sets for one practice exercise, by activity kind.
+    private static func axisSets(for definition: ExerciseDefinition) -> [PlannedSet] {
+        switch definition.kind {
+        case .cardio:
+            return [PlannedSet(
+                label: "Easy effort",
+                kind: .cardio,
+                target: SetTarget(timeTarget: .init(timeSeconds: 1_200)),
+                rest: RestRange(0),
+                config: .init(stepType: .cardio)
+            )]
+        case .timed:
+            return [PlannedSet(
+                label: "Hold",
+                kind: .timed,
+                target: SetTarget(timeTarget: .init(holdSeconds: 30), perSide: definition.isUnilateral),
+                rest: definition.defaultRest,
+                config: .init(stepType: .mobility)
+            )]
+        default:
+            let set = PlannedSet(
+                label: "Practice",
+                kind: definition.kind,
+                target: SetTarget(
+                    repTarget: .init(repsLow: 8),
+                    load: definition.kind == .strength ? .chooseLoad : nil,
+                    perSide: definition.isUnilateral
+                ),
+                rest: definition.defaultRest,
+                config: .init(stepType: definition.kind == .mobility ? .mobility : .working)
+            )
+            return [set, set]
+        }
+    }
+
+    /// One coordinated programme: at most one session per axis that still has
+    /// unmet, unblocked checkpoints — priorities first — spread across the
+    /// week within the user's day budget. Returns nil when no axis has
+    /// practice work to schedule.
+    ///
+    /// The emitted programme is an ordinary custom programme: authored order
+    /// is preserved and the user keeps full edit and skip rights over it.
+    public static func generateProgramme(
+        in document: SetlineDocument
+    ) -> (programme: CustomProgramme, templates: [WorkoutTemplate])? {
+        let plan = plan(in: document)
+        let ordered = AbilityAxis.allCases.sorted { left, right in
+            let leftRank = plan.priorities.firstIndex(of: left) ?? .max
+            let rightRank = plan.priorities.firstIndex(of: right) ?? .max
+            return leftRank != rightRank ? leftRank < rightRank : false
+        }
+        var templates: [WorkoutTemplate] = []
+        for axis in ordered where templates.count < document.capability.availableDays {
+            guard let template = axisTemplate(axis, in: document) else { continue }
+            templates.append(template)
+        }
+        guard !templates.isEmpty else { return nil }
+        // Spread sessions through the week rather than stacking them.
+        let weekdays = [2, 4, 6, 7, 1, 3, 5]
+        let programme = CustomProgramme(
+            name: "Capability block",
+            weekCount: 4,
+            enabled: true,
+            days: (1...7).map { weekday in
+                ProgrammeDay(
+                    weekday: weekday,
+                    templateID: zip(weekdays, templates).first { $0.0 == weekday }?.1.id
+                )
+            }
+        )
+        return (programme, templates)
     }
 }
 

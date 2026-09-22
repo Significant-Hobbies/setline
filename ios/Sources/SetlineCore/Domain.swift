@@ -718,6 +718,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
     public var goals: [ExerciseGoal]
     public var benchmarks: BenchmarksState
     public var mobility: MobilityState
+    public var capability: CapabilityState
     public var syncState: SyncState
     public var lastSyncedAt: Date?
 
@@ -732,6 +733,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         goals: [ExerciseGoal] = [],
         benchmarks: BenchmarksState = .initial,
         mobility: MobilityState = .initial,
+        capability: CapabilityState = .initial,
         sync: SyncInfo = .init(),
         hubAccountID: String? = nil
     ) {
@@ -744,6 +746,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         self.goals = goals
         self.benchmarks = benchmarks
         self.mobility = mobility
+        self.capability = capability
         self.syncState = sync.syncState
         self.lastSyncedAt = sync.lastSyncedAt
     }
@@ -769,6 +772,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         goals = try container.decodeIfPresent([ExerciseGoal].self, forKey: .goals) ?? []
         benchmarks = try container.decodeIfPresent(BenchmarksState.self, forKey: .benchmarks) ?? .initial
         mobility = try container.decodeIfPresent(MobilityState.self, forKey: .mobility) ?? .initial
+        capability = try container.decodeIfPresent(CapabilityState.self, forKey: .capability) ?? .initial
         syncState = try container.decodeIfPresent(SyncState.self, forKey: .syncState) ?? .deviceOnly
         lastSyncedAt = try container.decodeIfPresent(Date.self, forKey: .lastSyncedAt)
     }

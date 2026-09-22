@@ -800,6 +800,14 @@ public enum ExerciseCatalogue {
             config: .init(defaultRest: RestRange(15), cue: "Bend and straighten the toes; practise lifting the big toe on its own.", goalMetrics: [.maxRepetitions])
         ),
         ExerciseDefinition(
+            slug: "single-leg-balance",
+            name: "Single-leg balance",
+            pillars: [.mobility],
+            kind: .timed,
+            anatomy: .init(primaryMuscles: [.ankles, .glutes], isUnilateral: true),
+            config: .init(defaultRest: RestRange(15), cue: "Stand near stable support; start eyes-open and add difficulty only when steady.", goalMetrics: [.bestHoldSeconds])
+        ),
+        ExerciseDefinition(
             slug: "supported-floor-transfer",
             name: "Supported floor transfer",
             pillars: [.mobility, .strength],

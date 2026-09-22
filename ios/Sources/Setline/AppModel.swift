@@ -470,6 +470,60 @@ final class AppModel {
         document.history.first { $0.templateName == "Mobility practice" }
     }
 
+    // MARK: - Capability
+
+    /// Marks or clears a user-selected Specialize focus for an axis.
+    func toggleCapabilityFocus(_ axis: AbilityAxis) async {
+        await mutate { document in
+            if document.capability.focusAxes.contains(axis) {
+                document.capability.focusAxes.remove(axis)
+            } else {
+                document.capability.focusAxes.insert(axis)
+            }
+        }
+    }
+
+    /// Reported pain blocks automatic progression and removes the movement
+    /// from generated programmes until cleared.
+    func setCapabilityPain(_ reported: Bool, assessmentID: String) async {
+        await mutate { document in
+            if reported {
+                document.capability.painReports[assessmentID] = .now
+            } else {
+                document.capability.painReports.removeValue(forKey: assessmentID)
+            }
+        }
+    }
+
+    func setCapabilityDays(_ days: Int) async {
+        await mutate { $0.capability.availableDays = days }
+    }
+
+    /// Generates the coordinated programme and installs it as the custom
+    /// programme. The generated templates are ordinary templates — the user
+    /// keeps full edit and skip rights over them.
+    @discardableResult
+    func applyCapabilityProgramme() async -> Bool {
+        guard let generated = CapabilityEngine.generateProgramme(in: document) else { return false }
+        await mutate { document in
+            document.templates.append(contentsOf: generated.templates)
+            document.programme = .custom(generated.programme)
+        }
+        message = "Capability block scheduled on \(generated.templates.count) day\(generated.templates.count == 1 ? "" : "s")."
+        return true
+    }
+
+    /// Starts a session practising one axis's unmet checkpoints.
+    @discardableResult
+    func startAxisSession(_ axis: AbilityAxis) async -> Bool {
+        guard document.activeSession == nil,
+              let template = CapabilityEngine.axisTemplate(axis, in: document)
+        else { return false }
+        await startWorkout(template)
+        selectedTab = 0
+        return true
+    }
+
     func clearMobilityRecords() async {
         let committed = await mutate { document in
             document.mobility.cards = [:]

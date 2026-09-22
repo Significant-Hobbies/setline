@@ -514,4 +514,32 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["SETUP"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["SYMPTOMS"].exists)
     }
+
+    func testCapabilityProfileShowsAxesAndPriorities() {
+        // The persistent-fixture lane isolates the store and disables the
+        // mirror connection, so this test does not depend on the in-flight
+        // sync refactor's simulator behaviour.
+        let app = launch(["--ui-persistent-fixture", UUID().uuidString])
+
+        app.tabBars.buttons["You"].tap()
+        XCTAssertTrue(app.staticTexts["CAPABILITY"].waitForExistence(timeout: 3))
+        app.staticTexts["Capability profile"].tap()
+
+        // The dashboard names every axis and the priorities section, even on a
+        // blank profile where everything is unassessed.
+        XCTAssertTrue(app.staticTexts["PRIORITIES"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["AXES"].exists)
+        for axis in ["Strength", "Endurance", "Mobility", "Balance & control"] {
+            XCTAssertTrue(text(app, containing: axis).exists, "\(axis) axis missing")
+        }
+
+        // Drill into an axis to see its checkpoints.
+        let strength = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS[c] %@", "Strength")
+        ).firstMatch
+        XCTAssertTrue(strength.waitForExistence(timeout: 3))
+        strength.tap()
+        XCTAssertTrue(app.staticTexts["CHECKPOINTS"].waitForExistence(timeout: 3))
+        XCTAssertTrue(text(app, containing: "Strict pull-ups").exists)
+    }
 }

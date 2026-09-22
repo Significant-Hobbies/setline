@@ -92,6 +92,9 @@ public struct CapabilityAssessment: Identifiable, Equatable, Sendable {
     public let targetField: String?
     /// For logged-metric sources: the recorded value that clears the checkpoint.
     public let threshold: Double?
+    /// The exercise that practises this checkpoint — links into
+    /// `ExerciseCatalogue` so practice is a real movement, not text.
+    public let practiceSlug: String?
     /// Whether a qualifying logged performance may satisfy this assessment
     /// without a separate test. False for paired criteria — a 10 km distance
     /// alone cannot satisfy a distance-and-time checkpoint.
@@ -111,6 +114,7 @@ public struct CapabilityAssessment: Identifiable, Equatable, Sendable {
         evidenceField: String? = nil,
         targetField: String? = nil,
         threshold: Double? = nil,
+        practiceSlug: String? = nil,
         unlocksFromHistory: Bool = false
     ) {
         self.id = id
@@ -126,6 +130,7 @@ public struct CapabilityAssessment: Identifiable, Equatable, Sendable {
         self.evidenceField = evidenceField
         self.targetField = targetField
         self.threshold = threshold
+        self.practiceSlug = practiceSlug
         self.unlocksFromHistory = unlocksFromHistory
     }
 }
@@ -176,6 +181,7 @@ public enum CapabilityAssessmentCatalog {
             source: .benchmark("pullups"),
             evidenceField: "reps",
             targetField: "reps",
+            practiceSlug: "pull-up",
             unlocksFromHistory: true
         ),
         CapabilityAssessment(
@@ -189,7 +195,8 @@ public enum CapabilityAssessmentCatalog {
             nextProgression: "Raise the load-to-bodyweight target.",
             source: .benchmark("bench"),
             evidenceField: "load",
-            targetField: "ratio"
+            targetField: "ratio",
+            practiceSlug: "bench-press",
         ),
         CapabilityAssessment(
             id: "S-split",
@@ -202,7 +209,8 @@ public enum CapabilityAssessmentCatalog {
             nextProgression: "Raise the load or rep target.",
             source: .benchmark("split"),
             evidenceField: "load",
-            targetField: "ratio"
+            targetField: "ratio",
+            practiceSlug: "supported-bulgarian-split-squat",
         ),
         CapabilityAssessment(
             id: "S-carry",
@@ -215,7 +223,8 @@ public enum CapabilityAssessmentCatalog {
             nextProgression: "Raise load or distance.",
             source: .benchmark("carry"),
             evidenceField: "load",
-            targetField: "ratio"
+            targetField: "ratio",
+            practiceSlug: "farmer-carry",
         ),
 
         // Endurance — the two endurance benchmarks.
@@ -230,7 +239,8 @@ public enum CapabilityAssessmentCatalog {
             nextProgression: "A faster target time or a longer distance.",
             source: .benchmark("run"),
             evidenceField: "distance",
-            targetField: "distance"
+            targetField: "distance",
+            practiceSlug: "run",
         ),
         CapabilityAssessment(
             id: "E-swim",
@@ -258,7 +268,8 @@ public enum CapabilityAssessmentCatalog {
             nextProgression: "Raise the seconds target or reduce support.",
             source: .benchmark("balance"),
             evidenceField: nil,
-            targetField: "seconds"
+            targetField: "seconds",
+            practiceSlug: "single-leg-balance",
         ),
         CapabilityAssessment(
             id: "B-jump",
@@ -271,7 +282,8 @@ public enum CapabilityAssessmentCatalog {
             nextProgression: "Raise the distance target.",
             source: .benchmark("jump"),
             evidenceField: "distance",
-            targetField: "distance"
+            targetField: "distance",
+            practiceSlug: "box-jump",
         ),
         CapabilityAssessment(
             id: "B-agility",
@@ -304,7 +316,8 @@ public enum CapabilityAssessmentCatalog {
                 acceptableEvidence: [.measured],
                 easierVariation: card.easyPractice,
                 nextProgression: card.progressionOptions.first ?? "Maintain under the same setup.",
-                source: .mobilityCard(card.id)
+                source: .mobilityCard(card.id),
+                practiceSlug: card.practiceSlugs.first
             )
         }
 
@@ -319,5 +332,37 @@ public enum CapabilityAssessmentCatalog {
 
     public static func assessments(for axis: AbilityAxis) -> [CapabilityAssessment] {
         all.filter { $0.axis == axis }
+    }
+}
+
+// MARK: - User-controlled state
+
+/// The only capability state the document stores: what the user reported or
+/// chose. Assessment results themselves are always derived — they live in
+/// history, `BenchmarksState`, and `MobilityState`, never duplicated here.
+public struct CapabilityState: Codable, Equatable, Sendable {
+    /// Assessments the user reported pain on, keyed by assessment id. Pain
+    /// blocks automatic progression and removes the movement from generated
+    /// programmes until cleared.
+    public var painReports: [String: Date]
+    /// Axes the user selected as ambitious focus — the Specialize input.
+    public var focusAxes: Set<AbilityAxis>
+    /// How many training days per week a generated programme may use.
+    public var availableDays: Int
+
+    public init(
+        painReports: [String: Date] = [:],
+        focusAxes: Set<AbilityAxis> = [],
+        availableDays: Int = 3
+    ) {
+        self.painReports = painReports
+        self.focusAxes = focusAxes
+        self.availableDays = min(7, max(1, availableDays))
+    }
+
+    public static var initial: CapabilityState { CapabilityState() }
+
+    public func painReported(on assessmentID: String) -> Bool {
+        painReports[assessmentID] != nil
     }
 }

@@ -23,6 +23,7 @@ struct SettingsView: View {
                 if recoveryOnly {
                     Button("Try opening again") { Task { await model.load() } }
                 } else {
+                    capabilitySection
                     benchmarksSection
                     mobilitySection
                     storageSection
@@ -180,6 +181,39 @@ struct SettingsView: View {
                 Text("Finish the active workout first. Setline never shares a workout you are still doing.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// The four-axis capability profile: scores, priorities, and the
+    /// coordinated programme. Lives inside "You" with the other assessment
+    /// surfaces rather than competing with the daily workout flow.
+    private var capabilitySection: some View {
+        settingsSection("Capability") {
+            NavigationLink {
+                CapabilityView()
+            } label: {
+                HStack {
+                    Image(systemName: "diamond")
+                        .font(.title2)
+                        .frame(width: 44, height: 44)
+                        .background(SetlinePalette.coral)
+                        .clipShape(RoundedRectangle(cornerRadius: 9))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Capability profile")
+                            .font(.headline)
+                        let plan = CapabilityEngine.plan(in: model.document)
+                        let priorities = plan.priorities.map(\.title).joined(separator: " + ")
+                        Text(priorities.isEmpty ? "Four axes, one programme" : "Priorities: \(priorities)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(minHeight: 48)
             }
         }
     }
