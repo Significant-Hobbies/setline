@@ -50,9 +50,10 @@ is not claimed as shipped. The versioned JSON export remains the backup.
   `fix/mirror-timestamp-compatibility` lets an authorized pull commit after a
   mid-flight account switch) and shared view components extracted in
   `762540f`. `pnpm run check` and `pnpm quality:native` both pass: 216 core,
-  32 app, 21 UI tests, Release build, 81.41% coverage. Remaining caveat:
-  project.yml resolves PersonalSyncKit from a local checkout — repin to a
-  pushed SHA before hosted CI can build this.
+  32 app, 21 UI tests, Release build, 81.40% coverage. Build 11 prepared
+  (`3cb2fa3`, `06117ed`): PersonalSyncKit is repinned to the pushed
+  `significanthobbies` SHA `2272048` and the resolved file is committed,
+  so hosted CI and archive builds resolve the kit from the remote.
 
 - **2026-09-09** — exact workout-relaunch source `af7071d` passed hosted CI
   34334618829 (239 tests, 18 UI, existing credential skip, Release and 81.8057%
