@@ -177,7 +177,6 @@
 		D0903001D1E060A30E0E771A /* PersistentUIFixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentUIFixtureTests.swift; sourceTree = "<group>"; };
 		D10F2E3DD7E54944ECD85D08 /* MobilityEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobilityEngine.swift; sourceTree = "<group>"; };
 		D638AFB5C0FF38C44F3DE880 /* SimulatorICloudSignInTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorICloudSignInTests.swift; sourceTree = "<group>"; };
-		DC014D0F853C07A350FC9993 /* significanthobbies */ = {isa = PBXFileReference; lastKnownFileType = folder; name = significanthobbies; path = ../../significanthobbies; sourceTree = SOURCE_ROOT; };
 		DFAE6EB21BC26F97140F4FEE /* SecondaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryViews.swift; sourceTree = "<group>"; };
 		E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineOnboardingTests.swift; sourceTree = "<group>"; };
 		E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineLocalSaveTests.swift; sourceTree = "<group>"; };
@@ -274,7 +273,6 @@
 		401800249844F0B5D6E836D3 = {
 			isa = PBXGroup;
 			children = (
-				660B2CE7DED7EB139E827D0D /* Packages */,
 				28BB78622912024E69F708EC /* Setline */,
 				5745423AFF1E15935A399E22 /* SetlineCore */,
 				E920810526DCE73641A751A7 /* SetlineCoreTests */,
@@ -307,14 +305,6 @@
 			);
 			name = SetlineCore;
 			path = Sources/SetlineCore;
-			sourceTree = "<group>";
-		};
-		660B2CE7DED7EB139E827D0D /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				DC014D0F853C07A350FC9993 /* significanthobbies */,
-			);
-			name = Packages;
 			sourceTree = "<group>";
 		};
 		7F11BB8EB61A5F8FAC4C3B95 /* Sync */ = {
@@ -506,7 +496,7 @@
 			mainGroup = 401800249844F0B5D6E836D3;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				7435D947F8BC80D3737B0241 /* XCLocalSwiftPackageReference "../../significanthobbies" */,
+				C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C93C5A86494CB1CE017F1623 /* Products */;
@@ -817,7 +807,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 8F7LXHTJZR;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -886,7 +876,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 8F7LXHTJZR;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1022,20 +1012,26 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		7435D947F8BC80D3737B0241 /* XCLocalSwiftPackageReference "../../significanthobbies" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../significanthobbies;
+/* Begin XCRemoteSwiftPackageReference section */
+		C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Significant-Hobbies/significanthobbies.git";
+			requirement = {
+				kind = revision;
+				revision = 227204868649ced6a3c37f0b0a3e51105b21f14f;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		6211F2538331C41ABA958E8E /* PersonalSyncKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */;
 			productName = PersonalSyncKit;
 		};
 		842AC5390DAF651CB9996773 /* PersonalSyncKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */;
 			productName = PersonalSyncKit;
 		};
 /* End XCSwiftPackageProductDependency section */
