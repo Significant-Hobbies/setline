@@ -495,6 +495,14 @@ final class AppModel {
         }
     }
 
+    /// Records or clears a difficulty verdict on a checkpoint. Feedback
+    /// adjusts one variable in generated sessions — never two.
+    func setCapabilityFeedback(_ feedback: CheckpointFeedback?, assessmentID: String) async {
+        await mutate { document in
+            document.capability.feedback[assessmentID] = feedback
+        }
+    }
+
     func setCapabilityDays(_ days: Int) async {
         await mutate { $0.capability.availableDays = days }
     }

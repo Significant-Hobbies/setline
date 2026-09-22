@@ -174,10 +174,10 @@ public enum CapabilityAssessmentCatalog {
             axis: .strength,
             title: "Strict pull-ups",
             setup: "Straight-arm hang, chin above the bar, controlled lowering. No swinging or kipping.",
-            passingCriteria: "Meet your pull-up target (default 15 clean repetitions).",
+            passingCriteria: "15 clean repetitions. A fixed curriculum checkpoint; your editable benchmark target is tracked separately.",
             acceptableEvidence: [.measured, .selfReported],
             easierVariation: "Band-assisted or bodyweight-row practice.",
-            nextProgression: "Raise the rep target or add load.",
+            nextProgression: "More clean reps, then added load.",
             source: .benchmark("pullups"),
             evidenceField: "reps",
             targetField: "reps",
@@ -189,10 +189,10 @@ public enum CapabilityAssessmentCatalog {
             axis: .strength,
             title: "Bench press",
             setup: "Consistent, controlled range with safeties or a spotter; load includes the bar.",
-            passingCriteria: "An actual clean lift at or above your target load-to-bodyweight ratio. An estimated 1RM is planning evidence, not a passed lift.",
+            passingCriteria: "A clean lift at 1.25\u{00D7} bodyweight. An estimated 1RM is planning evidence, not a passed lift.",
             acceptableEvidence: [.measured, .estimated, .selfReported],
             easierVariation: "Lighter bench work or a controlled press-up progression.",
-            nextProgression: "Raise the load-to-bodyweight target.",
+            nextProgression: "Heavier load at the same clean range.",
             source: .benchmark("bench"),
             evidenceField: "load",
             targetField: "ratio",
@@ -203,10 +203,10 @@ public enum CapabilityAssessmentCatalog {
             axis: .strength,
             title: "Bulgarian split squat",
             setup: "Same stance and rear-foot support each time; controlled depth; weight is per hand.",
-            passingCriteria: "Meet the external-load and reps-per-leg targets on both sides.",
+            passingCriteria: "0.5\u{00D7} bodyweight total external load for 8 repetitions per leg, both sides.",
             acceptableEvidence: [.measured, .selfReported],
             easierVariation: "Bodyweight split squats or a supported stance.",
-            nextProgression: "Raise the load or rep target.",
+            nextProgression: "More load or more reps per leg.",
             source: .benchmark("split"),
             evidenceField: "load",
             targetField: "ratio",
@@ -217,7 +217,7 @@ public enum CapabilityAssessmentCatalog {
             axis: .strength,
             title: "Farmer carry",
             setup: "One weight in each hand, continuous walk, no straps and no put-downs.",
-            passingCriteria: "Meet the load-per-hand and distance targets.",
+            passingCriteria: "0.5\u{00D7} bodyweight per hand for 50 metres without a put-down.",
             acceptableEvidence: [.measured, .selfReported],
             easierVariation: "Lighter loads over the same route.",
             nextProgression: "Raise load or distance.",
@@ -233,10 +233,10 @@ public enum CapabilityAssessmentCatalog {
             axis: .endurance,
             title: "Continuous 10 km run",
             setup: "Flat, measured course; elapsed time without pausing the clock.",
-            passingCriteria: "Complete the target distance within the target time, continuously. Shorter efforts are not extrapolated.",
+            passingCriteria: "Continuous 10 km in under 50 minutes. Shorter efforts are not extrapolated.",
             acceptableEvidence: [.measured, .selfReported],
             easierVariation: "Shorter continuous runs or intervals at an easy pace.",
-            nextProgression: "A faster target time or a longer distance.",
+            nextProgression: "A faster 10 km or a longer continuous run.",
             source: .benchmark("run"),
             evidenceField: "distance",
             targetField: "distance",
@@ -247,10 +247,10 @@ public enum CapabilityAssessmentCatalog {
             axis: .endurance,
             title: "Water competence",
             setup: "Supervised pool with help available.",
-            passingCriteria: "Continuous swim distance plus treading time and basic water-safety skills, per the benchmark protocol.",
+            passingCriteria: "400 m continuous swim plus 2 minutes treading and basic water-safety skills.",
             acceptableEvidence: [.measured, .selfReported],
             easierVariation: "Shorter swims and supported treading practice.",
-            nextProgression: "Raise distance or treading targets.",
+            nextProgression: "A longer continuous swim or more treading.",
             source: .benchmark("swim"),
             evidenceField: "distance",
             targetField: "distance"
@@ -262,10 +262,10 @@ public enum CapabilityAssessmentCatalog {
             axis: .balanceControl,
             title: "Eyes-closed balance",
             setup: "Single-leg stance near stable support, eyes closed, best of three per leg.",
-            passingCriteria: "Meet the seconds target on each leg, eyes closed. Eyes-open results do not qualify.",
+            passingCriteria: "30 seconds per leg, eyes closed. Eyes-open results do not qualify.",
             acceptableEvidence: [.measured, .selfReported],
             easierVariation: "Eyes-open single-leg stance with a fingertip on support.",
-            nextProgression: "Raise the seconds target or reduce support.",
+            nextProgression: "Longer holds or less support.",
             source: .benchmark("balance"),
             evidenceField: nil,
             targetField: "seconds",
@@ -276,10 +276,10 @@ public enum CapabilityAssessmentCatalog {
             axis: .balanceControl,
             title: "Standing broad jump",
             setup: "Two-foot take-off, controlled landing; best of three consistent attempts.",
-            passingCriteria: "Meet the distance target with a controlled landing.",
+            passingCriteria: "2.3 metres with a controlled landing.",
             acceptableEvidence: [.measured, .selfReported],
             easierVariation: "Smaller jumps with an emphasis on a still, balanced landing.",
-            nextProgression: "Raise the distance target.",
+            nextProgression: "A longer jump with the same controlled landing.",
             source: .benchmark("jump"),
             evidenceField: "distance",
             targetField: "distance",
@@ -290,10 +290,10 @@ public enum CapabilityAssessmentCatalog {
             axis: .balanceControl,
             title: "Change of direction",
             setup: "5–10–5 shuttle on a consistent surface and timing method.",
-            passingCriteria: "Finish at or under the target shuttle time.",
+            passingCriteria: "5.5 seconds or faster on the 5\u{2013}10\u{2013}5 shuttle.",
             acceptableEvidence: [.measured, .selfReported],
             easierVariation: "Sub-maximal shuttles to build sprint tolerance first.",
-            nextProgression: "Lower the target time.",
+            nextProgression: "A faster shuttle.",
             source: .benchmark("agility"),
             evidenceField: "seconds",
             targetField: "seconds"
@@ -337,6 +337,21 @@ public enum CapabilityAssessmentCatalog {
 
 // MARK: - User-controlled state
 
+/// Difficulty feedback on one checkpoint. "Too hard" drops one variable back
+/// toward the easier variation; "too easy" points at the next progression.
+/// Either stays attached until the user changes it or the checkpoint passes.
+public enum CheckpointFeedback: String, Codable, Sendable {
+    case tooHard
+    case tooEasy
+
+    public var title: String {
+        switch self {
+        case .tooHard: "Too hard"
+        case .tooEasy: "Too easy"
+        }
+    }
+}
+
 /// The only capability state the document stores: what the user reported or
 /// chose. Assessment results themselves are always derived — they live in
 /// history, `BenchmarksState`, and `MobilityState`, never duplicated here.
@@ -345,6 +360,8 @@ public struct CapabilityState: Codable, Equatable, Sendable {
     /// blocks automatic progression and removes the movement from generated
     /// programmes until cleared.
     public var painReports: [String: Date]
+    /// Difficulty feedback per checkpoint, keyed by assessment id.
+    public var feedback: [String: CheckpointFeedback]
     /// Axes the user selected as ambitious focus — the Specialize input.
     public var focusAxes: Set<AbilityAxis>
     /// How many training days per week a generated programme may use.
@@ -352,12 +369,22 @@ public struct CapabilityState: Codable, Equatable, Sendable {
 
     public init(
         painReports: [String: Date] = [:],
+        feedback: [String: CheckpointFeedback] = [:],
         focusAxes: Set<AbilityAxis> = [],
         availableDays: Int = 3
     ) {
         self.painReports = painReports
+        self.feedback = feedback
         self.focusAxes = focusAxes
         self.availableDays = min(7, max(1, availableDays))
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        painReports = try container.decodeIfPresent([String: Date].self, forKey: .painReports) ?? [:]
+        feedback = try container.decodeIfPresent([String: CheckpointFeedback].self, forKey: .feedback) ?? [:]
+        focusAxes = try container.decodeIfPresent(Set<AbilityAxis>.self, forKey: .focusAxes) ?? []
+        availableDays = try container.decodeIfPresent(Int.self, forKey: .availableDays) ?? 3
     }
 
     public static var initial: CapabilityState { CapabilityState() }
@@ -365,4 +392,48 @@ public struct CapabilityState: Codable, Equatable, Sendable {
     public func painReported(on assessmentID: String) -> Bool {
         painReports[assessmentID] != nil
     }
+}
+
+// MARK: - Population references
+
+/// A disclosed population comparison. Every field is required: who was
+/// measured, under which protocol, which demographic grouping applies, and
+/// where the number comes from. Absent any one of those, the UI shows
+/// "Benchmark unavailable" rather than a number.
+public struct PopulationReference: Equatable, Sendable {
+    public let population: String
+    public let protocolText: String
+    public let grouping: String
+    public let source: String
+    /// The comparison in words — deliberately not a percentile claim.
+    public let finding: String
+
+    public init(population: String, protocolText: String, grouping: String, source: String, finding: String) {
+        self.population = population
+        self.protocolText = protocolText
+        self.grouping = grouping
+        self.source = source
+        self.finding = finding
+    }
+}
+
+/// The reference registry, keyed by capability assessment id. Sparse on
+/// purpose: a comparison exists only where the published protocol matches the
+/// app's assessment exactly. Everything else is unavailable, not estimated.
+public enum PopulationComparisons {
+    public static func reference(for assessmentID: String) -> PopulationReference? {
+        references[assessmentID]
+    }
+
+    private static let references: [String: PopulationReference] = [
+        // Knee-to-wall (M10): the weight-bearing lunge test has published
+        // reliability and validity evidence, and the app protocol matches it.
+        "M10": PopulationReference(
+            population: "Healthy adults",
+            protocolText: "Weight-bearing lunge: knee touches the wall, heel planted, toe-to-wall distance measured.",
+            grouping: "All adults; distance scales modestly with limb length, not age.",
+            source: "Bennell et al., 1998 — reliability and validity of the weight-bearing ankle lunge measure.",
+            finding: "Roughly 9–10 cm is a common functional result; less than that often limits squat and stair mechanics."
+        ),
+    ]
 }

@@ -12,19 +12,23 @@ public struct AssessmentResult: Equatable, Sendable {
     /// The user reported pain on this assessment — automatic progression is
     /// blocked until cleared, regardless of what the evidence shows.
     public var isPainBlocked: Bool
+    /// The user's difficulty verdict, if any.
+    public var feedback: CheckpointFeedback?
 
     public init(
         assessment: CapabilityAssessment,
         evidence: CapabilityEvidence,
         fraction: Double?,
         isPassed: Bool,
-        isPainBlocked: Bool = false
+        isPainBlocked: Bool = false,
+        feedback: CheckpointFeedback? = nil
     ) {
         self.assessment = assessment
         self.evidence = evidence
         self.fraction = fraction
         self.isPassed = isPassed
         self.isPainBlocked = isPainBlocked
+        self.feedback = feedback
     }
 
     public var isAssessed: Bool { evidence.kind != .missing }
@@ -79,6 +83,8 @@ public struct AxisPlan: Equatable, Sendable {
     public let rationale: String
     /// The first unmet checkpoint in curriculum order.
     public let nextCheckpoint: CapabilityAssessment?
+    /// For a maintained axis, when to verify it again. Nil otherwise.
+    public let verificationDue: Date?
 }
 
 /// The whole decision: per-axis plans plus the one or two selected priorities.
@@ -101,6 +107,10 @@ public enum CapabilityEngine {
     /// A priority selection never covers more than two axes at once.
     public static let maximumPriorities = 2
 
+    /// How often a maintained axis asks for verification — four weeks is a
+    /// deliberately conservative cadence, shown as guidance.
+    public static let maintenanceVerificationInterval: TimeInterval = 28 * 86_400
+
     // MARK: - Evidence resolution
 
     /// Resolves one assessment against the document's existing state. Reads
@@ -120,6 +130,7 @@ public enum CapabilityEngine {
             result = resolveLoggedMetric(assessment, exercise: exercise, metric: metric, in: document)
         }
         result.isPainBlocked = document.capability.painReports[assessment.id] != nil
+        result.feedback = document.capability.feedback[assessment.id]
         return result
     }
 
@@ -132,7 +143,13 @@ public enum CapabilityEngine {
         in document: SetlineDocument
     ) -> AssessmentResult {
         let benchmarks = document.benchmarks
-        let assessed = BenchmarkEngine.assess(benchmarkID, state: benchmarks)
+        // The curriculum judges against the authored default targets, not the
+        // user's editable ones — a checkpoint must mean the same thing for
+        // everyone or the 0–100 score stops meaning anything. User targets
+        // still drive the benchmark scorecard itself and the goal markers.
+        var curriculumState = benchmarks
+        curriculumState.targets = BenchmarkCatalog.defaultTargets
+        let assessed = BenchmarkEngine.assess(benchmarkID, state: curriculumState)
         if assessed.recorded {
             let state = benchmarks.metrics[benchmarkID]
             let kind: EvidenceKind = (state?.reported ?? false) ? .selfReported : .measured
@@ -164,8 +181,7 @@ public enum CapabilityEngine {
             )
         }
         let target = assessment.targetField.flatMap {
-            benchmarks.targets[benchmarkID]?.value($0)
-                ?? BenchmarkCatalog.defaultTargets[benchmarkID]?.value($0)
+            BenchmarkCatalog.defaultTargets[benchmarkID]?.value($0)
         }
         let unlocked = assessment.unlocksFromHistory && (target.map { value >= $0 } ?? false)
         return AssessmentResult(
@@ -326,7 +342,10 @@ public enum CapabilityEngine {
                 status: status,
                 priorityRank: nil,
                 rationale: rationale(for: score, status: status, goalAxes: goalAxes),
-                nextCheckpoint: score.results.first { !$0.isPassed }?.assessment
+                nextCheckpoint: score.results.first { !$0.isPassed }?.assessment,
+                verificationDue: status == .maintain
+                    ? score.lastVerified?.addingTimeInterval(maintenanceVerificationInterval)
+                    : nil
             )
         }
         let priorities = selectPriorities(from: scores, focusAxes: focusAxes, goalAxes: goalAxes)
@@ -337,7 +356,8 @@ public enum CapabilityEngine {
                     status: plan.status,
                     priorityRank: priorities.firstIndex(of: plan.axis).map { $0 + 1 },
                     rationale: plan.rationale,
-                    nextCheckpoint: plan.nextCheckpoint
+                    nextCheckpoint: plan.nextCheckpoint,
+                    verificationDue: plan.verificationDue
                 )
             },
             priorities: priorities
@@ -443,10 +463,17 @@ public enum CapabilityEngine {
             .compactMap { result -> Exercise? in
                 guard let slug = result.assessment.practiceSlug,
                       let definition = ExerciseCatalogue.definition(slug: slug) else { return nil }
+                // "Too hard" starts below the checkpoint at the easier
+                // variation; "too easy" points at the next progression. Either
+                // way the cue says why this variation was selected.
+                let cue = switch result.feedback {
+                case .tooEasy: result.assessment.nextProgression
+                default: result.assessment.easierVariation
+                }
                 return Exercise(
                     name: definition.name,
-                    cue: result.assessment.easierVariation,
-                    sets: axisSets(for: definition),
+                    cue: cue,
+                    sets: axisSets(for: definition, feedback: result.feedback),
                     definitionSlug: definition.slug,
                     pillars: definition.pillars
                 )
@@ -460,31 +487,51 @@ public enum CapabilityEngine {
         )
     }
 
-    /// Authored sets for one practice exercise, by activity kind.
-    private static func axisSets(for definition: ExerciseDefinition) -> [PlannedSet] {
+    /// Authored sets for one practice exercise, by activity kind. Feedback
+    /// adjusts exactly one variable — duration for timed work, repetitions for
+    /// everything else — never two at once.
+    private static func axisSets(
+        for definition: ExerciseDefinition,
+        feedback: CheckpointFeedback?
+    ) -> [PlannedSet] {
         switch definition.kind {
         case .cardio:
+            let seconds: Int = switch feedback {
+            case .tooHard: 600
+            case .tooEasy: 1_800
+            default: 1_200
+            }
             return [PlannedSet(
                 label: "Easy effort",
                 kind: .cardio,
-                target: SetTarget(timeTarget: .init(timeSeconds: 1_200)),
+                target: SetTarget(timeTarget: .init(timeSeconds: seconds)),
                 rest: RestRange(0),
                 config: .init(stepType: .cardio)
             )]
         case .timed:
+            let hold: Int = switch feedback {
+            case .tooHard: 15
+            case .tooEasy: 45
+            default: 30
+            }
             return [PlannedSet(
                 label: "Hold",
                 kind: .timed,
-                target: SetTarget(timeTarget: .init(holdSeconds: 30), perSide: definition.isUnilateral),
+                target: SetTarget(timeTarget: .init(holdSeconds: hold), perSide: definition.isUnilateral),
                 rest: definition.defaultRest,
                 config: .init(stepType: .mobility)
             )]
         default:
+            let reps: Int = switch feedback {
+            case .tooHard: 5
+            case .tooEasy: 12
+            default: 8
+            }
             let set = PlannedSet(
                 label: "Practice",
                 kind: definition.kind,
                 target: SetTarget(
-                    repTarget: .init(repsLow: 8),
+                    repTarget: .init(repsLow: reps),
                     load: definition.kind == .strength ? .chooseLoad : nil,
                     perSide: definition.isUnilateral
                 ),

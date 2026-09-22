@@ -271,6 +271,71 @@ final class CapabilityTests: XCTestCase {
         XCTAssertEqual(CapabilityEngine.goalProjectedScore(.strength, in: document), 25)
     }
 
+    func testUserEditedTargetsCannotInflateTheScore() {
+        var document = SetlineDocument.initial
+        // The user lowers their benchmark target to 1 rep and records 3 — the
+        // scorecard reaches it, but the curriculum checkpoint stays fixed at
+        // the authored 15.
+        document.benchmarks.targets["pullups"] = .init(values: ["reps": 1])
+        document.benchmarks.metrics["pullups"] = .init(numbers: ["reps": 3])
+        let result = CapabilityEngine.resolve(
+            CapabilityAssessmentCatalog.assessment(for: "S-pullups")!,
+            in: document
+        )
+        XCTAssertTrue(BenchmarkEngine.assess("pullups", state: document.benchmarks).reached, "User target is reached")
+        XCTAssertFalse(result.isPassed, "Curriculum checkpoint is not")
+        XCTAssertEqual(CapabilityEngine.axisScore(.strength, in: document).score, 0)
+    }
+
+    // MARK: - Feedback
+
+    func testTooHardRegressesOneVariable() {
+        var document = SetlineDocument.initial
+        document.capability.feedback["S-pullups"] = .tooHard
+        let template = CapabilityEngine.axisTemplate(.strength, in: document)
+        let pullups = template?.exercises.first { $0.definitionSlug == "pull-up" }
+        XCTAssertEqual(pullups?.sets.first?.target.repsLow, 5, "Too hard drops reps 8 → 5, nothing else")
+        XCTAssertEqual(pullups?.cue, "Band-assisted or bodyweight-row practice.", "Easier variation is the cue")
+    }
+
+    func testTooEasyPointsAtNextProgression() {
+        var document = SetlineDocument.initial
+        document.capability.feedback["S-pullups"] = .tooEasy
+        let template = CapabilityEngine.axisTemplate(.strength, in: document)
+        let pullups = template?.exercises.first { $0.definitionSlug == "pull-up" }
+        XCTAssertEqual(pullups?.sets.first?.target.repsLow, 12)
+        XCTAssertEqual(pullups?.cue, "More clean reps, then added load.")
+    }
+
+    func testMaintainAxisGetsVerificationDate() {
+        var document = SetlineDocument.initial
+        document.benchmarks.metrics["run"] = .init(
+            numbers: ["distance": 10],
+            texts: ["time": "45:00", "qualifier": "Exact time"],
+            flags: ["continuous": true]
+        )
+        document.benchmarks.metrics["swim"] = .init(
+            numbers: ["distance": 400, "tread": 120],
+            flags: ["basics": true]
+        )
+        document.benchmarks.updated["run"] = Date(timeIntervalSince1970: 1_000_000)
+        document.benchmarks.updated["swim"] = Date(timeIntervalSince1970: 1_000_000)
+        let plan = CapabilityEngine.plan(in: document)
+        let endurance = plan.axes.first { $0.axis == .endurance }
+        XCTAssertEqual(endurance?.status, .maintain)
+        XCTAssertEqual(
+            endurance?.verificationDue?.timeIntervalSince1970,
+            1_000_000 + CapabilityEngine.maintenanceVerificationInterval
+        )
+    }
+
+    // MARK: - Population references
+
+    func testPopulationReferenceDisclosedOrUnavailable() {
+        XCTAssertNotNil(PopulationComparisons.reference(for: "M10"), "Knee-to-wall has an exact-protocol reference")
+        XCTAssertNil(PopulationComparisons.reference(for: "S-pullups"), "No pull-up dataset → unavailable, never extrapolated")
+    }
+
     // MARK: - Persistence
 
     func testDocumentDecodesWithoutCapability() throws {

@@ -313,6 +313,11 @@ struct CapabilityAxisView: View {
                 Text("Next checkpoint: \(next.title)")
                     .font(.footnote.weight(.semibold))
             }
+            if let due = plan?.verificationDue {
+                Text("Verify again by \(due.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+            }
         }
     }
 
@@ -381,6 +386,8 @@ struct CapabilityCheckpointRow: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+            feedbackRow
+            populationLine
             painToggle
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -405,6 +412,53 @@ struct CapabilityCheckpointRow: View {
                 .padding(.vertical, 3)
                 .background(result.isPassed ? SetlinePalette.lime : SetlinePalette.steel.opacity(0.6))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
+        }
+    }
+
+    /// Difficulty verdicts. Each adjusts exactly one variable in generated
+    /// sessions; tapping the active verdict clears it.
+    private var feedbackRow: some View {
+        HStack(spacing: 16) {
+            ForEach([CheckpointFeedback.tooHard, .tooEasy], id: \.self) { verdict in
+                Button {
+                    Task {
+                        let next: CheckpointFeedback? = result.feedback == verdict ? nil : verdict
+                        await model.setCapabilityFeedback(next, assessmentID: result.assessment.id)
+                    }
+                } label: {
+                    Text(verdict.title)
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(result.feedback == verdict ? SetlinePalette.blue : SetlinePalette.steel.opacity(0.4))
+                        .clipShape(Capsule())
+                }
+                .frame(minHeight: 32)
+            }
+            Spacer()
+        }
+    }
+
+    /// The population comparison, fully disclosed — or an explicit
+    /// "Benchmark unavailable" where no exact-protocol dataset exists.
+    private var populationLine: some View {
+        Group {
+            if !result.isAssessed {
+                EmptyView()
+            } else if let reference = PopulationComparisons.reference(for: result.assessment.id) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Population: \(reference.finding)")
+                        .font(.caption2)
+                        .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                    Text("\(reference.population) · \(reference.protocolText) · \(reference.source)")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Text("Population benchmark unavailable — no exact-protocol reference exists.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
