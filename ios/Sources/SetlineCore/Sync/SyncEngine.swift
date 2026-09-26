@@ -93,6 +93,13 @@ public enum SyncEngine {
     /// Without these a delete never propagates: the other device still holds the
     /// entity and pushes it straight back. Bundled templates are never records, and
     /// history is append-only, so neither can produce a tombstone.
+    ///
+    /// A stamp that already says "deleted" still produces its tombstone: every
+    /// transport reads this snapshot independently, so emitting a delete only
+    /// once would let whichever consumer ran first — a pending count or another
+    /// remote's pass — consume the only copy and leave the stale remote version
+    /// to resurrect the entity. The ledger keeps the original deletion date, so
+    /// a replayed tombstone stays the same delete rather than a fresh one.
     public static func tombstones(
         for document: SetlineDocument,
         ledger: inout SyncLedger,
@@ -106,17 +113,42 @@ public enum SyncEngine {
             live.insert(SyncRecord.recordName(kind: .goal, entityID: goal.id))
         }
 
-        var tombstones: [SyncRecord] = []
-        for (recordName, stamp) in ledger.stamps {
+        var deletions: [SyncRecord] = []
+        let knownNames = Set(ledger.stamps.keys).union(document.syncDeletionDates.keys)
+        for recordName in knownNames {
             guard let (kind, entityID) = parse(recordName) else { continue }
             guard kind == .template || kind == .goal else { continue }
             guard !live.contains(recordName) else { continue }
-            guard stamp.fingerprint != "deleted" else { continue }
             var tombstone = SyncRecord(kind: kind, entityID: entityID, modifiedAt: now, payload: nil)
-            tombstone.modifiedAt = ledger.stamp(tombstone, now: now)
-            tombstones.append(tombstone)
+            if let seconds = document.syncDeletionDates[recordName] {
+                let deletedAt = Date(timeIntervalSinceReferenceDate: seconds)
+                tombstone.modifiedAt = deletedAt
+                ledger.stamps[recordName] = SyncLedger.Stamp(fingerprint: "deleted", modifiedAt: deletedAt)
+            } else {
+                tombstone.modifiedAt = ledger.stamp(tombstone, now: now)
+            }
+            deletions.append(tombstone)
         }
-        return tombstones.sorted { $0.recordName < $1.recordName }
+        return deletions.sorted { $0.recordName < $1.recordName }
+    }
+
+    /// Record local deletions before the app's atomic document save. Deliberate
+    /// recreation of an ID is a new local write and removes its old marker.
+    public static func recordLocalDeletions(
+        from previous: SetlineDocument, in candidate: inout SetlineDocument, now: Date
+    ) {
+        let before = mutableRecordNames(in: previous)
+        let after = mutableRecordNames(in: candidate)
+        for name in before.subtracting(after) { candidate.syncDeletionDates[name] = now.timeIntervalSinceReferenceDate }
+        for name in after.subtracting(before) { candidate.syncDeletionDates.removeValue(forKey: name) }
+    }
+
+    private static func mutableRecordNames(in document: SetlineDocument) -> Set<String> {
+        let templates = document.templates.filter { !$0.isBundled }.map {
+            SyncRecord.recordName(kind: .template, entityID: $0.id)
+        }
+        let goals = document.goals.map { SyncRecord.recordName(kind: .goal, entityID: $0.id) }
+        return Set(templates + goals)
     }
 
     // MARK: - Merge
@@ -218,7 +250,7 @@ public enum SyncEngine {
 
     // MARK: - Helpers
 
-    static func parse(_ recordName: String) -> (SyncRecordKind, UUID)? {
+    public static func parse(_ recordName: String) -> (SyncRecordKind, UUID)? {
         guard let separator = recordName.firstIndex(of: "-") else { return nil }
         let rawKind = String(recordName[recordName.startIndex..<separator])
         let rawID = String(recordName[recordName.index(after: separator)...])
@@ -236,7 +268,7 @@ public enum SyncEngine {
     /// not decode back to the value it came from, so a record would look edited
     /// every time it made the trip and two edits inside one second would tie on
     /// timestamp and fall through to an arbitrary tie-break.
-    static func makeEncoder() -> JSONEncoder {
+    public static func makeEncoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .custom { date, encoder in
             var container = encoder.singleValueContainer()
@@ -248,7 +280,7 @@ public enum SyncEngine {
         return encoder
     }
 
-    static func makeDecoder() -> JSONDecoder {
+    public static func makeDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let seconds = try decoder.singleValueContainer().decode(Double.self)

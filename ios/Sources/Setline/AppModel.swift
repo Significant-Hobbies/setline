@@ -14,6 +14,8 @@ final class AppModel {
     var isLoading = true
     private(set) var hasLoadedDocument = false
     private(set) var isSaving = false
+    private var storeGeneration = UUID()
+    private var isReplacingStore = false
     private var localWriteWaiters: [CheckedContinuation<Void, Never>] = []
     var isOnboardingPresented = false
     private(set) var isExistingOwnerOrientation = false
@@ -36,8 +38,11 @@ final class AppModel {
     private let store: SetlineStore
     private let defaults: UserDefaults
     private let restNotifier: any RestNotifying
-    private let syncCoordinator: SetlineCore.SyncCoordinator?
-    private let platform: PersonalPlatformConnection?
+    /// The app's record-dating ledger. The mirror runtime owns transport
+    /// bookkeeping; this file keeps "what the entities looked like at the last
+    /// write", which is how deleted templates and goals become tombstones.
+    private let syncStateStore: SyncStateStore
+    private let mirror: PersonalMirrorConnection?
     private let hubSyncStatusStore: HubSyncStatusStore
     private(set) var hubAccountNotice: String?
     var hubAccountMatches: Bool {
@@ -53,25 +58,23 @@ final class AppModel {
     init(
         store: SetlineStore = SetlineStore(),
         restNotifier: any RestNotifying = RestNotifier(),
-        syncCoordinator: SetlineCore.SyncCoordinator? = SetlineCore.SyncCoordinator(store: CloudKitRecordStore()),
-        platform: PersonalPlatformConnection? = AppModel.makePlatformConnection(),
+        syncStateStore: SyncStateStore = SyncStateStore(),
+        mirror: PersonalMirrorConnection? = AppModel.makeMirrorConnection(),
         hubSyncStatusStore: HubSyncStatusStore = HubSyncStatusStore(),
         defaults: UserDefaults = .standard
     ) {
         self.store = store
         self.defaults = defaults
         self.restNotifier = restNotifier
+        self.syncStateStore = syncStateStore
         self.hubSyncStatusStore = hubSyncStatusStore
         hubSyncSnapshot = hubSyncStatusStore.load()
         let arguments = ProcessInfo.processInfo.arguments
         // Every demo and interface-test launch runs against a fixture, so none of
-        // them may reach iCloud: a real account would make their results depend on
-        // whatever happens to be in it.
-        self.syncCoordinator = Self.isDemoLaunch(arguments) ? nil : syncCoordinator
-        self.platform = Self.isDemoLaunch(arguments) ? nil : platform
-        account = self.platform.map {
-            PersonalAccountModel(identity: $0.identity, callbackScheme: "setline")
-        }
+        // them may reach iCloud or the Hub: a real account would make their
+        // results depend on whatever happens to be in it.
+        self.mirror = Self.isDemoLaunch(arguments) ? nil : mirror
+        account = self.mirror?.account
         if arguments.contains("--plan-demo") { selectedTab = 1 }
         if arguments.contains("--history-demo") { selectedTab = 2 }
         if arguments.contains("--exercises-demo") { selectedTab = 4 }
@@ -228,7 +231,7 @@ final class AppModel {
     func finishWorkout() async {
         guard await mutate({ try $0.finishWorkout() }) else { return }
         await syncRestAlert()
-        if platform != nil { Task { await syncWithPlatform() } }
+        if mirror != nil { Task { await syncWithiCloud() } }
         if document.activeSession == nil { isWorkoutPresented = false }
     }
 
@@ -401,67 +404,248 @@ final class AppModel {
         message = "Filled from \(suggestion.sourceExerciseName) on \(suggestion.sourceDate.formatted(date: .abbreviated, time: .omitted))."
     }
 
-    // MARK: - iCloud
+    // MARK: - Mirror sync (iCloud + Hub)
+
+    /// The document as the mirror runtime's record set: every syncable entity
+    /// plus tombstones for entities that left it. Sessions are append-only;
+    /// the active session is deliberately excluded — a workout in progress
+    /// belongs to the phone in your hand.
+    func mirrorRecords(from supplied: SetlineDocument? = nil, generation: UUID? = nil) async throws -> [MirrorRecord] {
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
+        guard !isReplacingStore, generation == nil || generation == storeGeneration else {
+            throw SetlineHubCommitError.localDocumentUnavailable
+        }
+        let snapshot = supplied ?? document
+        guard snapshot == document else { throw SetlineHubCommitError.localDocumentUnavailable }
+        var bookkeeping = try await syncStateStore.load()
+        var records = try SyncEngine.records(for: snapshot, ledger: &bookkeeping.ledger, now: .now)
+        records.append(
+            contentsOf: SyncEngine.tombstones(for: snapshot, ledger: &bookkeeping.ledger, now: .now)
+        )
+        try await syncStateStore.save(bookkeeping)
+        return try records.map(Self.mirrorRecord(from:))
+    }
+
+    /// Wraps a `SyncRecord` in the mirror envelope: the entity payload stays
+    /// byte-identical inside `data`, while `recordType`, `entityId`, and an ISO
+    /// `occurredAt` give the Hub's contract and reads what they need without
+    /// understanding Setline's entity encoding.
+    private static func mirrorRecord(from record: SyncRecord) throws -> MirrorRecord {
+        let payload = try record.payload.map {
+            try mirrorEnvelope(entity: $0, kind: record.kind, entityID: record.entityID, occurredAt: record.modifiedAt)
+        }
+        return MirrorRecord(
+            name: record.recordName,
+            modifiedAt: record.modifiedAt,
+            payload: payload,
+            appendOnly: record.kind.isAppendOnly
+        )
+    }
+
+    private static func mirrorEnvelope(
+        entity: Data, kind: SyncRecordKind, entityID: UUID, occurredAt: Date
+    ) throws -> Data {
+        guard let object = try JSONSerialization.jsonObject(with: entity) as? [String: Any] else {
+            throw SetlineMirrorError.invalidEntityPayload
+        }
+        return try JSONSerialization.data(
+            withJSONObject: [
+                "recordType": kind.rawValue,
+                "entityId": entityID.uuidString.lowercased(),
+                "occurredAt": iso(occurredAt),
+                "data": object,
+            ],
+            options: [.sortedKeys]
+        )
+    }
+
+    /// Unwraps the entity from a mirror payload. Records written before the
+    /// envelope existed carry the raw entity at top level, so a missing `data`
+    /// key means the payload already is the entity.
+    private static func entityData(from payload: Data) -> Data {
+        guard let envelope = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
+              let data = envelope["data"],
+              let raw = try? JSONSerialization.data(withJSONObject: data, options: [.sortedKeys])
+        else { return payload }
+        return raw
+    }
+
+    /// Commits pulled mirror winners atomically. A failing local write throws,
+    /// which leaves the transport's pull token unadvanced — the records are
+    /// re-offered on the next pass instead of being acknowledged and lost.
+    func commitMirrorRecords(_ records: [MirrorRecord], pass: MirrorPass? = nil) async throws {
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
+        guard hasLoadedDocument, document.activeSession == nil else {
+            throw SetlineHubCommitError.localDocumentUnavailable
+        }
+        if let pass { try await validateMirrorPassLocked(pass) }
+        var next = document
+        for record in records {
+            try Self.apply(record, to: &next)
+        }
+        next.history.sort { $0.startedAt > $1.startedAt }
+        if next != document {
+            try await store.save(next)
+            document = next
+        }
+        if let pass {
+            pass.expected = document
+            try await validateMirrorPassLocked(pass)
+        }
+    }
+
+    private static func apply(_ record: MirrorRecord, to document: inout SetlineDocument) throws {
+        // Names that are not entity records — legacy Hub summaries and any
+        // foreign record — are left alone rather than guessed at.
+        guard let (kind, entityID) = SyncEngine.parse(record.name) else { return }
+        if record.isDeleted {
+            applyDeletion(record, kind: kind, entityID: entityID, to: &document)
+            return
+        }
+        guard let payload = record.payload else { return }
+        if let seconds = document.syncDeletionDates[record.name] {
+            guard record.modifiedAt.timeIntervalSinceReferenceDate >= seconds else { return }
+        }
+        let decoder = SyncEngine.makeDecoder()
+        switch kind {
+        case .template:
+            let template = try decoder.decode(WorkoutTemplate.self, from: entityData(from: payload))
+            guard !template.isBundled else { return }
+            if let index = document.templates.firstIndex(where: { $0.id == entityID }) {
+                document.templates[index] = template
+            } else {
+                document.templates.append(template)
+            }
+        case .session:
+            let session = try decoder.decode(WorkoutSession.self, from: entityData(from: payload))
+            if let index = document.history.firstIndex(where: { $0.id == entityID }) {
+                document.history[index] = session
+            } else {
+                document.history.append(session)
+            }
+        case .goal:
+            let goal = try decoder.decode(ExerciseGoal.self, from: entityData(from: payload))
+            if let index = document.goals.firstIndex(where: { $0.id == entityID }) {
+                document.goals[index] = goal
+            } else {
+                document.goals.append(goal)
+            }
+        case .programme:
+            document.programme = try decoder.decode(ProgrammeSelection.self, from: entityData(from: payload))
+        }
+        document.syncDeletionDates.removeValue(forKey: record.name)
+    }
+
+    private static func applyDeletion(
+        _ record: MirrorRecord, kind: SyncRecordKind, entityID: UUID,
+        to document: inout SetlineDocument
+    ) {
+        if kind == .template || kind == .goal {
+            document.syncDeletionDates[record.name] = max(
+                document.syncDeletionDates[record.name] ?? -Double.greatestFiniteMagnitude,
+                record.modifiedAt.timeIntervalSinceReferenceDate
+            )
+        }
+        switch kind {
+        case .template: document.templates.removeAll { $0.id == entityID }
+        case .goal: document.goals.removeAll { $0.id == entityID }
+        case .programme: document.programme = .none
+        case .session: break // History is append-only; it never tombstones.
+        }
+    }
+
+    @MainActor
+    final class MirrorPass {
+        var expected: SetlineDocument
+        let generation: UUID
+        let account: PersonalSyncAccount?
+        var transportID = "cloudkit"
+        init(document: SetlineDocument, generation: UUID, account: PersonalSyncAccount?) {
+            expected = document
+            self.generation = generation
+            self.account = account
+        }
+    }
+
+    func makeMirrorPass(account: PersonalSyncAccount? = nil) -> MirrorPass {
+        MirrorPass(document: document, generation: storeGeneration, account: account)
+    }
+
+    private func mirrorRecords(for pass: MirrorPass) async throws -> [MirrorRecord] {
+        guard !isReplacingStore, pass.generation == storeGeneration else {
+            throw SetlineHubCommitError.localDocumentUnavailable
+        }
+        pass.expected = document
+        return try await mirrorRecords(from: pass.expected, generation: pass.generation)
+    }
+
+    private func validateMirrorPass(_ pass: MirrorPass, transportID: String) async throws {
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
+        pass.transportID = transportID
+        try await validateMirrorPassLocked(pass)
+    }
+
+    private func validateMirrorPassLocked(_ pass: MirrorPass) async throws {
+        guard !isReplacingStore, pass.generation == storeGeneration, document == pass.expected else {
+            throw SetlineHubCommitError.localDocumentUnavailable
+        }
+        if pass.transportID == "hub" {
+            guard let verified = pass.account, let mirror, document.hubAccountID == verified.userID else {
+                throw PersonalSyncOwnershipError.differentAccount
+            }
+            try await mirror.identity.requireCurrentAccount(verified)
+        }
+        guard !isReplacingStore, pass.generation == storeGeneration, document == pass.expected else {
+            throw SetlineHubCommitError.localDocumentUnavailable
+        }
+    }
 
     /// Reads iCloud's state without syncing, so Settings can be honest on arrival.
     func refreshSyncAvailability() async {
-        guard let syncCoordinator else { return }
-        syncAvailability = await syncCoordinator.availability()
+        guard let mirror else { return }
+        if let availability = await mirror.runtime.availability(transportID: "cloudkit") {
+            syncAvailability = Self.syncAvailability(availability)
+        }
     }
 
-    /// Reconciles with iCloud. Safe to call on launch and on returning to the
-    /// foreground; it does nothing when there is no active workout to disturb and
-    /// nothing to say when the account is simply absent.
-    ///
-    /// A workout in progress blocks it. The merge already refuses to sync an active
-    /// session, but re-entering the document underneath a running set is a needless
-    /// risk for no benefit.
-    func syncWithiCloud(announcing: Bool = false) async {
-        guard hasLoadedDocument else { return }
-        guard let syncCoordinator, !isSyncing, document.activeSession == nil else { return }
-        isSyncing = true
-        defer { isSyncing = false }
-
-        let availability = await syncCoordinator.availability()
-        syncAvailability = availability
-        guard availability.isAvailable else {
-            if announcing, let reason = SyncError.unavailable(availability).errorDescription {
-                message = reason
+    private static func syncAvailability(_ availability: MirrorAvailability) -> SyncAvailability {
+        switch availability {
+        case .available: return .available
+        case .unavailable(let reason):
+            switch reason {
+            case "no iCloud account": return .noAccount
+            case "iCloud is restricted on this device": return .restricted
+            default: return .unknown(reason)
             }
-            return
         }
+    }
 
-        do {
-            let base = document
-            let (merged, outcome) = try await syncCoordinator.sync(base)
-            await acquireLocalWrite()
-            defer { releaseLocalWrite() }
-            guard document == base else {
-                if announcing { message = "Your programme changed while iCloud was syncing. Sync again when idle." }
-                return
-            }
-            if !merged.hasSameContent(as: document) || merged.lastSyncedAt != document.lastSyncedAt {
-                try await store.save(merged)
-                document = merged
-            }
-            if announcing {
-                message = outcome.changedAnything
-                    ? "iCloud up to date. \(outcome.pulled) in, \(outcome.pushed) out."
-                    : "iCloud already up to date."
-            }
-        } catch {
-            // A failed sync must never look like a successful one, but it also must
-            // not interrupt training: the local document is untouched either way.
-            document.syncState = .failed
-            if announcing { message = error.localizedDescription }
+    /// Reconciles with every remote — iCloud and the Hub — in one pass. Safe on
+    /// launch and foreground return; a workout in progress blocks it rather
+    /// than risking a document change under a running set.
+    func syncWithiCloud(announcing: Bool = false) async {
+        guard let outcome = await synchronize() else { return }
+        guard announcing else { return }
+        let cloud = outcome.transports.first { $0.transportID == "cloudkit" }
+        if let failure = cloud?.failure {
+            message = failure
+        } else if let cloud {
+            message = (cloud.pushed + cloud.pulled) > 0
+                ? "iCloud up to date. \(cloud.pulled) in, \(cloud.pushed) out."
+                : "iCloud already up to date."
         }
     }
 
     // MARK: - Personal Platform
 
     func refreshHubSyncStatus() async {
-        guard let platform else { return }
-        hubPendingCount = await platform.sync.pendingMutationCount()
+        guard let mirror else { return }
+        hubPendingCount = (try? await mirror.runtime.unpushedCount(
+            transportID: "hub", records: mirrorRecords()
+        )) ?? 0
     }
 
     func approveLocalHubHistory(for userID: String) async -> Bool {
@@ -469,13 +653,12 @@ final class AppModel {
     }
 
     func approveHubAccount() async {
-        guard !isPlatformSyncing, document.activeSession == nil, let platform else { return }
+        guard !isPlatformSyncing, document.activeSession == nil, let mirror else { return }
         do {
-            guard let verified = try await platform.identity.verifiedSyncAccount(),
+            guard let verified = try await mirror.identity.verifiedSyncAccount(),
                   account?.session?.userId == verified.userID else { return }
             guard await approveLocalHubHistory(for: verified.userID) else { return }
-            try await platform.identity.requireCurrentAccount(verified)
-            try await platform.sync.bindAccount(verified, adoptingUnownedData: true)
+            try await mirror.runtime.bindOwner(verified.userID)
             hubAccountNotice = nil
             await syncWithPlatform(announcing: true)
         } catch {
@@ -484,106 +667,90 @@ final class AppModel {
     }
 
     func syncWithPlatform(announcing: Bool = false, recoverMissingRecords: Bool = false) async {
-        guard hasLoadedDocument else { return }
-        guard let platform, account?.isSignedIn == true,
-              !isPlatformSyncing, document.activeSession == nil else { return }
+        guard account?.isSignedIn == true else { return }
+        let outcome = await synchronize(recover: recoverMissingRecords)
+        guard announcing, let outcome else { return }
+        let hub = outcome.transports.first { $0.transportID == "hub" }
+        if hub?.failure != nil {
+            message = "Hub sync needs a retry. Pending changes stay on this iPhone."
+        } else {
+            message = recoverMissingRecords
+                ? "Checked Hub history for missing records. Existing local workouts were kept."
+                : "Significant Hobbies Hub is up to date."
+        }
+    }
+
+    /// Runs the mirror pass over both transports and updates every surface the
+    /// views read: iCloud availability and document sync state, Hub pending
+    /// count, snapshot, and account notice. Returns nil when the pass cannot
+    /// run (no mirror, a workout in progress, or a pass already underway).
+    @discardableResult
+    private func synchronize(recover: Bool = false) async -> MirrorRuntime.Outcome? {
+        guard hasLoadedDocument, !isReplacingStore, let mirror, !isSyncing, !isPlatformSyncing,
+              document.activeSession == nil else { return nil }
+        isSyncing = true
         isPlatformSyncing = true
-        defer { isPlatformSyncing = false }
+        defer { isSyncing = false; isPlatformSyncing = false }
+        if let availability = await mirror.runtime.availability(transportID: "cloudkit") {
+            syncAvailability = Self.syncAvailability(availability)
+        }
         do {
-            guard let owner = document.hubAccountID else { throw SetlineHubOwnershipError.approvalRequired }
-            guard account?.session?.userId == owner else { throw SetlineHubOwnershipError.differentAccount }
-            guard let verified = try await platform.identity.verifiedSyncAccount(),
-                  verified.userID == owner else { throw SetlineHubOwnershipError.differentAccount }
-            try await platform.sync.bindAccount(verified)
-            hubAccountNotice = nil
-            try await enqueueApprovedHubHistory(using: platform.sync, account: verified)
-            hubPendingCount = await platform.sync.pendingMutationCount()
-            let recoveryBaseline = recoverMissingRecords ? document : nil
-            try await platform.sync.synchronize(account: verified, replayFromStart: recoverMissingRecords) { changes in
-                try await platform.identity.requireCurrentAccount(verified)
-                try await self.commitPlatformChanges(changes, ownerID: verified.userID, recoveryBaseline: recoveryBaseline)
-                try await platform.identity.requireCurrentAccount(verified)
+            if recover { try await mirror.runtime.repullAll() }
+            let verified = try? await mirror.identity.verifiedSyncAccount()
+            let pass = makeMirrorPass(account: verified)
+            let outcome = try await mirror.runtime.synchronize(records: {
+                try await self.mirrorRecords(for: pass)
+            }, validateLocalSnapshot: { transportID in
+                try await self.validateMirrorPass(pass, transportID: transportID)
+            }) { pulled in
+                try await self.commitMirrorRecords(pulled, pass: pass)
             }
-            hubPendingCount = await platform.sync.pendingMutationCount()
-            try await platform.identity.requireCurrentAccount(verified)
-            guard account?.session?.userId == owner else { throw SetlineHubOwnershipError.differentAccount }
-            hubSyncSnapshot = hubSyncStatusStore.recordSuccess()
-            if announcing {
-                message = recoverMissingRecords
-                    ? "Checked Hub history for missing summaries. Existing local workouts were kept."
-                    : "Significant Hobbies Hub is up to date."
-            }
+            hubPendingCount = (try? await mirror.runtime.unpushedCount(
+                transportID: "hub", records: mirrorRecords()
+            )) ?? 0
+            try await recordSyncOutcome(outcome, pass: pass)
+            return outcome
         } catch {
-            hubPendingCount = await platform.sync.pendingMutationCount()
             if let ownership = error as? SetlineHubOwnershipError {
                 hubAccountNotice = ownership.localizedDescription
             } else if error is PersonalSyncOwnershipError {
                 hubAccountNotice = "Approve the connection to resume, or sign in to the account that owns the waiting changes."
             }
-            guard hubAccountMatches else { return }
-            hubSyncSnapshot = hubSyncStatusStore.recordFailure()
-            if announcing {
-                message = "Hub sync needs a retry. Pending summaries stay on this iPhone."
-            }
+            return nil
         }
     }
 
-    func commitPlatformChanges(_ changes: [SyncChange], ownerID: String? = nil, recoveryBaseline: SetlineDocument? = nil) async throws {
+    private func recordSyncOutcome(_ outcome: MirrorRuntime.Outcome, pass: MirrorPass) async throws {
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
-        guard hasLoadedDocument, document.activeSession == nil else {
-            throw SetlineHubCommitError.localDocumentUnavailable
-        }
-        guard document.hubAccountID == ownerID else { throw SetlineHubOwnershipError.differentAccount }
-        if let baseline = recoveryBaseline, baseline.hubAccountID != ownerID {
-            throw SetlineHubOwnershipError.differentAccount
-        }
+        pass.transportID = outcome.transports.contains { $0.transportID == "hub" && $0.failure == nil } ? "hub" : "cloudkit"
+        try await validateMirrorPassLocked(pass)
         var next = document
-        for change in changes {
-            guard shouldApplyRecoveryChange(change, baseline: recoveryBaseline) else { continue }
-            if change.operation == .delete {
-                next.history.removeAll { $0.hubRecordID == change.id && $0.hubAccountID == ownerID }
-                continue
-            }
-            guard change.operation == .upsert,
-                  var session = SetlinePlatformRecord.session(from: change) else { continue }
-            session.hubAccountID = ownerID
-            if let index = next.history.firstIndex(where: { $0.id == session.id }) {
-                guard next.history[index].hubRecordID == change.id,
-                      next.history[index].hubAccountID == ownerID else { continue }
-                next.history[index] = session
-            } else {
-                next.history.append(session)
-            }
+        if let cloud = outcome.transports.first(where: { $0.transportID == "cloudkit" }) {
+            next.syncState = cloud.failure == nil ? .synced : .failed
+            if cloud.failure == nil { next.lastSyncedAt = outcome.completedAt }
         }
-        next.history.sort { $0.startedAt > $1.startedAt }
         if next != document {
             try await store.save(next)
             document = next
+            pass.expected = document
+            try await validateMirrorPassLocked(pass)
         }
-    }
-
-    private func enqueueApprovedHubHistory(using sync: PersonalSyncRuntime, account: PersonalSyncAccount) async throws {
-        for session in try document.approvedHubHistory(for: account.userID) {
-            guard let completedAt = session.completedAt,
-                  let record = SetlinePlatformRecord.session(session, completedAt: completedAt) else { continue }
-            try await sync.enqueue(
-                recordId: session.id.uuidString.lowercased(),
-                occurredAt: SetlinePlatformRecord.iso(session.startedAt),
-                record: record, account: account
-            )
+        let hub = outcome.transports.first { $0.transportID == "hub" }
+        if let hub {
+            if hub.failure == nil {
+                hubAccountNotice = nil
+                hubSyncSnapshot = hubSyncStatusStore.recordSuccess()
+            } else {
+                if document.hubAccountID != nil && !hubAccountMatches {
+                    hubAccountNotice = "This training belongs to another Hub account. Sign in to that account to sync."
+                } else if hub.failure == "not signed in" {
+                    hubAccountNotice = nil
+                } else if hubAccountMatches {
+                    hubSyncSnapshot = hubSyncStatusStore.recordFailure()
+                }
+            }
         }
-    }
-
-    private func shouldApplyRecoveryChange(_ change: SyncChange, baseline: SetlineDocument?) -> Bool {
-        guard let baseline else { return true }
-        let original = baseline.history.first { $0.hubRecordID == change.id }
-        let current = document.history.first { $0.hubRecordID == change.id }
-        // Fill gaps without replacing local summaries or undoing a removal
-        // made while the request was waiting. Native history is guarded below.
-        if change.operation == .upsert { return current == nil && original == nil }
-        if change.operation == .delete { return current == original }
-        return false
     }
 
     // MARK: - Data transfer
@@ -607,14 +774,19 @@ final class AppModel {
     }
 
     func confirmImport() async {
+        guard !isReplacingStore else { return }
+        isReplacingStore = true
+        storeGeneration = UUID()
+        defer { isReplacingStore = false }
         guard let importPreview else { return }
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         do {
-            try await store.replace(with: importPreview)
             // The imported file is now this device's truth, but everything it does
             // not contain must not be read as deleted elsewhere.
-            try? await syncCoordinator?.forgetBookkeeping()
+            try await mirror?.runtime.forgetBookkeeping()
+            try await syncStateStore.reset()
+            try await store.replace(with: importPreview)
             document = importPreview
             hasLoadedDocument = true
             self.importPreview = nil
@@ -626,13 +798,18 @@ final class AppModel {
     }
 
     func resetLocalData() async {
+        guard !isReplacingStore else { return }
+        isReplacingStore = true
+        storeGeneration = UUID()
+        defer { isReplacingStore = false }
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         do {
-            try await store.reset()
             // Resetting this device must not propagate as a deletion of the same
-            // training from iCloud and every other device.
-            try? await syncCoordinator?.forgetBookkeeping()
+            // training from iCloud, the Hub, and every other device.
+            try await mirror?.runtime.forgetBookkeeping()
+            try await syncStateStore.reset()
+            try await store.reset()
             document = .initial
             hasLoadedDocument = true
             message = "Local data reset."
@@ -665,6 +842,7 @@ final class AppModel {
         do {
             var next = document
             try operation(&next)
+            SyncEngine.recordLocalDeletions(from: document, in: &next, now: .now)
             try await store.save(next)
             document = next
             message = nil
@@ -675,18 +853,40 @@ final class AppModel {
         }
     }
 
-    private static func makePlatformConnection() -> PersonalPlatformConnection? {
+    private static func iso(_ date: Date) -> String {
+        isoFormatter.string(from: date)
+    }
+
+    nonisolated(unsafe) private static let isoFormatter = ISO8601DateFormatter()
+
+    private static func makeMirrorConnection() -> PersonalMirrorConnection? {
         let defaults = UserDefaults.standard
         let key = "personal-platform-device-id"
         let deviceId = defaults.string(forKey: key) ?? UUID().uuidString.lowercased()
         defaults.set(deviceId, forKey: key)
-        return try? PersonalPlatformConnection(
+        return try? PersonalMirrorConnection(
             domain: .setline,
             keychainService: "com.significanthobbies.setline",
             supportDirectory: SetlineFiles.supportDirectory,
-            deviceId: deviceId
+            deviceId: deviceId,
+            callbackScheme: "setline",
+            cloudKitContainer: "iCloud.com.significanthobbies.setline",
+            // The existing zone and record type keep the device's CloudKit
+            // history rather than re-seeding a fresh zone.
+            cloudKitZone: "Training",
+            cloudKitRecordType: "SyncRecord",
+            appendOnly: { name in
+                SyncEngine.parse(name)?.0.isAppendOnly ?? false
+            },
+            // The Hub leg stays quiet until the committed document is bound to
+            // the verified account; CloudKit syncs regardless.
+            accountGate: { verified in
+                (try? await SetlineStore().load())?.hubAccountID == verified.userID
+            }
         )
     }
 }
 
 enum SetlineHubCommitError: Error { case localDocumentUnavailable }
+
+enum SetlineMirrorError: Error { case invalidEntityPayload }

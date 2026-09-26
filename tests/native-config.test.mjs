@@ -17,7 +17,7 @@ async function readSource(path) {
 test("the CloudKit container is identical in the entitlement and the source", async () => {
   const [entitlements, store] = await Promise.all([
     readSource("ios/Sources/Setline/Setline.entitlements"),
-    readSource("ios/Sources/SetlineCore/Sync/CloudKitRecordStore.swift"),
+    readSource("ios/Sources/Setline/AppModel.swift"),
   ]);
 
   const entitled = [
@@ -29,13 +29,11 @@ test("the CloudKit container is identical in the entitlement and the source", as
     "expected exactly one iCloud container in the entitlement",
   );
 
-  const declared = store.match(
-    /containerIdentifier\s*=\s*"(iCloud\.[^"]+)"/,
-  )?.[1];
+  const declared = store.match(/cloudKitContainer:\s*"(iCloud\.[^"]+)"/)?.[1];
   assert.equal(
     declared,
     entitled[0],
-    "CloudKitRecordStore and the entitlement must name the same container",
+    "PersonalMirrorConnection and the entitlement must name the same container",
   );
 });
 

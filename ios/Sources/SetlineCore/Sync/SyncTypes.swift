@@ -17,46 +17,6 @@ public enum SyncAvailability: Equatable, Sendable {
     public var isAvailable: Bool { self == .available }
 }
 
-/// What a sync round trip changed.
-public struct SyncOutcome: Equatable, Sendable {
-    public var pushed: Int
-    public var pulled: Int
-    public var completedAt: Date
-
-    public init(pushed: Int, pulled: Int, completedAt: Date) {
-        self.pushed = pushed
-        self.pulled = pulled
-        self.completedAt = completedAt
-    }
-
-    public var changedAnything: Bool { pushed > 0 || pulled > 0 }
-}
-
-/// A batch of remote changes plus the token that resumes from after them.
-///
-/// There is deliberately no "this was a full resync" flag. The merge never infers a
-/// deletion from a record's absence — only from an explicit tombstone — so refetching
-/// everything is indistinguishable from an incremental fetch, and nothing downstream
-/// needs to know which happened.
-public struct RemoteChanges: Equatable, Sendable {
-    public var records: [SyncRecord]
-    public var token: Data?
-
-    public init(records: [SyncRecord], token: Data?) {
-        self.records = records
-        self.token = token
-    }
-}
-
-/// The transport, kept behind a protocol so the merge and the round-trip logic are
-/// testable without a container, a network, or an iCloud account.
-public protocol RemoteRecordStore: Sendable {
-    func availability() async -> SyncAvailability
-    /// Records changed since `token`. A nil token means "everything".
-    func changes(since token: Data?) async throws -> RemoteChanges
-    func save(_ records: [SyncRecord]) async throws
-}
-
 /// Errors worth telling a person about, as opposed to retrying silently.
 public enum SyncError: LocalizedError, Equatable {
     case unavailable(SyncAvailability)

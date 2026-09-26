@@ -711,6 +711,11 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
 
     public var schemaVersion: Int
     public var hubAccountID: String?
+    /// Deletion intent is user data: commit it with the document so a failed
+    /// bookkeeping write or an unfamiliar remote ID cannot erase the intent.
+    /// Reference-date seconds preserve subsecond ordering through the document's
+    /// legacy whole-second ISO date encoder.
+    public var syncDeletionDates: [String: TimeInterval]
     public var templates: [WorkoutTemplate]
     public var programme: ProgrammeSelection
     public var activeSession: WorkoutSession?
@@ -731,10 +736,12 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         goals: [ExerciseGoal] = [],
         benchmarks: BenchmarksState = .initial,
         sync: SyncInfo = .init(),
-        hubAccountID: String? = nil
+        hubAccountID: String? = nil,
+        syncDeletionDates: [String: TimeInterval] = [:]
     ) {
         self.schemaVersion = schemaVersion
         self.hubAccountID = hubAccountID
+        self.syncDeletionDates = syncDeletionDates
         self.templates = templates
         self.programme = programme
         self.activeSession = activeSession
@@ -752,6 +759,7 @@ public struct SetlineDocument: Codable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         hubAccountID = try container.decodeIfPresent(String.self, forKey: .hubAccountID)
+        syncDeletionDates = try container.decodeIfPresent([String: TimeInterval].self, forKey: .syncDeletionDates) ?? [:]
         templates = try container.decodeIfPresent([WorkoutTemplate].self, forKey: .templates) ?? []
         if let selection = try? container.decodeIfPresent(ProgrammeSelection.self, forKey: .programme) {
             programme = selection
