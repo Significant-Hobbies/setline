@@ -139,10 +139,12 @@ struct HistoryView: View {
             VStack(spacing: 3) {
                 Text(session.completedAt?.formatted(.dateTime.day()) ?? "–")
                     .font(.title2.monospacedDigit().weight(.black))
-                Text(session.completedAt?.formatted(.dateTime.month(.abbreviated)) ?? "")
+                Text(session.completedAt?.formatted(.dateTime.month(.abbreviated).year(.twoDigits)) ?? "")
                     .font(.caption.weight(.bold))
+                    .minimumScaleFactor(0.8)
             }
             .frame(width: 52, height: 58)
+            .accessibilityLabel(session.completedAt?.formatted(date: .long, time: .omitted) ?? "Completion date unavailable")
             .background(SetlinePalette.blue)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 5) {

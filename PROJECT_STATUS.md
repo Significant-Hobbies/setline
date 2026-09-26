@@ -34,6 +34,17 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-09-23 — public release hold:** App Store Connect has processed build
+  11 and a saved 1.0 listing draft, but the build must not be submitted yet.
+  `AppModel.mirrorRecords()` supplies full template, goal, programme, and
+  completed-session records to `PersonalMirrorConnection`'s Hub and CloudKit
+  transports. The Hub leg therefore sends more than the completed-workout
+  summaries promised in `SyncDisclosure`, `PRODUCT.md`, and the live privacy
+  page. The summary-only boundary was intentional before the mirror refactor;
+  it needs a transport-specific fix, regression tests, a new native build, and
+  matching privacy answers before public review. No App Privacy declaration or
+  public submission has been made for build 11.
+
 - **2026-09-22** — capability assessment & progressive training landed in four
   commits (`0d5e34b`, `d4f4008`, `00d6992`, `a57a3e8`, `76c755d`), tracked in
   #92/#93. A 15-card mobility curriculum records per-slot results; a shared
