@@ -68,11 +68,7 @@ const baselines = {
   },
   suppressions: 0,
 };
-const acceptedHighAdvisories = new Set([
-  "GHSA-3jxr-9vmj-r5cp",
-  "GHSA-mh99-v99m-4gvg",
-  "GHSA-rgw5-rvv9-x895",
-]);
+const acceptedHighAdvisories = new Set([]);
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
