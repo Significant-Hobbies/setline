@@ -166,19 +166,27 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertTrue(tombstones.first?.isDeleted == true)
     }
 
-    func testATombstoneIsNotReissuedOnEverySync() throws {
+    func testATombstoneReplaysWithItsOriginalDateOnEverySync() throws {
         var document = SetlineDocument.sample
         document.goals = [ExerciseGoal(exerciseName: "Bench press", metric: .estimatedOneRepMax, targetValue: 90)]
         var ledger = SyncLedger()
         _ = try SyncEngine.records(for: document, ledger: &ledger, now: epoch)
 
         document.goals = []
-        let later = epoch.addingTimeInterval(60)
-        XCTAssertEqual(SyncEngine.tombstones(for: document, ledger: &ledger, now: later).count, 1)
-        XCTAssertTrue(
-            SyncEngine.tombstones(for: document, ledger: &ledger, now: later.addingTimeInterval(60)).isEmpty,
-            "a delete already recorded must not keep being re-announced"
+        let deletedAt = epoch.addingTimeInterval(60)
+        let first = SyncEngine.tombstones(for: document, ledger: &ledger, now: deletedAt)
+        let second = SyncEngine.tombstones(
+            for: document,
+            ledger: &ledger,
+            now: deletedAt.addingTimeInterval(3600)
         )
+
+        XCTAssertEqual(first.count, 1)
+        XCTAssertEqual(
+            second, first,
+            "each remote reads its own snapshot, so a recorded delete must keep travelling; replaying it must not turn it into a fresh delete"
+        )
+        XCTAssertEqual(second.first?.modifiedAt, deletedAt)
     }
 
     // MARK: - Round trip

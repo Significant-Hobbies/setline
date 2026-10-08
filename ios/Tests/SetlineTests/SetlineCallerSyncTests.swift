@@ -23,9 +23,8 @@ final class SetlineCallerSyncTests: XCTestCase {
         await f.model.syncWithPlatform(announcing: true, recoverMissingRecords: true)
         XCTAssertEqual(f.model.account?.session?.userId, "b")
         XCTAssertEqual(f.model.document.hubAccountID, "a")
-        // The held pull resolved under account A, so its session legitimately
-        // commits to the document bound to A.
-        XCTAssertEqual(f.model.document.history.map(\.id), [f.remoteSessionID])
+        // The session changed while HTTP was held: the stale reply cannot commit.
+        XCTAssertTrue(f.model.document.history.isEmpty)
         // The account switch then closed the Hub leg: nothing was pushed to
         // account B.
         XCTAssertNil(f.model.hubSyncSnapshot.lastSuccessfulAt)
@@ -34,7 +33,7 @@ final class SetlineCallerSyncTests: XCTestCase {
         XCTAssertTrue(requests.isEmpty, "No mutation may be pushed to the switched account")
         let reopened = try await f.store.load()
         XCTAssertEqual(reopened.hubAccountID, "a")
-        XCTAssertEqual(reopened.history.map(\.id), [f.remoteSessionID])
+        XCTAssertTrue(reopened.history.isEmpty)
     }
 
     func testHeldDownloadDefersForWorkoutThenRetryPreservesRecordedSetsAfterReopen() async throws {

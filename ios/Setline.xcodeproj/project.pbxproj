@@ -1018,7 +1018,7 @@
 			repositoryURL = "https://github.com/Significant-Hobbies/significanthobbies.git";
 			requirement = {
 				kind = revision;
-				revision = 227204868649ced6a3c37f0b0a3e51105b21f14f;
+				revision = a9f933b73ba873e1a613bcc145c2d74db8077254;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

@@ -255,6 +255,255 @@ final class SetlineSyncCommitTests: XCTestCase {
                       "The tombstone must reach the remote, not be overwritten by it")
     }
 
+    func testTombstoneReplaySurvivesBookkeepingReopen() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        let syncFile = root.appending(path: "sync.json")
+        var document = SetlineDocument.sample
+        var template = TwelveWeekProgramme.template(for: .lower, week: 1)
+        template.id = UUID()
+        template.isBundled = false
+        document.templates.append(template)
+        try await store.save(document)
+        let model = AppModel(
+            store: store, restNotifier: SyncTestRestNotifier(),
+            syncStateStore: SyncStateStore(fileURL: syncFile),
+            mirror: nil
+        )
+        await model.load()
+        _ = try await model.mirrorRecords() // teach the ledger the template existed
+        try await model.commitMirrorRecords([
+            MirrorRecord(
+                name: SyncRecord.recordName(kind: .template, entityID: template.id),
+                modifiedAt: .now, payload: nil
+            ),
+        ])
+        let name = SyncRecord.recordName(kind: .template, entityID: template.id)
+        let afterDelete = try await model.mirrorRecords()
+        let first = try XCTUnwrap(afterDelete.first { $0.name == name })
+        XCTAssertTrue(first.isDeleted)
+
+        // A relaunched model reads the same document and bookkeeping files.
+        let reopened = AppModel(
+            store: store, restNotifier: SyncTestRestNotifier(),
+            syncStateStore: SyncStateStore(fileURL: syncFile),
+            mirror: nil
+        )
+        await reopened.load()
+        let replayedSnapshot = try await reopened.mirrorRecords()
+        let replayed = try XCTUnwrap(replayedSnapshot.first { $0.name == name })
+        XCTAssertEqual(
+            replayed, first,
+            "a recorded delete must still travel after reopen, dated when it was deleted rather than redated on every snapshot"
+        )
+        let secondSnapshot = try await reopened.mirrorRecords()
+        let replayedAgain = try XCTUnwrap(secondSnapshot.first { $0.name == name })
+        XCTAssertEqual(replayedAgain, first, "successive snapshots must replay the exact tombstone")
+    }
+
+    func testTombstoneRetriesReachCloudKitAfterAHubOnlySuccess() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        var document = SetlineDocument.sample
+        var template = TwelveWeekProgramme.template(for: .lower, week: 1)
+        template.id = UUID()
+        template.isBundled = false
+        document.templates.append(template)
+        try await store.save(document)
+        let model = AppModel(
+            store: store, restNotifier: SyncTestRestNotifier(),
+            syncStateStore: SyncStateStore(fileURL: root.appending(path: "sync.json")),
+            mirror: nil
+        )
+        await model.load()
+        _ = try await model.mirrorRecords() // teach the ledger the template existed
+        try await model.commitMirrorRecords([
+            MirrorRecord(
+                name: SyncRecord.recordName(kind: .template, entityID: template.id),
+                modifiedAt: .now, payload: nil
+            ),
+        ])
+
+        // The Hub is reachable; CloudKit holds the pre-delete copy and refuses
+        // pushes, so the first pass can only deliver the tombstone to the Hub.
+        let hub = SetlineRemoteFixture(id: "hub", records: [])
+        let stale = try envelope(
+            .template, entityID: template.id, entity: template,
+            modifiedAt: Date(timeIntervalSince1970: 1_600_000_000)
+        )
+        let cloudkit = SetlineRemoteFixture(id: "cloudkit", records: [stale])
+        await cloudkit.setFailPushes(true)
+        let runtime = MirrorRuntime(
+            transports: [hub, cloudkit],
+            store: try MirrorBookkeepingStore(fileURL: root.appending(path: "mirror.json"))
+        )
+
+        // The pending-change count reads the same snapshot the passes do; it
+        // must not be able to consume the tombstone before either remote sees it.
+        _ = try await runtime.unpushedCount(transportID: "hub", records: model.mirrorRecords())
+        let first = try await runtime.synchronize(records: { try await model.mirrorRecords() }) {
+            try await model.commitMirrorRecords($0)
+        }
+        XCTAssertNil(first.transports.first { $0.transportID == "hub" }?.failure)
+        XCTAssertNotNil(first.transports.first { $0.transportID == "cloudkit" }?.failure)
+        XCTAssertFalse(
+            model.document.templates.contains { $0.id == template.id },
+            "the unreachable remote's stale copy must not undo the delete while its push is refused"
+        )
+
+        await cloudkit.setFailPushes(false)
+        let retried = try await runtime.synchronize(records: { try await model.mirrorRecords() }) {
+            try await model.commitMirrorRecords($0)
+        }
+        XCTAssertTrue(retried.isComplete)
+
+        let name = SyncRecord.recordName(kind: .template, entityID: template.id)
+        let hubPushed = await hub.pushed
+        let cloudPushed = await cloudkit.pushed
+        XCTAssertTrue(
+            hubPushed.contains { $0.name == name && $0.isDeleted },
+            "the Hub accepted the tombstone on the first pass"
+        )
+        XCTAssertTrue(
+            cloudPushed.contains { $0.name == name && $0.isDeleted },
+            "the retry must still carry the tombstone CloudKit missed"
+        )
+        XCTAssertFalse(model.document.templates.contains { $0.id == template.id })
+        let persisted = try await store.load()
+        XCTAssertFalse(
+            persisted.templates.contains { $0.id == template.id },
+            "the old CloudKit copy must never resurrect the deleted template"
+        )
+    }
+
+    func testPreviouslyUnknownDeletionSurvivesSecondRemoteAndReopen() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        try await store.save(.sample)
+        let syncFile = root.appending(path: "sync.json")
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(),
+                             syncStateStore: SyncStateStore(fileURL: syncFile), mirror: nil)
+        await model.load()
+        var template = TwelveWeekProgramme.template(for: .lower, week: 1)
+        template.id = UUID()
+        template.isBundled = false
+        let name = SyncRecord.recordName(kind: .template, entityID: template.id)
+        let deletedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let tombstone = MirrorRecord(name: name, modifiedAt: deletedAt, payload: nil)
+        let stale = try envelope(.template, entityID: template.id, entity: template,
+                                 modifiedAt: deletedAt.addingTimeInterval(-60))
+        let hub = SetlineRemoteFixture(id: "hub", records: [tombstone])
+        let cloudkit = SetlineRemoteFixture(id: "cloudkit", records: [stale])
+        let runtime = MirrorRuntime(transports: [hub, cloudkit],
+                                    store: MirrorBookkeepingStore(fileURL: root.appending(path: "mirror.json")))
+        let outcome = try await runtime.synchronize(records: { try await model.mirrorRecords() }) {
+            try await model.commitMirrorRecords($0)
+        }
+        XCTAssertTrue(outcome.isComplete)
+        XCTAssertFalse(model.document.templates.contains { $0.id == template.id })
+        let cloudPushed = await cloudkit.pushed
+        XCTAssertTrue(cloudPushed.contains { $0.name == name && $0.isDeleted })
+        let reopened = AppModel(store: store, restNotifier: SyncTestRestNotifier(),
+                                syncStateStore: SyncStateStore(fileURL: syncFile), mirror: nil)
+        await reopened.load()
+        let snapshot = try await reopened.mirrorRecords()
+        XCTAssertEqual(snapshot.first { $0.name == name }, tombstone)
+    }
+
+    func testDeletionKeepsSubsecondOrderingAndIgnoredBundledUpsertAfterReopen() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), mirror: nil)
+        await model.load()
+        var template = TwelveWeekProgramme.template(for: .lower, week: 1)
+        template.id = UUID()
+        let name = SyncRecord.recordName(kind: .template, entityID: template.id)
+        let deletedAt = Date(timeIntervalSince1970: 1_800_000_000.75)
+        let deletion = MirrorRecord(name: name, modifiedAt: deletedAt, payload: nil)
+        try await model.commitMirrorRecords([deletion])
+        // Bundled templates are ignored, even if newer: they cannot erase a delete.
+        template.isBundled = true
+        try await model.commitMirrorRecords([
+            envelope(.template, entityID: template.id, entity: template,
+                     modifiedAt: deletedAt.addingTimeInterval(10)),
+        ])
+        let reopened = AppModel(store: store, restNotifier: SyncTestRestNotifier(),
+                                syncStateStore: SyncStateStore(fileURL: root.appending(path: "fresh-ledger.json")),
+                                mirror: nil)
+        await reopened.load()
+        template.isBundled = false
+        try await reopened.commitMirrorRecords([
+            envelope(.template, entityID: template.id, entity: template,
+                     modifiedAt: Date(timeIntervalSince1970: 1_800_000_000.5)),
+        ])
+        XCTAssertFalse(reopened.document.templates.contains { $0.id == template.id })
+        let records = try await reopened.mirrorRecords()
+        XCTAssertEqual(records.first { $0.name == name }, deletion)
+        // Equal-time live winners follow the shared merge policy.
+        try await reopened.commitMirrorRecords([
+            envelope(.template, entityID: template.id, entity: template, modifiedAt: deletedAt),
+        ])
+        XCTAssertTrue(reopened.document.templates.contains { $0.id == template.id })
+        XCTAssertNil(reopened.document.syncDeletionDates[name])
+    }
+
+    func testLocalGoalDeletionPersistsBeforeAnySnapshotAndFailedSaveCanRetry() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appending(path: "workouts.json")
+        let store = SetlineStore(fileURL: file)
+        var original = SetlineDocument.initial
+        let goal = ExerciseGoal(exerciseName: "Bench press", metric: .topSetLoad, targetValue: 80)
+        original.goals.append(goal)
+        try await store.save(original)
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), mirror: nil)
+        await model.load()
+        let backup = root.appending(path: "original.json")
+        try FileManager.default.moveItem(at: file, to: backup)
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
+        await model.deleteGoal(goal)
+        XCTAssertTrue(model.document.goals.contains { $0.id == goal.id })
+        XCTAssertTrue(model.document.syncDeletionDates.isEmpty)
+        try FileManager.default.removeItem(at: file)
+        try FileManager.default.moveItem(at: backup, to: file)
+        await model.deleteGoal(goal)
+        let reopened = AppModel(store: store, restNotifier: SyncTestRestNotifier(),
+                                syncStateStore: SyncStateStore(fileURL: root.appending(path: "fresh-ledger.json")),
+                                mirror: nil)
+        await reopened.load()
+        XCTAssertFalse(reopened.document.goals.contains { $0.id == goal.id })
+        let records = try await reopened.mirrorRecords()
+        let name = SyncRecord.recordName(kind: .goal, entityID: goal.id)
+        XCTAssertTrue(try XCTUnwrap(records.first { $0.name == name }).isDeleted)
+    }
+
+    func testSavedLocalDeletionInvalidatesAnOlderMirrorSnapshot() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SetlineStore(fileURL: root.appending(path: "workouts.json"))
+        var original = SetlineDocument.initial
+        let goal = ExerciseGoal(exerciseName: "Bench press", metric: .topSetLoad, targetValue: 80)
+        original.goals = [goal]
+        try await store.save(original)
+        let model = AppModel(store: store, restNotifier: SyncTestRestNotifier(), mirror: nil)
+        await model.load()
+        let pass = model.makeMirrorPass()
+        await model.deleteGoal(goal)
+        do {
+            try await model.commitMirrorRecords([
+                envelope(.goal, entityID: goal.id, entity: goal),
+            ], pass: pass)
+            XCTFail("A winner merged against an old document must retry")
+        } catch {}
+        XCTAssertTrue(model.document.goals.isEmpty)
+        let saved = try await store.load()
+        XCTAssertTrue(saved.goals.isEmpty)
+    }
+
     func testDownloadCommitDefersWhileWorkoutIsActive() async throws {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -412,5 +661,37 @@ private actor SetlinePullFixture: MirrorTransport {
     func pull(since token: Data?) async throws -> MirrorPullPage {
         pullTokens.append(token)
         return MirrorPullPage(records: token == nil ? records : [], nextToken: Data("t".utf8))
+    }
+}
+
+/// A remote that keeps what it accepted and can refuse pushes, so one leg of a
+/// dual-mirror pass can succeed while the other stays pending for a retry.
+private actor SetlineRemoteFixture: MirrorTransport {
+    let id: String
+    private(set) var pushed: [MirrorRecord] = []
+    private var records: [MirrorRecord]
+    private var failPushes = false
+
+    init(id: String, records: [MirrorRecord]) {
+        self.id = id
+        self.records = records
+    }
+
+    func setFailPushes(_ value: Bool) { failPushes = value }
+
+    func availability() async -> MirrorAvailability { .available }
+    func push(_ records: [MirrorRecord]) async throws {
+        if failPushes { throw MirrorSyncError.unavailable("synthetic outage") }
+        pushed.append(contentsOf: records)
+        for record in records {
+            if let index = self.records.firstIndex(where: { $0.name == record.name }) {
+                self.records[index] = record
+            } else {
+                self.records.append(record)
+            }
+        }
+    }
+    func pull(since token: Data?) async throws -> MirrorPullPage {
+        MirrorPullPage(records: token == nil ? records : [], nextToken: Data("t".utf8))
     }
 }

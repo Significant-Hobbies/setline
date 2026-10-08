@@ -34,6 +34,21 @@ is not claimed as shipped. The versioned JSON export remains the backup.
 
 ## Timeline
 
+- **2026-10-09 — durable sync deletions:** recovered the swept
+  `setline-safe-sync-158` work as Setline's consumer integration for
+  significanthobbies #158. Template and goal deletion intent is committed with
+  the document (`syncDeletionDates`) before any sync snapshot, so a failed
+  bookkeeping write, a reopen, or an unfamiliar remote's older copy cannot
+  resurrect a deleted entity; recorded tombstones replay with their original
+  date to every transport until each has seen them. Each mirror pass captures
+  the document, store generation, and verified Hub account, and refuses to
+  commit pulled winners or record its outcome if any of them changed; import
+  and reset clear bookkeeping before replacing the document. PersonalSyncKit
+  is repinned from `2272048` (an unmerged branch commit) to significanthobbies
+  `main` `a9f933b`, whose Hub pull rejects a reply after a mid-flight account
+  switch, so that test now expects nothing to commit. The build 11 release
+  hold below is unchanged.
+
 - **2026-09-23 — public release hold:** App Store Connect has processed build
   11 and a saved 1.0 listing draft, but the build must not be submitted yet.
   `AppModel.mirrorRecords()` supplies full template, goal, programme, and
