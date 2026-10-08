@@ -38,9 +38,9 @@ public actor SyncStateStore {
     public func load() throws -> Bookkeeping {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return Bookkeeping() }
         let data = try Data(contentsOf: fileURL)
-        // Unreadable bookkeeping is recoverable: dropping it costs one full compare,
-        // never a workout. So it must not be allowed to block syncing.
-        return (try? JSONDecoder().decode(Bookkeeping.self, from: data)) ?? Bookkeeping()
+        // Preserve unreadable deletion evidence instead of silently redating
+        // records or losing legacy tombstones. Explicit recovery can reset it.
+        return try JSONDecoder().decode(Bookkeeping.self, from: data)
     }
 
     public func save(_ bookkeeping: Bookkeeping) throws {

@@ -14,6 +14,8 @@ final class AppModel {
     var isLoading = true
     private(set) var hasLoadedDocument = false
     private(set) var isSaving = false
+    private var storeGeneration = UUID()
+    private var isReplacingStore = false
     private var localWriteWaiters: [CheckedContinuation<Void, Never>] = []
     var isOnboardingPresented = false
     private(set) var isExistingOwnerOrientation = false
@@ -548,11 +550,22 @@ final class AppModel {
     /// plus tombstones for entities that left it. Sessions are append-only;
     /// the active session is deliberately excluded — a workout in progress
     /// belongs to the phone in your hand.
-    func mirrorRecords() async throws -> [MirrorRecord] {
+    ///
+    /// The snapshot is taken under the local write lock and refused while the
+    /// store is being replaced, or when a pass's captured document or store
+    /// generation is no longer current.
+    func mirrorRecords(from supplied: SetlineDocument? = nil, generation: UUID? = nil) async throws -> [MirrorRecord] {
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
+        guard !isReplacingStore, generation == nil || generation == storeGeneration else {
+            throw SetlineHubCommitError.localDocumentUnavailable
+        }
+        let snapshot = supplied ?? document
+        guard snapshot == document else { throw SetlineHubCommitError.localDocumentUnavailable }
         var bookkeeping = try await syncStateStore.load()
-        var records = try SyncEngine.records(for: document, ledger: &bookkeeping.ledger, now: .now)
+        var records = try SyncEngine.records(for: snapshot, ledger: &bookkeeping.ledger, now: .now)
         records.append(
-            contentsOf: SyncEngine.tombstones(for: document, ledger: &bookkeeping.ledger, now: .now)
+            contentsOf: SyncEngine.tombstones(for: snapshot, ledger: &bookkeeping.ledger, now: .now)
         )
         try await syncStateStore.save(bookkeeping)
         return try records.map(Self.mirrorRecord(from:))
@@ -605,12 +618,15 @@ final class AppModel {
     /// Commits pulled mirror winners atomically. A failing local write throws,
     /// which leaves the transport's pull token unadvanced — the records are
     /// re-offered on the next pass instead of being acknowledged and lost.
-    func commitMirrorRecords(_ records: [MirrorRecord]) async throws {
+    /// With a `pass`, winners merged against a document that changed since the
+    /// pass captured it are refused, so they retry against the current one.
+    func commitMirrorRecords(_ records: [MirrorRecord], pass: MirrorPass? = nil) async throws {
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         guard hasLoadedDocument, document.activeSession == nil else {
             throw SetlineHubCommitError.localDocumentUnavailable
         }
+        if let pass { try await validateMirrorPassLocked(pass) }
         var next = document
         for record in records {
             try Self.apply(record, to: &next)
@@ -620,6 +636,10 @@ final class AppModel {
             try await store.save(next)
             document = next
         }
+        if let pass {
+            pass.expected = document
+            try await validateMirrorPassLocked(pass)
+        }
     }
 
     private static func apply(_ record: MirrorRecord, to document: inout SetlineDocument) throws {
@@ -627,16 +647,28 @@ final class AppModel {
         // foreign record — are left alone rather than guessed at.
         guard let (kind, entityID) = SyncEngine.parse(record.name) else { return }
         if record.isDeleted {
-            applyTombstone(kind, entityID: entityID, to: &document)
+            applyTombstone(record, kind: kind, entityID: entityID, to: &document)
             return
         }
         guard let payload = record.payload else { return }
-        try applyUpsert(kind, entityID: entityID, data: entityData(from: payload), to: &document)
+        // A recorded deletion outranks any older live copy, including one an
+        // unfamiliar remote still holds after this device forgot its ledger.
+        if let seconds = document.syncDeletionDates[record.name],
+           record.modifiedAt.timeIntervalSinceReferenceDate < seconds { return }
+        let applied = try applyUpsert(kind, entityID: entityID, data: entityData(from: payload), to: &document)
+        if applied { document.syncDeletionDates.removeValue(forKey: record.name) }
     }
 
     private static func applyTombstone(
-        _ kind: SyncRecordKind, entityID: UUID, to document: inout SetlineDocument
+        _ record: MirrorRecord, kind: SyncRecordKind, entityID: UUID,
+        to document: inout SetlineDocument
     ) {
+        if kind == .template || kind == .goal {
+            document.syncDeletionDates[record.name] = max(
+                document.syncDeletionDates[record.name] ?? -Double.greatestFiniteMagnitude,
+                record.modifiedAt.timeIntervalSinceReferenceDate
+            )
+        }
         switch kind {
         case .template: document.templates.removeAll { $0.id == entityID }
         case .goal: document.goals.removeAll { $0.id == entityID }
@@ -645,14 +677,17 @@ final class AppModel {
         }
     }
 
+    /// Returns false when the record was deliberately ignored (bundled
+    /// templates are never records), so it cannot clear a recorded deletion.
+    @discardableResult
     private static func applyUpsert(
         _ kind: SyncRecordKind, entityID: UUID, data: Data, to document: inout SetlineDocument
-    ) throws {
+    ) throws -> Bool {
         let decoder = SyncEngine.makeDecoder()
         switch kind {
         case .template:
             let template = try decoder.decode(WorkoutTemplate.self, from: data)
-            guard !template.isBundled else { return }
+            guard !template.isBundled else { return false }
             upsert(template, into: &document.templates, id: \.id)
         case .session:
             upsert(try decoder.decode(WorkoutSession.self, from: data), into: &document.history, id: \.id)
@@ -660,6 +695,62 @@ final class AppModel {
             upsert(try decoder.decode(ExerciseGoal.self, from: data), into: &document.goals, id: \.id)
         case .programme:
             document.programme = try decoder.decode(ProgrammeSelection.self, from: data)
+        }
+        return true
+    }
+
+    /// One mirror pass's view of the local document: the snapshot every
+    /// transport was offered, the store generation it came from, and the Hub
+    /// account verified when the pass began.
+    @MainActor
+    final class MirrorPass {
+        var expected: SetlineDocument
+        let generation: UUID
+        let account: PersonalSyncAccount?
+        var transportID = "cloudkit"
+
+        init(document: SetlineDocument, generation: UUID, account: PersonalSyncAccount?) {
+            expected = document
+            self.generation = generation
+            self.account = account
+        }
+    }
+
+    func makeMirrorPass(account: PersonalSyncAccount? = nil) -> MirrorPass {
+        MirrorPass(document: document, generation: storeGeneration, account: account)
+    }
+
+    private func mirrorRecords(for pass: MirrorPass) async throws -> [MirrorRecord] {
+        guard !isReplacingStore, pass.generation == storeGeneration else {
+            throw SetlineHubCommitError.localDocumentUnavailable
+        }
+        pass.expected = document
+        return try await mirrorRecords(from: pass.expected, generation: pass.generation)
+    }
+
+    private func validateMirrorPass(_ pass: MirrorPass, transportID: String) async throws {
+        await acquireLocalWrite()
+        defer { releaseLocalWrite() }
+        pass.transportID = transportID
+        try await validateMirrorPassLocked(pass)
+    }
+
+    /// Callers hold the local write lock. A local edit, an import or reset, or
+    /// a Hub account change since the snapshot was captured fails the check.
+    private func validateMirrorPassLocked(_ pass: MirrorPass) async throws {
+        try requireCurrentSnapshot(pass)
+        if pass.transportID == "hub" {
+            guard let verified = pass.account, let mirror, document.hubAccountID == verified.userID else {
+                throw PersonalSyncOwnershipError.differentAccount
+            }
+            try await mirror.identity.requireCurrentAccount(verified)
+        }
+        try requireCurrentSnapshot(pass)
+    }
+
+    private func requireCurrentSnapshot(_ pass: MirrorPass) throws {
+        guard !isReplacingStore, pass.generation == storeGeneration, document == pass.expected else {
+            throw SetlineHubCommitError.localDocumentUnavailable
         }
     }
 
@@ -755,7 +846,7 @@ final class AppModel {
     /// run (no mirror, a workout in progress, or a pass already underway).
     @discardableResult
     private func synchronize(recover: Bool = false) async -> MirrorRuntime.Outcome? {
-        guard hasLoadedDocument, let mirror, !isSyncing, !isPlatformSyncing,
+        guard hasLoadedDocument, !isReplacingStore, let mirror, !isSyncing, !isPlatformSyncing,
               document.activeSession == nil else { return nil }
         isSyncing = true
         isPlatformSyncing = true
@@ -765,15 +856,19 @@ final class AppModel {
         }
         do {
             if recover { try await mirror.runtime.repullAll() }
+            let verified = try? await mirror.identity.verifiedSyncAccount()
+            let pass = makeMirrorPass(account: verified)
             let outcome = try await mirror.runtime.synchronize(records: {
-                try await self.mirrorRecords()
+                try await self.mirrorRecords(for: pass)
+            }, validateLocalSnapshot: { transportID in
+                try await self.validateMirrorPass(pass, transportID: transportID)
             }) { pulled in
-                try await self.commitMirrorRecords(pulled)
+                try await self.commitMirrorRecords(pulled, pass: pass)
             }
             hubPendingCount = (try? await mirror.runtime.unpushedCount(
                 transportID: "hub", records: mirrorRecords()
             )) ?? 0
-            await applySyncOutcome(outcome)
+            try await applySyncOutcome(outcome, pass: pass)
             return outcome
         } catch {
             if let ownership = error as? SetlineHubOwnershipError {
@@ -786,18 +881,24 @@ final class AppModel {
     }
 
     /// Writes the pass's results back into the surfaces views read: document
-    /// sync state and the Hub snapshot/notice.
-    private func applySyncOutcome(_ outcome: MirrorRuntime.Outcome) async {
+    /// sync state and the Hub snapshot/notice. A document that changed since
+    /// the pass captured it is left for the next pass to report on.
+    private func applySyncOutcome(_ outcome: MirrorRuntime.Outcome, pass: MirrorPass) async throws {
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
+        pass.transportID = outcome.transports.contains { $0.transportID == "hub" && $0.failure == nil }
+            ? "hub" : "cloudkit"
+        try await validateMirrorPassLocked(pass)
         var next = document
         if let cloud = outcome.transports.first(where: { $0.transportID == "cloudkit" }) {
             next.syncState = cloud.failure == nil ? .synced : .failed
             if cloud.failure == nil { next.lastSyncedAt = outcome.completedAt }
         }
         if next != document {
-            try? await store.save(next)
+            try await store.save(next)
             document = next
+            pass.expected = document
+            try await validateMirrorPassLocked(pass)
         }
         guard let hub = outcome.transports.first(where: { $0.transportID == "hub" }) else { return }
         if hub.failure == nil {
@@ -833,15 +934,20 @@ final class AppModel {
     }
 
     func confirmImport() async {
-        guard let importPreview else { return }
+        guard !isReplacingStore, let importPreview else { return }
+        isReplacingStore = true
+        storeGeneration = UUID()
+        defer { isReplacingStore = false }
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         do {
-            try await store.replace(with: importPreview)
             // The imported file is now this device's truth, but everything it does
-            // not contain must not be read as deleted elsewhere.
-            try? await syncStateStore.reset()
-            try? await mirror?.runtime.forgetBookkeeping()
+            // not contain must not be read as deleted elsewhere. Bookkeeping is
+            // cleared before the document is replaced, so a failure leaves the
+            // old document with intact bookkeeping rather than the reverse.
+            try await mirror?.runtime.forgetBookkeeping()
+            try await syncStateStore.reset()
+            try await store.replace(with: importPreview)
             document = importPreview
             hasLoadedDocument = true
             self.importPreview = nil
@@ -853,14 +959,18 @@ final class AppModel {
     }
 
     func resetLocalData() async {
+        guard !isReplacingStore else { return }
+        isReplacingStore = true
+        storeGeneration = UUID()
+        defer { isReplacingStore = false }
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         do {
-            try await store.reset()
             // Resetting this device must not propagate as a deletion of the same
             // training from iCloud, the Hub, and every other device.
-            try? await syncStateStore.reset()
-            try? await mirror?.runtime.forgetBookkeeping()
+            try await mirror?.runtime.forgetBookkeeping()
+            try await syncStateStore.reset()
+            try await store.reset()
             document = .initial
             hasLoadedDocument = true
             message = "Local data reset."
@@ -893,6 +1003,9 @@ final class AppModel {
         do {
             var next = document
             try operation(&next)
+            // Deletion intent is committed with the document itself, before any
+            // sync snapshot can observe the entity missing.
+            SyncEngine.recordLocalDeletions(from: document, in: &next, now: .now)
             try await store.save(next)
             document = next
             message = nil
