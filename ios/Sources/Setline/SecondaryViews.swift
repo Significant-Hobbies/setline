@@ -2,6 +2,7 @@ import AuthenticationServices
 import PersonalSyncKit
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
@@ -22,6 +23,8 @@ struct SettingsView: View {
                 )
                 if recoveryOnly {
                     Button("Try opening again") { Task { await model.load() } }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Try opening again")
                 } else {
                     capabilitySection
                     benchmarksSection
@@ -36,7 +39,7 @@ struct SettingsView: View {
                             item: SetlineExportPayload(document: model.document),
                             preview: SharePreview("Setline data")
                         ) {
-                            Label("Export complete Setline data", systemImage: "square.and.arrow.up")
+                            Label("export complete setline data", systemImage: "square.and.arrow.up").accessibilityLabel("Export complete Setline data")
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .frame(minHeight: 48)
@@ -44,12 +47,12 @@ struct SettingsView: View {
                     Button {
                         isImporterPresented = true
                     } label: {
-                        Label("Preview an import", systemImage: "doc.badge.plus")
+                        Label("preview an import", systemImage: "doc.badge.plus").accessibilityLabel("Preview an import")
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .frame(minHeight: 48)
                     Button(role: .destructive) { showResetConfirmation = true } label: {
-                        Label("Reset local data", systemImage: "trash")
+                        Label("reset local data", systemImage: "trash").accessibilityLabel("Reset local data")
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .frame(minHeight: 48)
@@ -82,13 +85,21 @@ struct SettingsView: View {
         }
         .alert("Replace all Setline data?", isPresented: $model.isImportConfirmationPresented) {
             Button("Replace", role: .destructive) { Task { await model.confirmImport() } }
+                .textCase(.lowercase)
+                .accessibilityLabel("Replace")
             Button("Cancel", role: .cancel) { model.importPreview = nil }
+                .textCase(.lowercase)
+                .accessibilityLabel("Cancel")
         } message: {
             Text("The import contains \(model.importPreview?.templates.count ?? 0) templates and \(model.importPreview?.history.count ?? 0) completed workouts. Your current device state will be replaced.")
         }
         .confirmationDialog("Reset local Setline data?", isPresented: $showResetConfirmation) {
             Button("Reset local data", role: .destructive) { Task { await model.resetLocalData() } }
+                .textCase(.lowercase)
+                .accessibilityLabel("Reset local data")
             Button("Cancel", role: .cancel) {}
+                .textCase(.lowercase)
+                .accessibilityLabel("Cancel")
         }
     }
 
@@ -101,10 +112,10 @@ struct SettingsView: View {
     private var significantHobbiesHubSection: some View {
         settingsSection("Significant Hobbies Hub") {
             Text(SyncDisclosure.hubPurpose)
-                .font(.footnote)
+                .font(SetlineType.footnote)
                 .foregroundStyle(.secondary)
             Text(SyncDisclosure.hubScope)
-                .font(.footnote)
+                .font(SetlineType.footnote)
                 .foregroundStyle(.secondary)
             LabeledContent("Status", value: hubStatusTitle)
             LabeledContent("Queued summaries", value: "\(model.hubPendingCount)")
@@ -116,21 +127,23 @@ struct SettingsView: View {
             }
             if let failed = model.hubSyncSnapshot.lastFailedAt {
                 Text("The last attempt failed \(failed.formatted(date: .abbreviated, time: .shortened)). Pending summaries stay on this iPhone until a retry succeeds.")
-                    .font(.footnote)
+                    .font(SetlineType.footnote)
                     .foregroundStyle(SetlinePalette.coral)
             }
             if let account = model.account {
                 if account.isSignedIn {
                     Label(account.session?.email ?? "Connected", systemImage: "checkmark.icloud")
                     if let notice = model.hubAccountNotice {
-                        Text(notice).font(.footnote).foregroundStyle(SetlinePalette.coral)
+                        Text(notice).font(SetlineType.footnote).foregroundStyle(SetlinePalette.coral)
                     }
                     if (model.document.hubAccountID == nil || model.hubAccountMatches) && (model.needsHubApproval || model.hubAccountNotice != nil) {
                         Text("Connect unapproved workout history and waiting sync changes to the account above? Workouts already owned by another account stay separate.")
-                            .font(.footnote)
+                            .font(SetlineType.footnote)
                         Button("Approve history for this account") {
                             Task { await model.approveHubAccount() }
                         }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Approve history for this account")
                         .disabled(model.isPlatformSyncing || model.document.activeSession != nil)
                     }
                     Button {
@@ -143,13 +156,17 @@ struct SettingsView: View {
                     Button("Recover missing Hub summaries") {
                         Task { await model.syncWithPlatform(announcing: true, recoverMissingRecords: true) }
                     }
+                    .textCase(.lowercase)
+                    .accessibilityLabel("Recover missing Hub summaries")
                     .disabled(model.isPlatformSyncing || model.document.activeSession != nil || !model.hubAccountMatches)
                     Text("Checks this account’s history for summaries an older app may have missed. Existing local workouts are kept. Unavailable set details cannot be recovered from a summary.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(SetlineType.footnote).foregroundStyle(.secondary)
                     Button("Sign out", role: .destructive) { Task { await account.signOut() } }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Sign out")
                 } else {
                     Text("Connect your private Significant Hobbies account to make these summaries visible in Hub. iCloud device continuity works separately.")
-                        .font(.footnote)
+                        .font(SetlineType.footnote)
                         .foregroundStyle(.secondary)
                     SignInWithAppleButton(.continue) { request in
                         account.prepareApple(request)
@@ -168,18 +185,20 @@ struct SettingsView: View {
                             await model.syncWithPlatform()
                         }
                     }
+                    .textCase(.lowercase)
+                    .accessibilityLabel("Continue with Google")
                     .buttonStyle(.borderedProminent)
                     .frame(maxWidth: .infinity)
                     .disabled(account.isConnecting)
                 }
                 if account.isConnecting { ProgressView() }
                 if let error = account.errorMessage {
-                    Text(error).font(.footnote).foregroundStyle(.red)
+                    Text(error).font(SetlineType.footnote).foregroundStyle(.red)
                 }
             }
             if model.document.activeSession != nil {
                 Text("Finish the active workout first. Setline never shares a workout you are still doing.")
-                    .font(.footnote)
+                    .font(SetlineType.footnote)
                     .foregroundStyle(.secondary)
             }
         }
@@ -196,20 +215,20 @@ struct SettingsView: View {
         } label: {
             HStack {
                 Image(systemName: icon)
-                    .font(.title2)
+                    .font(SetlineType.title2)
                     .frame(width: 44, height: 44)
                     .background(color)
                     .clipShape(RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.headline)
+                        .font(SetlineType.headline)
                     Text(subtitle)
-                        .font(.subheadline)
+                        .font(SetlineType.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.caption)
+                    .font(SetlineType.caption)
                     .foregroundStyle(.secondary)
             }
             .frame(minHeight: 48)
@@ -262,14 +281,14 @@ struct SettingsView: View {
         settingsSection("Storage") {
             HStack {
                 Image(systemName: "iphone.gen3")
-                    .font(.title2)
+                    .font(SetlineType.title2)
                     .frame(width: 44, height: 44)
                     .background(SetlinePalette.blue)
                     .clipShape(RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(storageTitle).font(.headline)
+                    Text(storageTitle).font(SetlineType.headline)
                     Text("Workouts run and record with no signal and no sign-in.")
-                        .font(.subheadline)
+                        .font(SetlineType.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -283,10 +302,10 @@ struct SettingsView: View {
     private var iCloudSection: some View {
         settingsSection("iCloud device continuity") {
             Text(SyncDisclosure.iCloudPurpose)
-                .font(.footnote)
+                .font(SetlineType.footnote)
                 .foregroundStyle(.secondary)
             Text(SyncDisclosure.iCloudScope)
-                .font(.footnote)
+                .font(SetlineType.footnote)
                 .foregroundStyle(.secondary)
             LabeledContent("Status", value: iCloudStatusTitle)
             if let synced = model.document.lastSyncedAt {
@@ -307,7 +326,7 @@ struct SettingsView: View {
     @ViewBuilder private var iCloudRow: some View {
         if let availability = model.syncAvailability, !availability.isAvailable {
             Text(SyncError.unavailable(availability).errorDescription ?? "iCloud is unavailable.")
-                .font(.footnote)
+                .font(SetlineType.footnote)
                 .foregroundStyle(.secondary)
         } else {
             Button {
@@ -323,12 +342,12 @@ struct SettingsView: View {
             .frame(minHeight: 48)
             if model.document.activeSession != nil {
                 Text("Finish the active workout first. Setline never syncs a session you are still doing.")
-                    .font(.footnote)
+                    .font(SetlineType.footnote)
                     .foregroundStyle(.secondary)
             }
         }
         Text("Use Export to keep a copy of everything, including on devices where iCloud is off.")
-            .font(.footnote)
+            .font(SetlineType.footnote)
             .foregroundStyle(.secondary)
     }
 
@@ -368,20 +387,21 @@ struct SettingsView: View {
     private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionLabel(text: title)
-            VStack(alignment: .leading, spacing: 10) { content() }
-                .padding(16)
-                .background(SetlinePalette.paper)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+            SMCard(padding: 16) {
+                VStack(alignment: .leading, spacing: 10) { content() }
+            }
         }
     }
 }
 
 func pageHeader(_ title: String, subtitle: String) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-        Text("SETLINE").font(.caption.weight(.black)).tracking(2.2)
+        Text("setline").font(SetlineType.caption.weight(.black)).tracking(2.2)
         InkRule()
-        Text(title).font(.system(.largeTitle, design: .rounded, weight: .black))
-        Text(subtitle).font(.body).foregroundStyle(.secondary)
+        SMSectionHeader(title, size: 34)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(title)
+        Text(subtitle).font(SetlineType.body).foregroundStyle(.secondary)
     }
     .padding(.top, 18)
 }

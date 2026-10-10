@@ -1,8 +1,10 @@
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 
 struct WorkoutPlayerView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showFinishConfirmation = false
 
@@ -32,7 +34,7 @@ struct WorkoutPlayerView: View {
         .safeAreaInset(edge: .top) {
             if let message = model.message {
                 Label(message, systemImage: "exclamationmark.triangle")
-                    .font(.footnote)
+                    .font(SetlineType.footnote)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(SetlinePalette.chalk)
@@ -41,14 +43,18 @@ struct WorkoutPlayerView: View {
         .interactiveDismissDisabled(model.document.activeSession != nil)
         .confirmationDialog("Finish this workout?", isPresented: $showFinishConfirmation) {
             Button("Finish and save") { Task { await model.finishWorkout() } }
+                .textCase(.lowercase)
+                .accessibilityLabel("Finish and save")
             Button("Keep training", role: .cancel) {}
+                .textCase(.lowercase)
+                .accessibilityLabel("Keep training")
         } message: {
             Text("Any remaining planned sets will be recorded as skipped.")
         }
     }
 
     private func sessionBar(_ session: WorkoutSession) -> some View {
-        HStack(spacing: 14) {
+        (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10)) : AnyLayout(HStackLayout(spacing: 14))) {
             Button {
                 model.isWorkoutPresented = false
             } label: {
@@ -60,20 +66,22 @@ struct WorkoutPlayerView: View {
             .accessibilityLabel("Return to Today")
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.templateName)
-                    .font(.headline.weight(.black))
-                    .lineLimit(1)
+                    .font(SetlineType.headline.weight(.black))
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("\(session.completedCount) / \(session.steps.count) recorded")
-                    .font(.caption.monospacedDigit())
+                    .font(SetlineType.caption.monospacedDigit())
                     .foregroundStyle(SetlinePalette.chalk.opacity(0.68))
             }
             Spacer()
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 Text(context.date.timeIntervalSince(session.startedAt).durationClock)
-                    .font(.headline.monospacedDigit().weight(.black))
+                    .font(SetlineType.headline.monospacedDigit().weight(.black))
                     .accessibilityLabel("Workout elapsed time")
             }
             Button("Finish") { showFinishConfirmation = true }
-                .font(.subheadline.weight(.bold))
+                .textCase(.lowercase)
+                .accessibilityLabel("Finish")
+                .font(SetlineType.subheadline.weight(.bold))
                 .frame(minHeight: 44)
         }
         .padding(.horizontal, 16)
@@ -87,17 +95,20 @@ struct WorkoutPlayerView: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 42))
                 .foregroundStyle(SetlinePalette.lime)
-            Text("The plan is recorded.")
-                .font(.system(.largeTitle, design: .rounded, weight: .black))
+            SMSectionHeader("the plan is recorded.", size: 34)
             Text("\(session.completedWorkingSetCount) working sets · \(session.completedCount) steps completed · \(session.steps.count - session.completedCount) skipped")
-                .font(.headline.monospacedDigit())
+                .font(SetlineType.headline.monospacedDigit())
             if session.tonnage > 0 {
                 Text("\(session.tonnage.trimmedString) kg total load moved")
-                    .font(.subheadline.monospacedDigit())
+                    .font(SetlineType.subheadline.monospacedDigit())
                     .foregroundStyle(SetlinePalette.ink.opacity(0.7))
             }
-            Button("Save workout") { Task { await model.finishWorkout() } }
-                .buttonStyle(ActionSlabStyle())
+            Button { Task { await model.finishWorkout() } } label: {
+                Text("save workout").frame(maxWidth: .infinity)
+            }
+                .textCase(.lowercase)
+                .accessibilityLabel("Save workout")
+                .buttonStyle(SetlineBrandButtonStyle())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(24)
@@ -139,6 +150,7 @@ private struct SegmentDraft: Identifiable, Equatable {
 
 private struct AttemptBoard: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let step: WorkoutStep
 
     @State private var drafts: [SegmentDraft] = []
@@ -166,21 +178,28 @@ private struct AttemptBoard: View {
                         await model.completeCurrent(segments: segments, workSeconds: recordedWorkSeconds)
                     }
                 } label: {
-                    Label("Record set · start rest", systemImage: "checkmark")
+                    Label("record set · start rest", systemImage: "checkmark").accessibilityLabel("Record set · start rest")
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(ActionSlabStyle())
+                .buttonStyle(SetlineBrandButtonStyle())
                 .disabled(!canComplete)
                 .opacity(canComplete ? 1 : 0.48)
-                HStack(spacing: 12) {
+                (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))) {
                     Button("Do later") { Task { await model.deferCurrent() } }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Do later")
                         .buttonStyle(.bordered)
                     Button("Add another set") { Task { await model.addExtraSet() } }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Add another set")
                         .buttonStyle(.bordered)
                     Spacer()
                     Button("Skip", role: .destructive) { Task { await model.skipCurrent() } }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Skip")
                         .frame(minHeight: 44)
                 }
-                .font(.subheadline.weight(.semibold))
+                .font(SetlineType.subheadline.weight(.semibold))
             }
             .padding(20)
         }
@@ -194,7 +213,9 @@ private struct AttemptBoard: View {
                     // system keyboard accessory, whose transient zero-width
                     // layout can produce invalid frame warnings.
                     Button("Done") { focusedField = nil }
-                        .font(.subheadline.weight(.bold))
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Done")
+                        .font(SetlineType.subheadline.weight(.bold))
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
@@ -209,20 +230,20 @@ private struct AttemptBoard: View {
             VStack(alignment: .leading, spacing: 5) {
                 SectionLabel(text: headingLabel)
                 Text(step.exerciseName)
-                    .font(.system(size: 32, weight: .black, design: .rounded))
+                    .font(SetlineType.title)
                     .tracking(-0.7)
             }
             Spacer()
             VStack(spacing: 4) {
                 Text("#\(step.authoredPosition + 1)")
-                    .font(.headline.monospacedDigit().weight(.black))
+                    .font(SetlineType.headline.monospacedDigit().weight(.black))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
                     .background(step.stepType.countsAsWorkingSet ? SetlinePalette.lime : SetlinePalette.blue)
                     .clipShape(RoundedRectangle(cornerRadius: 7))
                 if step.isOptional {
-                    Text("OPTIONAL")
-                        .font(.system(size: 9, weight: .black))
+                    Text("optional")
+                        .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy))
                         .foregroundStyle(SetlinePalette.ink.opacity(0.55))
                 }
             }
@@ -240,26 +261,26 @@ private struct AttemptBoard: View {
 
     private var targetBlock: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("TARGET")
-                .font(.caption.weight(.bold))
+            Text("target")
+                .font(SetlineType.caption.weight(.bold))
                 .tracking(1.1)
             Text(step.target.displayString)
-                .font(.system(size: 42, weight: .black, design: .rounded).monospacedDigit())
+                .font(.custom(SetlinePalette.theme.monoFont, size: 42, relativeTo: .title).weight(.heavy).monospacedDigit())
                 .minimumScaleFactor(0.6)
                 .lineLimit(2)
             if !step.target.qualifiers.isEmpty {
                 Text(step.target.qualifiers.joined(separator: " · "))
-                    .font(.subheadline.weight(.bold))
+                    .font(SetlineType.subheadline.weight(.bold))
                     .foregroundStyle(SetlinePalette.ink.opacity(0.7))
             }
             if !step.rest.isEmpty {
                 Text("Authored rest \(step.rest.displayString)")
-                    .font(.caption.monospacedDigit())
+                    .font(SetlineType.caption.monospacedDigit())
                     .foregroundStyle(SetlinePalette.ink.opacity(0.55))
             }
             if !step.cue.isEmpty {
                 Text(step.cue)
-                    .font(.body.weight(.medium))
+                    .font(SetlineType.body.weight(.medium))
                     .foregroundStyle(SetlinePalette.ink.opacity(0.65))
                     .padding(.top, 4)
             }
@@ -275,25 +296,28 @@ private struct AttemptBoard: View {
             HStack(spacing: 14) {
                 TimelineView(.periodic(from: .now, by: 0.5)) { context in
                     Text(TimeInterval(liveWorkSeconds(at: context.date)).durationClock)
-                        .font(.system(size: 34, weight: .black, design: .rounded).monospacedDigit())
+                        .font(.custom(SetlinePalette.theme.monoFont, size: 34, relativeTo: .title).weight(.heavy).monospacedDigit())
                         .accessibilityLabel("Set duration \(liveWorkSeconds(at: context.date)) seconds")
                 }
                 Spacer()
-                Button(workStartedAt == nil ? "Start set" : "Stop") {
+                Button(workStartedAt == nil ? "start set" : "stop") {
                     toggleWorkTimer()
                 }
-                .font(.subheadline.weight(.bold))
+                .accessibilityLabel(workStartedAt == nil ? "Start set" : "Stop")
+                .font(SetlineType.subheadline.weight(.bold))
                 .frame(minWidth: 96, minHeight: 44)
                 .background(workStartedAt == nil ? SetlinePalette.blue : SetlinePalette.coral.opacity(0.85))
                 .clipShape(RoundedRectangle(cornerRadius: 9))
                 if accumulatedWorkSeconds > 0 || workStartedAt != nil {
                     Button("Reset") { resetWorkTimer() }
-                        .font(.subheadline.weight(.bold))
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Reset")
+                        .font(SetlineType.subheadline.weight(.bold))
                         .frame(minHeight: 44)
                 }
             }
             Text("Timed independently of rest, so time under load is recorded rather than estimated.")
-                .font(.caption)
+                .font(SetlineType.caption)
                 .foregroundStyle(SetlinePalette.ink.opacity(0.55))
         }
     }
@@ -333,8 +357,8 @@ private struct AttemptBoard: View {
                 Button {
                     isQuickEntryShown.toggle()
                 } label: {
-                    Label("Type it", systemImage: "text.cursor")
-                        .font(.caption.weight(.bold))
+                    Label("type it", systemImage: "text.cursor").accessibilityLabel("Type it")
+                        .font(SetlineType.caption.weight(.bold))
                 }
                 .frame(minHeight: 32)
             }
@@ -345,23 +369,23 @@ private struct AttemptBoard: View {
                 Button {
                     drafts.append(SegmentDraft(side: step.target.perSide ? .right : nil))
                 } label: {
-                    Label("Add segment", systemImage: "plus")
-                        .font(.subheadline.weight(.bold))
+                    Label("add segment", systemImage: "plus").accessibilityLabel("Add segment")
+                        .font(SetlineType.subheadline.weight(.bold))
                 }
                 .frame(minHeight: 44)
                 if drafts.count > 1 {
                     Button(role: .destructive) {
                         _ = drafts.popLast()
                     } label: {
-                        Label("Remove last", systemImage: "minus")
-                            .font(.subheadline.weight(.bold))
+                        Label("remove last", systemImage: "minus").accessibilityLabel("Remove last")
+                            .font(SetlineType.subheadline.weight(.bold))
                     }
                     .frame(minHeight: 44)
                 }
             }
             if drafts.count > 1 {
                 Text("All \(drafts.count) segments record as one set.")
-                    .font(.caption.weight(.semibold))
+                    .font(SetlineType.caption.weight(.semibold))
                     .foregroundStyle(SetlinePalette.ink.opacity(0.6))
             }
         }
@@ -373,7 +397,7 @@ private struct AttemptBoard: View {
             if drafts.count > 1 || step.target.perSide {
                 HStack {
                     Text("SEGMENT \(index + 1)")
-                        .font(.system(size: 10, weight: .black))
+                        .font(.custom(SetlinePalette.theme.sansFont, size: 10, relativeTo: .caption2).weight(.heavy))
                         .foregroundStyle(SetlinePalette.ink.opacity(0.5))
                     Spacer()
                     if step.target.perSide {
@@ -422,7 +446,7 @@ private struct AttemptBoard: View {
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .font(.body.monospaced())
+                    .font(SetlineType.body.monospaced())
                     .accessibilityLabel("Shorthand set entry")
                 let parsed = SetEntryParser.parse(quickEntry)
                 if !quickEntry.isEmpty {
@@ -431,20 +455,22 @@ private struct AttemptBoard: View {
                     Text(parsed.segments.isEmpty
                         ? "Not understood yet."
                         : "Reads as: " + parsed.segments.map(describe).joined(separator: " + "))
-                        .font(.caption.weight(.semibold))
+                        .font(SetlineType.caption.weight(.semibold))
                         .foregroundStyle(parsed.segments.isEmpty
                             ? SetlinePalette.coral
                             : SetlinePalette.ink.opacity(0.75))
                     if !parsed.unrecognised.isEmpty {
                         Text("Ignored: \(parsed.unrecognised.joined(separator: ", "))")
-                            .font(.caption)
+                            .font(SetlineType.caption)
                             .foregroundStyle(SetlinePalette.coral)
                     }
                 }
                 Button("Apply to segments") {
                     applyQuickEntry(parsed)
                 }
-                .font(.subheadline.weight(.bold))
+                .textCase(.lowercase)
+                .accessibilityLabel("Apply to segments")
+                .font(SetlineType.subheadline.weight(.bold))
                 .frame(minHeight: 44)
                 .disabled(parsed.segments.isEmpty)
             }
@@ -519,15 +545,15 @@ private struct AttemptBoard: View {
         field: EntryField
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.caption.weight(.bold))
+            Text(title).font(SetlineType.caption.weight(.bold))
             HStack(alignment: .center, spacing: 5) {
                 TextField("0", text: value)
                     .keyboardType(.decimalPad)
                     .focused($focusedField, equals: field)
-                    .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
+                    .font(.custom(SetlinePalette.theme.monoFont, size: 30, relativeTo: .title).weight(.heavy).monospacedDigit())
                     .accessibilityLabel(title)
                 Text(unit)
-                    .font(.caption.weight(.bold))
+                    .font(SetlineType.caption.weight(.bold))
                     .foregroundStyle(SetlinePalette.ink.opacity(0.55))
             }
             .padding(.horizontal, 12)
@@ -541,6 +567,7 @@ private struct AttemptBoard: View {
 
 private struct RestBoard: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let rest: RestState
     let next: WorkoutStep?
 
@@ -551,38 +578,50 @@ private struct RestBoard: View {
                 VStack(alignment: .leading, spacing: 24) {
                     SectionLabel(text: remaining > 0 ? "Rest · wall clock" : "Rest target complete")
                     Text(TimeInterval(remaining).durationClock)
-                        .font(.system(size: 78, weight: .black, design: .rounded).monospacedDigit())
+                        .font(.custom(SetlinePalette.theme.monoFont, size: 78, relativeTo: .title).weight(.heavy).monospacedDigit())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.4)
                         .tracking(-2)
                         .contentTransition(.numericText(countsDown: true))
                         .accessibilityLabel("\(remaining) seconds remaining")
-                    HStack(spacing: 10) {
+                    (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10)) : AnyLayout(HStackLayout(spacing: 10))) {
                         Button("−15 sec") { Task { await model.adjustRest(by: -15) } }
+                            .textCase(.lowercase)
+                            .accessibilityLabel("−15 sec")
                         Button("+15 sec") { Task { await model.adjustRest(by: 15) } }
+                            .textCase(.lowercase)
+                            .accessibilityLabel("+15 sec")
                         Button("+30 sec") { Task { await model.adjustRest(by: 30) } }
+                            .textCase(.lowercase)
+                            .accessibilityLabel("+30 sec")
                     }
-                    .buttonStyle(.bordered)
-                    .font(.subheadline.weight(.bold))
+                    .buttonStyle(SMButtonStyle(.outline))
+                    .font(SetlineType.subheadline.weight(.bold))
                     .tint(SetlinePalette.ink)
                     if let next {
                         InkRule()
                         SectionLabel(text: "Next in authored order")
                         Text(next.exerciseName)
-                            .font(.system(.title, design: .rounded, weight: .black))
+                            .font(SetlineType.title)
                         Text("\(next.label) · \(next.target.displayString)")
-                            .font(.title3.weight(.semibold).monospacedDigit())
-                        Button(remaining > 0 ? "Start next early" : "Start next set") {
+                            .font(SetlineType.title3.weight(.semibold).monospacedDigit())
+                        Button {
                             Task { await model.endRest() }
+                        } label: {
+                            Text(remaining > 0 ? "start next early" : "start next set")
+                                .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(ActionSlabStyle())
+                        .accessibilityLabel(remaining > 0 ? "Start next early" : "Start next set")
+                        .buttonStyle(SetlineBrandButtonStyle())
                     }
                     Text("Authored \(rest.authoredSeconds)s · adjusted \(rest.adjustedSeconds)s · actual \(rest.actual(at: context.date))s")
-                        .font(.caption.monospacedDigit())
+                        .font(SetlineType.caption.monospacedDigit())
                         .foregroundStyle(SetlinePalette.ink.opacity(0.62))
                 }
                 .padding(24)
             }
         }
-        .background(SetlinePalette.lime)
+        .background(SetlinePalette.chalk)
     }
 }
 
@@ -595,7 +634,7 @@ private struct SetRail: View {
                 SectionLabel(text: "Session rail")
                 Spacer()
                 Text("Authored position retained")
-                    .font(.caption2)
+                    .font(SetlineType.caption2)
                     .foregroundStyle(.secondary)
             }
             ScrollView(.horizontal, showsIndicators: false) {
@@ -603,12 +642,11 @@ private struct SetRail: View {
                     ForEach(Array(session.steps.enumerated()), id: \.element.id) { index, step in
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(step.authoredPosition + 1)")
-                                .font(.caption2.monospacedDigit().weight(.black))
+                                .font(SetlineType.caption2.monospacedDigit().weight(.black))
                             Text(step.exerciseName)
-                                .font(.caption.weight(.bold))
-                                .lineLimit(1)
-                            Text(step.status == .planned && index == session.activeIndex ? "ACTIVE" : step.status.rawValue.uppercased())
-                                .font(.system(size: 9, weight: .black))
+                                .font(SetlineType.caption.weight(.bold))
+                                .fixedSize(horizontal: false, vertical: true)
+                            SMStatusPill(step.status == .planned && index == session.activeIndex ? "active" : step.status.rawValue.lowercased())
                         }
                         .frame(width: 112, alignment: .leading)
                         .padding(9)

@@ -1,5 +1,6 @@
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 import UniformTypeIdentifiers
 
 struct RootView: View {
@@ -19,19 +20,19 @@ struct RootView: View {
             } else {
                 TabView(selection: $model.selectedTab) {
                     NavigationStack { TodayView() }
-                        .tabItem { Label("Today", systemImage: "scope") }
+                        .tabItem { Label("today", systemImage: "scope").accessibilityLabel("Today") }
                         .tag(0)
                     NavigationStack { PlanView() }
-                        .tabItem { Label("Plan", systemImage: "list.bullet.rectangle") }
+                        .tabItem { Label("plan", systemImage: "list.bullet.rectangle").accessibilityLabel("Plan") }
                         .tag(1)
                     NavigationStack { HistoryView() }
-                        .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
+                        .tabItem { Label("history", systemImage: "clock.arrow.circlepath").accessibilityLabel("History") }
                         .tag(2)
                     NavigationStack { SettingsView() }
-                        .tabItem { Label("You", systemImage: "person.crop.circle") }
+                        .tabItem { Label("you", systemImage: "person.crop.circle").accessibilityLabel("You") }
                         .tag(3)
                     NavigationStack { ExercisesView() }
-                        .tabItem { Label("Exercises", systemImage: "chart.line.uptrend.xyaxis") }
+                        .tabItem { Label("exercises", systemImage: "chart.line.uptrend.xyaxis").accessibilityLabel("Exercises") }
                         .tag(4)
                 }
                 .setlineBackground()
@@ -45,6 +46,8 @@ struct RootView: View {
             set: { if !$0 { model.message = nil } }
         )) {
             Button("OK", role: .cancel) { model.message = nil }
+                .textCase(.lowercase)
+                .accessibilityLabel("OK")
         } message: {
             Text(model.message ?? "")
         }
@@ -100,22 +103,23 @@ struct TodayView: View {
             }
             .padding(.top, 18)
             InkRule()
-            Text("Follow the plan.\nRecord the truth.")
-                .font(.system(.largeTitle, design: .rounded, weight: .black))
+            SMSectionHeader("Follow the plan.\nRecord the truth.", size: 34)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Follow the plan.\nRecord the truth.")
                 .tracking(-1)
                 .padding(.top, 10)
         }
     }
 
     private var brandLabel: some View {
-        Text("SETLINE")
-            .font(.caption.weight(.black))
+        Text("setline")
+            .font(SetlineType.caption.weight(.black))
             .tracking(2.2)
     }
 
     private var dateLabel: some View {
         Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)))
-            .font(.subheadline.monospacedDigit().weight(.semibold))
+            .font(SetlineType.subheadline.monospacedDigit().weight(.semibold))
     }
 
     private func workoutHero(_ resolved: ResolvedSession) -> some View {
@@ -124,19 +128,19 @@ struct TodayView: View {
                 SectionLabel(text: resolved.isRestDay ? "Today · scheduled rest" : "Today · authored plan")
                 Spacer()
                 Image(systemName: "lock.fill")
-                    .font(.caption)
+                    .font(SetlineType.caption)
             }
             .padding(.bottom, 14)
             Text(resolved.template.name)
-                .font(.system(.title, design: .rounded, weight: .black))
+                .font(SetlineType.title)
                 .tracking(-0.8)
             Text(resolved.subtitle)
-                .font(.title3.weight(.medium))
+                .font(SetlineType.title3.weight(.medium))
                 .foregroundStyle(SetlinePalette.ink.opacity(0.66))
                 .padding(.top, 3)
             if let notice = resolved.outOfBlockNotice {
                 Text(notice)
-                    .font(.footnote.weight(.medium))
+                    .font(SetlineType.footnote.weight(.medium))
                     .foregroundStyle(SetlinePalette.ink.opacity(0.7))
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -158,17 +162,19 @@ struct TodayView: View {
                 Button {
                     Task { await model.startWorkout(resolved) }
                 } label: {
-                    Label("Start workout", systemImage: "arrow.right")
+                    Label("start workout", systemImage: "arrow.right").accessibilityLabel("Start workout")
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(ActionSlabStyle())
+                .buttonStyle(SetlineBrandButtonStyle())
                 .accessibilityHint("Starts an offline workout using the authored order")
                 NavigationLink {
                     SessionPreviewView(resolved: resolved)
                 } label: {
-                    Label("Review the session first", systemImage: "list.bullet")
-                        .font(.subheadline.weight(.bold))
+                    Label("review the session first", systemImage: "list.bullet").accessibilityLabel("review the session first")
+                        .font(SetlineType.subheadline.weight(.bold))
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
+                .accessibilityLabel("Review the session first")
             }
             if !resolved.notes.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
@@ -176,20 +182,14 @@ struct TodayView: View {
                     SectionLabel(text: "Authored rules")
                     ForEach(Array(resolved.notes.enumerated()), id: \.offset) { _, note in
                         Text("· \(note)")
-                            .font(.footnote)
+                            .font(SetlineType.footnote)
                             .foregroundStyle(SetlinePalette.ink.opacity(0.72))
                     }
                 }
                 .padding(.top, 16)
             }
         }
-        .padding(20)
-        .background(SetlinePalette.paper)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(SetlinePalette.ink.opacity(0.12), lineWidth: 1)
-        }
+        .paperCard()
     }
 
     /// Scrolls rather than wraps: four pillars cannot share one phone-width row
@@ -198,15 +198,8 @@ struct TodayView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 ForEach(Pillar.allCases.filter { pillars.contains($0) }, id: \.self) { pillar in
-                    Text(pillar.title.uppercased())
-                        .font(.caption2.weight(.black))
-                        .tracking(0.6)
-                        .lineLimit(1)
-                        .fixedSize()
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background(SetlinePalette.blue.opacity(0.7))
-                        .clipShape(Capsule())
+                    SMStatusPill(pillar.title.lowercased())
+                        .fixedSize(horizontal: true, vertical: false)
                 }
             }
         }
@@ -217,14 +210,18 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 16) {
             SectionLabel(text: "Workout in progress")
             Text(session.templateName)
-                .font(.system(.title, design: .rounded, weight: .black))
+                .font(SetlineType.title)
             ProgressView(value: Double(session.completedCount), total: Double(max(1, session.steps.count)))
                 .tint(SetlinePalette.lime)
                 .scaleEffect(x: 1, y: 2, anchor: .center)
             Text("\(session.completedCount) of \(session.steps.count) steps recorded")
-                .font(.subheadline.monospacedDigit())
-            Button("Resume workout") { model.isWorkoutPresented = true }
-                .buttonStyle(ActionSlabStyle())
+                .font(SetlineType.subheadline.monospacedDigit())
+            Button { model.isWorkoutPresented = true } label: {
+                Text("resume workout").frame(maxWidth: .infinity)
+            }
+                .textCase(.lowercase)
+                .accessibilityLabel("Resume workout")
+                .buttonStyle(SetlineBrandButtonStyle())
         }
         .padding(20)
         .background(SetlinePalette.ink)
@@ -248,9 +245,9 @@ struct TodayView: View {
     private func metric(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(value)
-                .font(.headline.monospacedDigit().weight(.black))
-            Text(label)
-                .font(.caption2.weight(.bold))
+                .font(SetlineType.headline.monospacedDigit().weight(.black))
+            Text(label.lowercased())
+                .font(SetlineType.caption2.weight(.bold))
                 .foregroundStyle(SetlinePalette.ink.opacity(0.55))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -261,18 +258,18 @@ struct TodayView: View {
         let todayIndex = todayStripIndex
         return VStack(alignment: .leading, spacing: 14) {
             SectionLabel(text: "This week")
-            HStack(spacing: 7) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: dynamicTypeSize.isAccessibilitySize ? 2 : 7), spacing: 7) {
                 ForEach(Array(week.enumerated()), id: \.offset) { index, day in
                     let hasPlan = day != nil && !(day?.isRestDay ?? true)
                     VStack(spacing: 6) {
                         Text(stripDayLabel(index))
-                            .font(.caption2.weight(.bold))
+                            .font(SetlineType.caption2.weight(.bold))
                         Circle()
                             .fill(hasPlan ? SetlinePalette.ink : SetlinePalette.steel)
                             .frame(width: 9, height: 9)
                         Text(stripSessionLabel(day))
-                            .font(.system(size: 9, weight: .bold))
-                            .lineLimit(1)
+                            .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.bold))
+                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                             .minimumScaleFactor(0.7)
                             .foregroundStyle(SetlinePalette.ink.opacity(0.7))
                     }
@@ -318,17 +315,17 @@ struct TodayView: View {
             if let latest = model.document.history.first {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(latest.templateName).font(.headline)
+                        Text(latest.templateName).font(SetlineType.headline)
                         Text(latest.completedAt?.formatted(date: .abbreviated, time: .shortened) ?? "In progress")
-                            .font(.subheadline)
+                            .font(SetlineType.subheadline)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("\(latest.completedWorkingSetCount)")
-                            .font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit())
-                        Text("WORKING SETS")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.custom(SetlinePalette.theme.monoFont, size: 30, relativeTo: .title).weight(.heavy).monospacedDigit())
+                        Text("working sets")
+                            .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.bold))
                             .foregroundStyle(SetlinePalette.ink.opacity(0.55))
                     }
                 }
@@ -336,7 +333,7 @@ struct TodayView: View {
                 InkRule()
             } else {
                 Text("Your first completed workout will establish the record—not an estimate.")
-                    .font(.body)
+                    .font(SetlineType.body)
                     .foregroundStyle(SetlinePalette.ink.opacity(0.66))
             }
         }
@@ -353,7 +350,7 @@ struct SessionPreviewView: View {
             if !resolved.notes.isEmpty {
                 Section("Authored rules") {
                     ForEach(Array(resolved.notes.enumerated()), id: \.offset) { _, note in
-                        Text(note).font(.footnote)
+                        Text(note).font(SetlineType.footnote)
                     }
                 }
             }
@@ -363,24 +360,24 @@ struct SessionPreviewView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text(plannedSet.label)
-                                    .font(.subheadline.weight(.semibold))
+                                    .font(SetlineType.subheadline.weight(.semibold))
                                 Spacer()
                                 Text(plannedSet.stepType.title.uppercased())
-                                    .font(.system(size: 9, weight: .black))
+                                    .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy))
                                     .foregroundStyle(SetlinePalette.ink.opacity(0.5))
                             }
                             Text(plannedSet.target.displayString)
-                                .font(.headline.monospacedDigit())
+                                .font(SetlineType.headline.monospacedDigit())
                             let qualifiers = plannedSet.target.qualifiers
                                 + (plannedSet.rest.isEmpty ? [] : ["Rest \(plannedSet.rest.displayString)"])
                                 + (plannedSet.isOptional ? ["Optional"] : [])
                             if !qualifiers.isEmpty {
                                 Text(qualifiers.joined(separator: " · "))
-                                    .font(.caption)
+                                    .font(SetlineType.caption)
                                     .foregroundStyle(.secondary)
                             }
                             if let cue = plannedSet.cue, !cue.isEmpty {
-                                Text(cue).font(.caption).foregroundStyle(.secondary)
+                                Text(cue).font(SetlineType.caption).foregroundStyle(.secondary)
                             }
                         }
                         .padding(.vertical, 2)

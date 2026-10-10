@@ -11,6 +11,7 @@
 		06B31DF75BFAA837FA9FAAA6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6BF346E7B39E1FEE8CD50C7C /* Assets.xcassets */; };
 		0C260E4D0C6C142C45B3AC6D /* HistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C887472FBEDF36FD127C32 /* HistoryViews.swift */; };
 		0FA5FD50B707EF422848A2E6 /* Targets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B888AC3A36F08B6334AE20CA /* Targets.swift */; };
+		12800C7C294CA959BBB8FD9D /* SaaSMakerUI in Frameworks */ = {isa = PBXBuildFile; productRef = E22E7A952D2FB4338F0F0185 /* SaaSMakerUI */; };
 		171B1B9E0DDE084379BB9DF8 /* RestNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B9735779088EF43C24F335 /* RestNotifier.swift */; };
 		1FA5DF9F89B308A82207E40B /* SetlineCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		27AC3883B9A7376D6262AAD5 /* PersonalSyncKit in Frameworks */ = {isa = PBXBuildFile; productRef = 842AC5390DAF651CB9996773 /* PersonalSyncKit */; };
@@ -204,6 +205,7 @@
 			files = (
 				8AEB42E3793E01E4E40F67FF /* SetlineCore.framework in Frameworks */,
 				AB34B33A9BE381FB529BAC90 /* PersonalSyncKit in Frameworks */,
+				12800C7C294CA959BBB8FD9D /* SaaSMakerUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -429,6 +431,7 @@
 			name = Setline;
 			packageProductDependencies = (
 				6211F2538331C41ABA958E8E /* PersonalSyncKit */,
+				E22E7A952D2FB4338F0F0185 /* SaaSMakerUI */,
 			);
 			productName = Setline;
 			productReference = BA87F29CCAE78D4F24E75B1F /* Setline.app */;
@@ -497,6 +500,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */,
+				4CA3BD9ECD417D3F4D139DDD /* XCRemoteSwiftPackageReference "ui-library" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C93C5A86494CB1CE017F1623 /* Products */;
@@ -1013,6 +1017,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		4CA3BD9ECD417D3F4D139DDD /* XCRemoteSwiftPackageReference "ui-library" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sass-maker/ui-library";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.14;
+			};
+		};
 		C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Significant-Hobbies/significanthobbies.git";
@@ -1033,6 +1045,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */;
 			productName = PersonalSyncKit;
+		};
+		E22E7A952D2FB4338F0F0185 /* SaaSMakerUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4CA3BD9ECD417D3F4D139DDD /* XCRemoteSwiftPackageReference "ui-library" */;
+			productName = SaaSMakerUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

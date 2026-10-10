@@ -1,5 +1,6 @@
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 
 enum SetlineOnboardingPolicy {
     static func shouldPresent(document: SetlineDocument, completed: Bool) -> Bool {
@@ -112,12 +113,14 @@ struct SetlineOnboardingView: View {
                     step = .preview
                 }
             }
-            .buttonStyle(ActionSlabStyle())
+            .buttonStyle(SetlineBrandButtonStyle())
             .accessibilityHint("Reviews a real session before starting")
 
             Button("I’ll build my own programme") {
                 model.completeOnboarding(openPlan: true)
             }
+            .textCase(.lowercase)
+            .accessibilityLabel("I’ll build my own programme")
             .font(.headline)
             .frame(maxWidth: .infinity, minHeight: 48)
             .buttonStyle(.bordered)
@@ -125,6 +128,8 @@ struct SetlineOnboardingView: View {
             Button("Configure later") {
                 model.completeOnboarding()
             }
+            .textCase(.lowercase)
+            .accessibilityLabel("Configure later")
             .font(.subheadline.weight(.semibold))
             .frame(maxWidth: .infinity, minHeight: 44)
         }
@@ -133,6 +138,8 @@ struct SetlineOnboardingView: View {
     private var previewStep: some View {
         VStack(alignment: .leading, spacing: 22) {
             Button("Back") { step = .welcome }
+                .textCase(.lowercase)
+                .accessibilityLabel("Back")
                 .font(.subheadline.weight(.bold))
                 .frame(minHeight: 44)
 
@@ -176,7 +183,7 @@ struct SetlineOnboardingView: View {
                     Task { await model.startWorkout(preview) }
                 }
             }
-            .buttonStyle(ActionSlabStyle())
+            .buttonStyle(SetlineBrandButtonStyle())
             .accessibilityHint(
                 model.isExistingOwnerOrientation
                     ? "Closes the onboarding tour without changing your programme"
@@ -200,7 +207,9 @@ struct SetlineOnboardingView: View {
             Button("See Today") {
                 model.completeOnboarding()
             }
-            .buttonStyle(ActionSlabStyle())
+            .textCase(.lowercase)
+            .accessibilityLabel("See Today")
+            .buttonStyle(SetlineBrandButtonStyle())
         }
     }
 

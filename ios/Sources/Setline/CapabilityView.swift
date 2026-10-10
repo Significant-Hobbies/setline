@@ -1,5 +1,6 @@
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 
 /// The four-axis capability profile: demonstrated curriculum scores, the next
 /// milestone's effect, and the prioritised plan. Scores are curriculum
@@ -105,9 +106,9 @@ struct CapabilityView: View {
 
     private var legend: some View {
         HStack(spacing: 16) {
-            Label("Now", systemImage: "circle.fill")
-            Label("Next checkpoint", systemImage: "circle.dashed")
-            Label("Your goal", systemImage: "circle")
+            Label("now", systemImage: "circle.fill").accessibilityLabel("Now")
+            Label("next checkpoint", systemImage: "circle.dashed").accessibilityLabel("Next checkpoint")
+            Label("your goal", systemImage: "circle").accessibilityLabel("Your goal")
         }
         .font(.caption2.weight(.bold))
         .foregroundStyle(SetlinePalette.ink.opacity(0.6))
@@ -180,9 +181,9 @@ struct CapabilityView: View {
             Button {
                 Task { await model.applyCapabilityProgramme() }
             } label: {
-                Label("Generate coordinated programme", systemImage: "calendar.badge.plus")
+                Label("generate coordinated programme", systemImage: "calendar.badge.plus").accessibilityLabel("Generate coordinated programme")
             }
-            .buttonStyle(ActionSlabStyle())
+            .buttonStyle(SetlineBrandButtonStyle())
             Text("One programme across the axes — priorities first, maintenance retained — installed as an ordinary custom programme you can still edit and skip.")
                 .font(.footnote)
                 .foregroundStyle(SetlinePalette.ink.opacity(0.72))
@@ -321,7 +322,7 @@ struct CapabilityAxisView: View {
             } label: {
                 Label("Start \(score.axis.title) session", systemImage: "play.fill")
             }
-            .buttonStyle(ActionSlabStyle())
+            .buttonStyle(SetlineBrandButtonStyle())
             .disabled(model.document.activeSession != nil)
             let focused = model.document.capability.focusAxes.contains(score.axis)
             Button {

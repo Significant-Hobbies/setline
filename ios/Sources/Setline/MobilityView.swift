@@ -1,5 +1,6 @@
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 
 /// Head-to-toe mobility curriculum — a periodic movement baseline alongside the
 /// Benchmarks scorecard. Three views: cards (record the 15 checks), snapshots
@@ -48,7 +49,11 @@ struct MobilityView: View {
             Button("Clear records", role: .destructive) {
                 Task { await model.clearMobilityRecords() }
             }
+            .textCase(.lowercase)
+            .accessibilityLabel("Clear records")
             Button("Cancel", role: .cancel) {}
+                .textCase(.lowercase)
+                .accessibilityLabel("Cancel")
         } message: {
             Text("Saved snapshots and your practice set will be kept.")
         }
@@ -93,9 +98,9 @@ struct MobilityView: View {
                 Button {
                     Task { await model.startMobilityPractice() }
                 } label: {
-                    Label("Start practice session", systemImage: "play.fill")
+                    Label("start practice session", systemImage: "play.fill").accessibilityLabel("Start practice session")
                 }
-                .buttonStyle(ActionSlabStyle())
+                .buttonStyle(SetlineBrandButtonStyle())
                 .disabled(model.document.activeSession != nil)
                 if let lastPractice = model.lastMobilityPractice {
                     Text("Last practised \(lastPractice.startedAt.formatted(date: .abbreviated, time: .omitted))")
@@ -181,7 +186,7 @@ struct MobilityView: View {
             Button {
                 Task { await model.saveMobilityAssessment(date: snapshotDate) }
             } label: {
-                Label("Save snapshot", systemImage: "plus")
+                Label("save snapshot", systemImage: "plus").accessibilityLabel("Save snapshot")
                     .font(.caption.weight(.bold))
             }
             .frame(minHeight: 36)
@@ -237,7 +242,7 @@ struct MobilityView: View {
             Button {
                 showClearConfirmation = true
             } label: {
-                Label("Clear current records", systemImage: "trash")
+                Label("clear current records", systemImage: "trash").accessibilityLabel("Clear current records")
                     .font(.caption.weight(.bold))
             }
             .frame(minHeight: 40)
