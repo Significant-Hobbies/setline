@@ -315,7 +315,7 @@ final class SetlineUITests: XCTestCase {
 
         for tab in ["Plan", "History", "You", "Exercises"] {
             tapTab(app, tab)
-            XCTAssertTrue(app.staticTexts[tab].waitForExistence(timeout: 2))
+            XCTAssertTrue(app.staticTexts.ci(tab).waitForExistence(timeout: 2))
         }
     }
 
