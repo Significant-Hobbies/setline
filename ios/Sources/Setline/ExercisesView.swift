@@ -1,6 +1,7 @@
 import Charts
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 
 /// Every exercise with recorded evidence, its measured current values, the ideal
 /// you authored, and the distance between the two.
@@ -47,9 +48,9 @@ struct ExercisesView: View {
                 Button {
                     isCatalogueShown = true
                 } label: {
-                    Label("Set a target from the catalogue", systemImage: "target")
+                    Label("set a target from the catalogue", systemImage: "target").accessibilityLabel("Set a target from the catalogue")
                 }
-                .buttonStyle(ActionSlabStyle())
+                .buttonStyle(SetlineBrandButtonStyle())
                 if trainedExercises.isEmpty {
                     ContentUnavailableView(
                         "No recorded working sets",
@@ -79,9 +80,9 @@ struct ExercisesView: View {
                             } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 3) {
-                                        Text(goal.exerciseName).font(.headline)
+                                        Text(goal.exerciseName).font(SetlineType.headline)
                                         Text("\(goal.metric.title) target \(goal.metric.format(goal.targetValue))")
-                                            .font(.subheadline.monospacedDigit())
+                                            .font(SetlineType.subheadline.monospacedDigit())
                                             .foregroundStyle(.secondary)
                                     }
                                     Spacer()
@@ -122,7 +123,7 @@ struct ExercisesView: View {
 
     private func summaryTile(_ label: String, _ value: String, _ colour: Color) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(value).font(.system(size: 34, weight: .black, design: .rounded).monospacedDigit())
+            Text(value).font(.custom(SetlinePalette.theme.monoFont, size: 34, relativeTo: .title).weight(.heavy).monospacedDigit())
             SectionLabel(text: label)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -142,27 +143,27 @@ struct ExercisesView: View {
         }
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(name).font(.headline.weight(.black))
+                Text(name).font(SetlineType.headline.weight(.black))
                 if let headline {
                     Text("\(headline.0.title): \(headline.0.format(headline.1.value))")
-                        .font(.subheadline.monospacedDigit())
+                        .font(SetlineType.subheadline.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
                 if let goal {
                     let progress = ExerciseMetrics.progress(for: goal, history: model.document.history)
                     HStack(spacing: 6) {
                         Text("Target \(goal.metric.format(goal.targetValue))")
-                            .font(.caption.monospacedDigit().weight(.bold))
+                            .font(SetlineType.caption.monospacedDigit().weight(.bold))
                         if progress.isAchieved {
                             Text("REACHED")
-                                .font(.system(size: 9, weight: .black))
+                                .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy))
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
                                 .background(SetlinePalette.lime)
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
                         } else if let fraction = progress.fraction {
                             Text("\(Int(fraction * 100))%")
-                                .font(.caption.monospacedDigit().weight(.bold))
+                                .font(SetlineType.caption.monospacedDigit().weight(.bold))
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -231,19 +232,17 @@ struct ExerciseDetailView: View {
     private var heading: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let definition {
-                HStack(spacing: 6) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
                     ForEach(Pillar.allCases.filter { definition.pillars.contains($0) }, id: \.self) { pillar in
-                        Text(pillar.title.uppercased())
-                            .font(.caption2.weight(.black))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(SetlinePalette.blue.opacity(0.7))
-                            .clipShape(Capsule())
+                        SMStatusPill(pillar.title.lowercased())
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
                     }
                 }
                 if !definition.cue.isEmpty {
                     Text(definition.cue)
-                        .font(.subheadline)
+                        .font(SetlineType.subheadline)
                         .foregroundStyle(SetlinePalette.ink.opacity(0.7))
                 }
             }
@@ -257,7 +256,7 @@ struct ExerciseDetailView: View {
             SectionLabel(text: "Current · measured")
             if availableMetrics.isEmpty {
                 Text("No comparable working set recorded yet.")
-                    .font(.subheadline)
+                    .font(SetlineType.subheadline)
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(availableMetrics, id: \.self) { metric in
@@ -268,12 +267,12 @@ struct ExerciseDetailView: View {
                     ) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(metric.title)
-                                .font(.caption.weight(.bold))
+                                .font(SetlineType.caption.weight(.bold))
                                 .foregroundStyle(SetlinePalette.ink.opacity(0.6))
                             Text(metric.format(value.value))
-                                .font(.system(size: 28, weight: .black, design: .rounded).monospacedDigit())
+                                .font(.custom(SetlinePalette.theme.monoFont, size: 28, relativeTo: .title).weight(.heavy).monospacedDigit())
                             Text(value.provenance)
-                                .font(.caption)
+                                .font(SetlineType.caption)
                                 .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -283,10 +282,10 @@ struct ExerciseDetailView: View {
                     } else {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(metric.title)
-                                .font(.caption.weight(.bold))
+                                .font(SetlineType.caption.weight(.bold))
                                 .foregroundStyle(SetlinePalette.ink.opacity(0.6))
                             Text("Unavailable")
-                                .font(.headline)
+                                .font(SetlineType.headline)
                                 .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -309,14 +308,14 @@ struct ExerciseDetailView: View {
                 Button {
                     isGoalEditorShown = true
                 } label: {
-                    Label("Set target", systemImage: "plus")
-                        .font(.caption.weight(.bold))
+                    Label("set target", systemImage: "plus").accessibilityLabel("Set target")
+                        .font(SetlineType.caption.weight(.bold))
                 }
                 .frame(minHeight: 32)
             }
             if goals.isEmpty {
                 Text("No target set. Setting one turns recorded numbers into a trajectory.")
-                    .font(.subheadline)
+                    .font(SetlineType.subheadline)
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(goals) { goal in
@@ -331,15 +330,15 @@ struct ExerciseDetailView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(progress.goal.metric.title)
-                        .font(.caption.weight(.bold))
+                        .font(SetlineType.caption.weight(.bold))
                         .foregroundStyle(SetlinePalette.ink.opacity(0.6))
                     Text(progress.goal.metric.format(progress.goal.targetValue))
-                        .font(.system(size: 26, weight: .black, design: .rounded).monospacedDigit())
+                        .font(.custom(SetlinePalette.theme.monoFont, size: 26, relativeTo: .title).weight(.heavy).monospacedDigit())
                 }
                 Spacer()
                 if progress.isAchieved {
                     Text("REACHED")
-                        .font(.caption2.weight(.black))
+                        .font(SetlineType.caption2.weight(.black))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
                         .background(SetlinePalette.lime)
@@ -347,9 +346,13 @@ struct ExerciseDetailView: View {
                 }
                 Menu {
                     Button("Edit target") { editingGoal = progress.goal }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Edit target")
                     Button("Remove target", role: .destructive) {
                         Task { await model.deleteGoal(progress.goal) }
                     }
+                    .textCase(.lowercase)
+                    .accessibilityLabel("Remove target")
                 } label: {
                     Image(systemName: "ellipsis.circle").frame(width: 32, height: 32)
                 }
@@ -371,11 +374,11 @@ struct ExerciseDetailView: View {
             }
             if let projected = progress.projectedDate {
                 Text("At the recorded rate, reached around \(projected.formatted(date: .abbreviated, time: .omitted)).")
-                    .font(.caption)
+                    .font(SetlineType.caption)
                     .foregroundStyle(.secondary)
             } else if progress.evidenceCount < 2 {
                 Text("A trend needs at least two comparable sessions.")
-                    .font(.caption)
+                    .font(SetlineType.caption)
                     .foregroundStyle(.secondary)
             }
             trendChart(progress)
@@ -388,9 +391,9 @@ struct ExerciseDetailView: View {
     private func factColumn(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(label)
-                .font(.system(size: 9, weight: .black))
+                .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy))
                 .foregroundStyle(SetlinePalette.ink.opacity(0.55))
-            Text(value).font(.subheadline.monospacedDigit().weight(.bold))
+            Text(value).font(SetlineType.subheadline.monospacedDigit().weight(.bold))
         }
     }
 
@@ -415,7 +418,7 @@ struct ExerciseDetailView: View {
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
                     .foregroundStyle(SetlinePalette.coral)
                     .annotation(position: .top, alignment: .leading) {
-                        Text("Target").font(.system(size: 9, weight: .black)).foregroundStyle(SetlinePalette.coral)
+                        Text("Target").font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy)).foregroundStyle(SetlinePalette.coral)
                     }
             }
             .chartYAxis { AxisMarks(position: .leading) }
@@ -436,14 +439,14 @@ struct ExerciseDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionLabel(text: "Next session")
                 Text(actionTitle(recommendation))
-                    .font(.system(size: 22, weight: .black, design: .rounded).monospacedDigit())
+                    .font(.custom(SetlinePalette.theme.monoFont, size: 22, relativeTo: .title).weight(.heavy).monospacedDigit())
                 if let evidence = recommendation.evidenceSummary {
                     Text("Last session: \(evidence)")
-                        .font(.caption.monospacedDigit())
+                        .font(SetlineType.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
                 Text(recommendation.rationale)
-                    .font(.footnote)
+                    .font(SetlineType.footnote)
                     .foregroundStyle(SetlinePalette.ink.opacity(0.72))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -487,11 +490,11 @@ struct ExerciseDetailView: View {
                 InkRule()
                 SectionLabel(text: "Authored progression")
                 Text("\(rule.repsLow)–\(rule.repsHigh) reps. \(rule.specialRule)")
-                    .font(.footnote)
+                    .font(SetlineType.footnote)
                     .foregroundStyle(SetlinePalette.ink.opacity(0.72))
             }
         }
-        .font(.subheadline)
+        .font(SetlineType.subheadline)
         .padding(16)
         .background(SetlinePalette.paper)
         .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -555,7 +558,7 @@ private struct GoalEditorView: View {
                     }
                     if metric == .bestPaceSecondsPerKilometre {
                         Text("Enter seconds per kilometre. Lower is better.")
-                            .font(.caption)
+                            .font(SetlineType.caption)
                             .foregroundStyle(.secondary)
                     }
                     Toggle("Set a target date", isOn: $hasTargetDate)
@@ -574,9 +577,13 @@ private struct GoalEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Cancel")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Save")
                         .disabled(Double(value) == nil)
                 }
             }
@@ -630,9 +637,9 @@ private struct CataloguePickerView: View {
                         ExerciseDetailView(exerciseName: definition.name)
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(definition.name).font(.headline)
+                            Text(definition.name).font(SetlineType.headline)
                             Text(definition.equipment.map(\.title).joined(separator: " · "))
-                                .font(.caption)
+                                .font(SetlineType.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -644,6 +651,8 @@ private struct CataloguePickerView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Done")
                 }
             }
         }

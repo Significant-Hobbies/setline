@@ -11,6 +11,7 @@
 		06B31DF75BFAA837FA9FAAA6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6BF346E7B39E1FEE8CD50C7C /* Assets.xcassets */; };
 		0C260E4D0C6C142C45B3AC6D /* HistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C887472FBEDF36FD127C32 /* HistoryViews.swift */; };
 		0FA5FD50B707EF422848A2E6 /* Targets.swift in Sources */ = {isa = PBXBuildFile; fileRef = B888AC3A36F08B6334AE20CA /* Targets.swift */; };
+		12800C7C294CA959BBB8FD9D /* SaaSMakerUI in Frameworks */ = {isa = PBXBuildFile; productRef = E22E7A952D2FB4338F0F0185 /* SaaSMakerUI */; };
 		171B1B9E0DDE084379BB9DF8 /* RestNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B9735779088EF43C24F335 /* RestNotifier.swift */; };
 		1FA5DF9F89B308A82207E40B /* SetlineCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0DE14EAFD3C581FCA8D09CA7 /* SetlineCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		27AC3883B9A7376D6262AAD5 /* PersonalSyncKit in Frameworks */ = {isa = PBXBuildFile; productRef = 842AC5390DAF651CB9996773 /* PersonalSyncKit */; };
@@ -43,6 +44,7 @@
 		905B35BB3B49C692703FAA7B /* TodayResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E6AEE25CFD26FE63620A033 /* TodayResolution.swift */; };
 		9B6BAEA361E4A2746BFBF940 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D57699DA4317A7229DA6B21 /* SyncEngine.swift */; };
 		A031AC59DD7E97AE6D39E9F6 /* CapabilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CBA7D7365CA6A20E625F454 /* CapabilityView.swift */; };
+		A35CDB0A95D6765442AE1BA8 /* CaseInsensitiveQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1FC02D9FFF0AD0815CDE0CA /* CaseInsensitiveQuery.swift */; };
 		A46006ED190AB476CE42B49D /* Benchmarks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 190434E1C1253D3A5697AA61 /* Benchmarks.swift */; };
 		A5A13BCF0E49EF420B534092 /* BenchmarkEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EC16949F5FB01DB731E51B /* BenchmarkEngine.swift */; };
 		A748F947702FBF73CBE681AD /* WorkoutPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 818A8EDA05B5D0B4E9DE47B3 /* WorkoutPlayerView.swift */; };
@@ -182,6 +184,7 @@
 		E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineLocalSaveTests.swift; sourceTree = "<group>"; };
 		E5E9F7783F28C53B367D7F90 /* SyncStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStateStore.swift; sourceTree = "<group>"; };
 		E92046B812E9A5C73CDF886A /* HubOwnership.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubOwnership.swift; sourceTree = "<group>"; };
+		F1FC02D9FFF0AD0815CDE0CA /* CaseInsensitiveQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseInsensitiveQuery.swift; sourceTree = "<group>"; };
 		F52F5D64B932696BAEDEE0AC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FBBE42C7ABF6A0C4DA2027BF /* CapabilityEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapabilityEngine.swift; sourceTree = "<group>"; };
 		FD0F45743D45AA79513293AE /* SetlineCallerSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineCallerSyncTests.swift; sourceTree = "<group>"; };
@@ -204,6 +207,7 @@
 			files = (
 				8AEB42E3793E01E4E40F67FF /* SetlineCore.framework in Frameworks */,
 				AB34B33A9BE381FB529BAC90 /* PersonalSyncKit in Frameworks */,
+				12800C7C294CA959BBB8FD9D /* SaaSMakerUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -333,6 +337,7 @@
 		CA65850D7C9D4AC4404536A1 /* SetlineUITests */ = {
 			isa = PBXGroup;
 			children = (
+				F1FC02D9FFF0AD0815CDE0CA /* CaseInsensitiveQuery.swift */,
 				FEE9CEC1CE889DCD183F4CF7 /* SetlineUITests.swift */,
 				D638AFB5C0FF38C44F3DE880 /* SimulatorICloudSignInTests.swift */,
 			);
@@ -429,6 +434,7 @@
 			name = Setline;
 			packageProductDependencies = (
 				6211F2538331C41ABA958E8E /* PersonalSyncKit */,
+				E22E7A952D2FB4338F0F0185 /* SaaSMakerUI */,
 			);
 			productName = Setline;
 			productReference = BA87F29CCAE78D4F24E75B1F /* Setline.app */;
@@ -497,6 +503,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */,
+				4CA3BD9ECD417D3F4D139DDD /* XCRemoteSwiftPackageReference "ui-library" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C93C5A86494CB1CE017F1623 /* Products */;
@@ -529,6 +536,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A35CDB0A95D6765442AE1BA8 /* CaseInsensitiveQuery.swift in Sources */,
 				66E5690BB3806C5D8CF41CF8 /* SetlineUITests.swift in Sources */,
 				4D32E4DE1B4B35D3A3303C81 /* SimulatorICloudSignInTests.swift in Sources */,
 			);
@@ -1013,6 +1021,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		4CA3BD9ECD417D3F4D139DDD /* XCRemoteSwiftPackageReference "ui-library" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sass-maker/ui-library";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.14;
+			};
+		};
 		C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Significant-Hobbies/significanthobbies.git";
@@ -1033,6 +1049,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C9E98573C03358D4C8873F13 /* XCRemoteSwiftPackageReference "significanthobbies" */;
 			productName = PersonalSyncKit;
+		};
+		E22E7A952D2FB4338F0F0185 /* SaaSMakerUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4CA3BD9ECD417D3F4D139DDD /* XCRemoteSwiftPackageReference "ui-library" */;
+			productName = SaaSMakerUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

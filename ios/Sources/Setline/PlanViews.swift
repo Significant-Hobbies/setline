@@ -1,8 +1,10 @@
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 
 struct PlanView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var editingTemplate: WorkoutTemplate?
     @State private var isCreatingTemplate = false
     @State private var showProgrammeSwitch = false
@@ -39,9 +41,15 @@ struct PlanView: View {
                         days: (1...7).map { ProgrammeDay(weekday: $0, templateID: nil) }
                     ))) }
                 }
+                .textCase(.lowercase)
+                .accessibilityLabel("Create a weekly programme")
             }
             Button("No programme") { Task { await model.selectProgramme(.none) } }
+                .textCase(.lowercase)
+                .accessibilityLabel("No programme")
             Button("Cancel", role: .cancel) {}
+                .textCase(.lowercase)
+                .accessibilityLabel("Cancel")
         }
     }
 
@@ -53,17 +61,17 @@ struct PlanView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     SectionLabel(text: "Active programme")
-                    Text(programmeTitle).font(.title2.weight(.black))
+                    Text(programmeTitle).font(SetlineType.title2.weight(.black))
                     Text(programmeSubtitle)
-                        .font(.subheadline)
+                        .font(SetlineType.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button {
                     showProgrammeSwitch = true
                 } label: {
-                    Label("Change", systemImage: "arrow.triangle.2.circlepath")
-                        .font(.caption.weight(.bold))
+                    Label("change", systemImage: "arrow.triangle.2.circlepath").accessibilityLabel("Change")
+                        .font(SetlineType.caption.weight(.bold))
                 }
                 .frame(minHeight: 36)
             }
@@ -74,7 +82,7 @@ struct PlanView: View {
                 customProgrammeEditor(programme)
             case .none:
                 Text("Today will offer your first template until a programme is chosen.")
-                    .font(.subheadline)
+                    .font(SetlineType.subheadline)
                     .foregroundStyle(.secondary)
             }
         }
@@ -106,14 +114,14 @@ struct PlanView: View {
     private var bundledProgrammeDetail: some View {
         let position = TwelveWeekProgramme.position(for: .now)
         return VStack(alignment: .leading, spacing: 14) {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: dynamicTypeSize.isAccessibilitySize ? 2 : 7), spacing: 6) {
                 ForEach(TwelveWeekProgramme.schedule) { entry in
                     VStack(spacing: 5) {
                         Text(entry.dayLabel)
-                            .font(.caption2.weight(.bold))
+                            .font(SetlineType.caption2.weight(.bold))
                         Text(entry.title)
-                            .font(.system(size: 9, weight: .bold))
-                            .lineLimit(2)
+                            .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.bold))
+                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                             .minimumScaleFactor(0.7)
                             .multilineTextAlignment(.center)
                     }
@@ -138,13 +146,13 @@ struct PlanView: View {
                 } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(template.name).font(.subheadline.weight(.bold))
+                            Text(template.name).font(SetlineType.subheadline.weight(.bold))
                             Text("\(template.exercises.count) exercises · \(template.workingSetCount) working sets")
-                                .font(.caption.monospacedDigit())
+                                .font(SetlineType.caption.monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Image(systemName: "chevron.right").font(.caption)
+                        Image(systemName: "chevron.right").font(SetlineType.caption)
                     }
                     .foregroundStyle(SetlinePalette.ink)
                     .padding(.vertical, 6)
@@ -154,16 +162,16 @@ struct PlanView: View {
             SectionLabel(text: "Checkpoints")
             ForEach(TwelveWeekProgramme.checkpoints) { checkpoint in
                 HStack {
-                    Text(checkpoint.name).font(.caption.weight(.bold))
+                    Text(checkpoint.name).font(SetlineType.caption.weight(.bold))
                     Spacer()
                     Text(TwelveWeekProgramme.checkpointDate(checkpoint)
                         .formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption.monospacedDigit())
+                        .font(SetlineType.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
             }
             Text("Record \(TwelveWeekProgramme.checkpointMeasures.count) measures at each checkpoint, including knee-to-wall distance and squat support.")
-                .font(.caption)
+                .font(SetlineType.caption)
                 .foregroundStyle(.secondary)
         }
     }
@@ -174,12 +182,14 @@ struct PlanView: View {
                 get: { programme.enabled },
                 set: { _ in Task { await model.toggleProgramme() } }
             ))
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: dynamicTypeSize.isAccessibilitySize ? 2 : 7), spacing: 6) {
                 ForEach(programme.days) { day in
                     Menu {
                         Button("Rest day") {
                             Task { await model.assignTemplate(nil, to: day.weekday) }
                         }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Rest day")
                         ForEach(model.document.templates) { template in
                             Button(template.name) {
                                 Task { await model.assignTemplate(template.id, to: day.weekday) }
@@ -188,9 +198,9 @@ struct PlanView: View {
                     } label: {
                         VStack(spacing: 7) {
                             Text(Calendar.current.shortWeekdaySymbols[day.weekday - 1].prefix(2))
-                                .font(.caption2.weight(.bold))
+                                .font(SetlineType.caption2.weight(.bold))
                             Image(systemName: day.templateID == nil ? "minus" : "checkmark")
-                                .font(.caption.weight(.black))
+                                .font(SetlineType.caption.weight(.black))
                         }
                         .frame(maxWidth: .infinity, minHeight: 52)
                         .background(day.templateID == nil ? SetlinePalette.steel.opacity(0.55) : SetlinePalette.lime)
@@ -218,26 +228,26 @@ struct PlanView: View {
                 SectionLabel(text: "Workout templates")
                 Spacer()
                 Button { isCreatingTemplate = true } label: {
-                    Label("New template", systemImage: "plus")
+                    Label("new template", systemImage: "plus").accessibilityLabel("New template")
                 }
-                .font(.subheadline.weight(.bold))
+                .font(SetlineType.subheadline.weight(.bold))
                 .frame(minHeight: 44)
             }
             if model.document.templates.isEmpty {
                 Text("The authored block resolves its own sessions. Add a template for anything outside it.")
-                    .font(.subheadline)
+                    .font(SetlineType.subheadline)
                     .foregroundStyle(.secondary)
             }
             ForEach(model.document.templates) { template in
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(template.name).font(.title3.weight(.black))
-                            Text(template.detail).font(.subheadline).foregroundStyle(.secondary)
+                            Text(template.name).font(SetlineType.title3.weight(.black))
+                            Text(template.detail).font(SetlineType.subheadline).foregroundStyle(.secondary)
                         }
                         Spacer()
                         Text(template.isBundled ? "BUNDLED" : "CUSTOM")
-                            .font(.caption2.weight(.black))
+                            .font(SetlineType.caption2.weight(.black))
                             .padding(6)
                             .background(template.isBundled ? SetlinePalette.blue : SetlinePalette.lime)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
@@ -248,13 +258,17 @@ struct PlanView: View {
                         Text("\(template.workingSetCount) working")
                         Spacer()
                         Button("Duplicate") { Task { await model.duplicateTemplate(template) } }
-                            .font(.subheadline.weight(.bold))
+                            .textCase(.lowercase)
+                            .accessibilityLabel("Duplicate")
+                            .font(SetlineType.subheadline.weight(.bold))
                         if !template.isBundled {
                             Button("Edit") { editingTemplate = template }
-                                .font(.subheadline.weight(.bold))
+                                .textCase(.lowercase)
+                                .accessibilityLabel("Edit")
+                                .font(SetlineType.subheadline.weight(.bold))
                         }
                     }
-                    .font(.subheadline.monospacedDigit())
+                    .font(SetlineType.subheadline.monospacedDigit())
                     InkRule()
                 }
                 .padding(.vertical, 8)
@@ -328,11 +342,13 @@ struct TemplateEditorView: View {
                                 config: .init(stepType: .working)
                             ))
                         } label: {
-                            Label("Add set", systemImage: "plus")
+                            Label("add set", systemImage: "plus").accessibilityLabel("Add set")
                         }
                         Button("Remove exercise", role: .destructive) {
                             draft.exercises.removeAll { $0.id == exercise.id }
                         }
+                        .textCase(.lowercase)
+                        .accessibilityLabel("Remove exercise")
                     } header: {
                         Text(exercise.name.isEmpty ? "Exercise" : exercise.name)
                     }
@@ -341,7 +357,7 @@ struct TemplateEditorView: View {
                     Button {
                         draft.exercises.append(Self.blankExercise())
                     } label: {
-                        Label("Add exercise", systemImage: "plus")
+                        Label("add exercise", systemImage: "plus").accessibilityLabel("Add exercise")
                     }
                 }
             }
@@ -352,6 +368,7 @@ struct TemplateEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .textCase(.lowercase)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
@@ -359,6 +376,8 @@ struct TemplateEditorView: View {
                             if await model.saveTemplate(linked(draft)) { dismiss() }
                         }
                     }
+                    .textCase(.lowercase)
+                    .accessibilityLabel("Save")
                     .disabled(!isValid || model.isSaving)
                 }
             }
@@ -379,11 +398,11 @@ struct TemplateEditorView: View {
             }
         if let definition = ExerciseCatalogue.match(name: exercise.wrappedValue.name) {
             Label("Matched \(definition.name) in the library", systemImage: "checkmark.seal")
-                .font(.caption)
+                .font(SetlineType.caption)
                 .foregroundStyle(.secondary)
         } else if !exercise.wrappedValue.name.isEmpty {
-            Label("Not in the library — measurements still record under this name", systemImage: "info.circle")
-                .font(.caption)
+            Label("not in the library — measurements still record under this name", systemImage: "info.circle").accessibilityLabel("Not in the library — measurements still record under this name")
+                .font(SetlineType.caption)
                 .foregroundStyle(.secondary)
         }
         TextField("Coaching cue", text: exercise.cue, axis: .vertical)
@@ -417,6 +436,8 @@ struct TemplateEditorView: View {
             Button("Remove set", role: .destructive) {
                 exercise.wrappedValue.sets.removeAll { $0.id == plannedSet.wrappedValue.id }
             }
+            .textCase(.lowercase)
+            .accessibilityLabel("Remove set")
         }
     }
 
@@ -478,7 +499,7 @@ struct TemplateEditorView: View {
         }
         Toggle("Per side", isOn: plannedSet.target.perSide)
         LabeledContent("Reads as", value: plannedSet.wrappedValue.target.displayString)
-            .font(.caption)
+            .font(SetlineType.caption)
     }
 
     private func intBinding(_ source: Binding<Int?>) -> Binding<String> {

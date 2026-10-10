@@ -1,6 +1,7 @@
 import Foundation
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 
 @main
 struct SetlineApp: App {
@@ -10,6 +11,7 @@ struct SetlineApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .smTheme(SetlinePalette.theme)
                 .environment(model)
                 .task {
                     await model.load()

@@ -1,5 +1,6 @@
 import SetlineCore
 import SwiftUI
+import SaaSMakerUI
 
 /// Fitness capability benchmarks — a periodic scorecard that complements daily
 /// workout execution. Three views: overview (current vs target), check-ins
@@ -57,7 +58,11 @@ struct BenchmarksView: View {
             Button("Clear measurements", role: .destructive) {
                 Task { await model.clearBenchmarkMeasurements() }
             }
+            .textCase(.lowercase)
+            .accessibilityLabel("Clear measurements")
             Button("Cancel", role: .cancel) {}
+                .textCase(.lowercase)
+                .accessibilityLabel("Cancel")
         } message: {
             Text("Saved check-ins, profile, and targets will be kept.")
         }
@@ -262,7 +267,7 @@ struct BenchmarksView: View {
                     item: BenchmarkScorecard.text(for: model.document.benchmarks),
                     preview: SharePreview("Setline baseline scorecard")
                 ) {
-                    Label("Share", systemImage: "square.and.arrow.up")
+                    Label("share", systemImage: "square.and.arrow.up").accessibilityLabel("Share")
                         .font(.caption.weight(.bold))
                 }
                 .frame(minHeight: 36)
@@ -272,7 +277,7 @@ struct BenchmarksView: View {
                 Button {
                     Task { await model.saveBenchmarkCheckIn(date: checkInDate) }
                 } label: {
-                    Label("Save check-in", systemImage: "plus")
+                    Label("save check-in", systemImage: "plus").accessibilityLabel("Save check-in")
                         .font(.caption.weight(.bold))
                 }
                 .frame(minHeight: 36)
@@ -336,9 +341,9 @@ struct BenchmarksView: View {
             Button {
                 activeView = .overview
             } label: {
-                Label("Back to overview", systemImage: "arrow.left")
+                Label("back to overview", systemImage: "arrow.left").accessibilityLabel("Back to overview")
             }
-            .buttonStyle(ActionSlabStyle())
+            .buttonStyle(SetlineBrandButtonStyle())
         } else {
             VStack(alignment: .leading, spacing: 14) {
                 ForEach(history) { checkIn in
@@ -369,7 +374,7 @@ struct BenchmarksView: View {
                 Button {
                     showClearConfirmation = true
                 } label: {
-                    Label("Clear measurements", systemImage: "trash")
+                    Label("clear measurements", systemImage: "trash").accessibilityLabel("Clear measurements")
                         .font(.caption.weight(.bold))
                 }
                 .frame(minHeight: 40)
