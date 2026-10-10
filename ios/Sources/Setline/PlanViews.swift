@@ -369,7 +369,6 @@ struct TemplateEditorView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .textCase(.lowercase)
-                        .accessibilityLabel("Cancel")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
