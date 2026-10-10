@@ -50,7 +50,7 @@ final class SetlineUITests: XCTestCase {
     /// control rather than working around its absence.
     private func dismissKeyboard(_ app: XCUIApplication) {
         guard app.keyboards.count > 0 else { return }
-        let done = app.buttons["Done"]
+        let done = app.buttons.ci("Done")
         if done.waitForExistence(timeout: 2) {
             done.tap()
         }
@@ -63,10 +63,10 @@ final class SetlineUITests: XCTestCase {
     /// outcome — the rest board appearing — keeps this from depending on where the
     /// button happens to land.
     private func recordSetAndWaitForRest(_ app: XCUIApplication) {
-        let rest = app.staticTexts["REST · WALL CLOCK"]
+        let rest = app.staticTexts.ci("REST · WALL CLOCK")
         for _ in 0..<3 {
             dismissKeyboard(app)
-            let record = app.buttons["Record set · start rest"]
+            let record = app.buttons.ci("Record set · start rest")
             guard record.waitForExistence(timeout: 3), record.isHittable else {
                 app.swipeUp()
                 continue
@@ -128,7 +128,7 @@ final class SetlineUITests: XCTestCase {
     /// Opens a recorded session from History by tapping its row rather than any text
     /// that happens to mention the workout's name.
     private func openHistorySession(_ app: XCUIApplication, named name: String) {
-        let historyTab = app.tabBars.buttons["History"]
+        let historyTab = app.tabBars.buttons.ci("History")
         XCTAssertTrue(historyTab.waitForExistence(timeout: 5))
         historyTab.tap()
 
@@ -146,13 +146,13 @@ final class SetlineUITests: XCTestCase {
 
     func testUnreadableDocumentShowsBackupRecoveryInsteadOfAnEmptyWorkout() {
         let app = launch(["--recovery-demo"])
-        let alert = app.alerts["Setline"]
+        let alert = app.alerts.ci("Setline")
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
-        alert.buttons["OK"].tap()
-        XCTAssertTrue(app.staticTexts["Restore your programme"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Try opening again"].exists)
-        XCTAssertTrue(app.buttons["Preview an import"].exists)
-        XCTAssertFalse(app.buttons["Export complete Setline data"].exists)
+        alert.buttons.ci("OK").tap()
+        XCTAssertTrue(app.staticTexts.ci("Restore your programme").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons.ci("Try opening again").exists)
+        XCTAssertTrue(app.buttons.ci("Preview an import").exists)
+        XCTAssertFalse(app.buttons.ci("Export complete Setline data").exists)
         XCTAssertFalse(app.tabBars.firstMatch.exists)
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "Unreadable document recovery"
@@ -163,19 +163,19 @@ final class SetlineUITests: XCTestCase {
     func testStartsWorkoutAndShowsTimestampRest() {
         let app = launch()
 
-        XCTAssertTrue(app.staticTexts["Follow the plan.\nRecord the truth."].waitForExistence(timeout: 3))
-        app.buttons["Start workout"].tap()
-        XCTAssertTrue(app.staticTexts["Front squat"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts.ci("Follow the plan.\nRecord the truth.").waitForExistence(timeout: 3))
+        app.buttons.ci("Start workout").tap()
+        XCTAssertTrue(app.staticTexts.ci("Front squat").waitForExistence(timeout: 3))
 
-        let reps = app.textFields["Reps"]
+        let reps = app.textFields.ci("Reps")
         reps.tap()
         reps.typeText("8")
-        let weight = app.textFields["Weight"]
+        let weight = app.textFields.ci("Weight")
         weight.tap()
         weight.typeText("40")
         recordSetAndWaitForRest(app)
 
-        XCTAssertTrue(app.buttons["Start next early"].exists)
+        XCTAssertTrue(app.buttons.ci("Start next early").exists)
     }
 
     func testRecordedWorkoutSurvivesInterruptionRelaunchAndFinish() {
@@ -185,15 +185,15 @@ final class SetlineUITests: XCTestCase {
             app.terminate()
             app.launchArguments += ["--ui-fixture-cleanup"]
             app.launch()
-            XCTAssertTrue(app.staticTexts["Restore your programme"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.staticTexts.ci("Restore your programme").waitForExistence(timeout: 5))
             XCTAssertFalse(app.tabBars.firstMatch.exists)
             app.terminate()
         }
-        XCTAssertTrue(app.buttons["Start workout"].waitForExistence(timeout: 5))
-        app.buttons["Start workout"].tap()
-        XCTAssertTrue(app.staticTexts["Front squat"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons.ci("Start workout").waitForExistence(timeout: 5))
+        app.buttons.ci("Start workout").tap()
+        XCTAssertTrue(app.staticTexts.ci("Front squat").waitForExistence(timeout: 3))
         recordShorthand(app, "5x40, 2x30")
-        app.buttons["+30 sec"].tap()
+        app.buttons.ci("+30 sec").tap()
         let cadence = text(app, containing: "Authored 60s · adjusted 90s")
         XCTAssertTrue(cadence.waitForExistence(timeout: 5))
         let remaining = app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@", "seconds remaining")).firstMatch
@@ -204,7 +204,7 @@ final class SetlineUITests: XCTestCase {
 
         app.terminate()
         app.launch() // Same UUID; normal disk load, never --ui-demo.
-        let resume = app.buttons["Resume workout"]
+        let resume = app.buttons.ci("Resume workout")
         XCTAssertTrue(resume.waitForExistence(timeout: 5))
         resume.tap()
         XCTAssertTrue(cadence.waitForExistence(timeout: 5))
@@ -213,12 +213,12 @@ final class SetlineUITests: XCTestCase {
         XCTAssertNotNil(afterRemaining)
         XCTAssertLessThanOrEqual(afterRemaining ?? 999, beforeRemaining ?? -1, "Relaunch must not reset wall-clock rest")
         keepWorkoutScreenshot(app, named: "Setline rest resumed from disk")
-        let next = app.buttons["Start next early"].exists ? app.buttons["Start next early"] : app.buttons["Start next set"]
+        let next = app.buttons.ci("Start next early").exists ? app.buttons.ci("Start next early") : app.buttons.ci("Start next set")
         XCTAssertTrue(next.waitForExistence(timeout: 3))
         next.tap()
         recordShorthand(app, "4x55")
-        app.buttons["Finish"].tap()
-        app.buttons["Finish and save"].tap()
+        app.buttons.ci("Finish").tap()
+        app.buttons.ci("Finish and save").tap()
         openHistorySession(app, named: "Lower strength")
         assertInterruptedWorkoutReceipt(app)
         keepWorkoutScreenshot(app, named: "Setline detailed workout after finish")
@@ -226,20 +226,20 @@ final class SetlineUITests: XCTestCase {
         app.terminate()
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["Resume workout"].exists)
+        XCTAssertFalse(app.buttons.ci("Resume workout").exists)
         openHistorySession(app, named: "Lower strength")
         assertInterruptedWorkoutReceipt(app)
         keepWorkoutScreenshot(app, named: "Setline detailed workout reopened")
     }
 
     private func recordShorthand(_ app: XCUIApplication, _ value: String) {
-        let typeIt = app.buttons["Type it"]
+        let typeIt = app.buttons.ci("Type it")
         if typeIt.exists { typeIt.tap() }
-        let entry = app.textFields["Shorthand set entry"]
+        let entry = app.textFields.ci("Shorthand set entry")
         XCTAssertTrue(entry.waitForExistence(timeout: 5))
         entry.tap()
         entry.typeText(value)
-        app.buttons["Apply to segments"].tap()
+        app.buttons.ci("Apply to segments").tap()
         recordSetAndWaitForRest(app)
     }
 
@@ -261,15 +261,15 @@ final class SetlineUITests: XCTestCase {
     func testSetTimerRunsIndependentlyOfRest() {
         let app = launch()
 
-        app.buttons["Start workout"].tap()
-        XCTAssertTrue(app.staticTexts["SET TIMER"].waitForExistence(timeout: 3))
-        let start = app.buttons["Start set"]
+        app.buttons.ci("Start workout").tap()
+        XCTAssertTrue(app.staticTexts.ci("SET TIMER").waitForExistence(timeout: 3))
+        let start = app.buttons.ci("Start set")
         XCTAssertTrue(start.exists)
         start.tap()
-        XCTAssertTrue(app.buttons["Stop"].waitForExistence(timeout: 2))
-        app.buttons["Stop"].tap()
-        XCTAssertTrue(app.buttons["Start set"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.buttons["Reset"].exists)
+        XCTAssertTrue(app.buttons.ci("Stop").waitForExistence(timeout: 2))
+        app.buttons.ci("Stop").tap()
+        XCTAssertTrue(app.buttons.ci("Start set").waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons.ci("Reset").exists)
     }
 
     /// The headline requirement: `5 reps × 40 kg` then `2 reps × 30 kg`, recorded as
@@ -277,11 +277,11 @@ final class SetlineUITests: XCTestCase {
     func testRecordsTwoSegmentsAsOneSetAndKeepsBothInTheReceipt() {
         let app = launch()
 
-        app.buttons["Start workout"].tap()
-        XCTAssertTrue(app.staticTexts["Front squat"].waitForExistence(timeout: 3))
+        app.buttons.ci("Start workout").tap()
+        XCTAssertTrue(app.staticTexts.ci("Front squat").waitForExistence(timeout: 3))
 
-        app.buttons["Type it"].tap()
-        let shorthand = app.textFields["Shorthand set entry"]
+        app.buttons.ci("Type it").tap()
+        let shorthand = app.textFields.ci("Shorthand set entry")
         XCTAssertTrue(shorthand.waitForExistence(timeout: 5))
         shorthand.tap()
         shorthand.typeText("5x40, 2x30")
@@ -292,14 +292,14 @@ final class SetlineUITests: XCTestCase {
         ).firstMatch
         XCTAssertTrue(reading.waitForExistence(timeout: 5))
 
-        app.buttons["Apply to segments"].tap()
-        XCTAssertTrue(app.staticTexts["SEGMENT 2"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["All 2 segments record as one set."].exists)
+        app.buttons.ci("Apply to segments").tap()
+        XCTAssertTrue(app.staticTexts.ci("SEGMENT 2").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.ci("All 2 segments record as one set.").exists)
 
         recordSetAndWaitForRest(app)
 
-        app.buttons["Finish"].tap()
-        app.buttons["Finish and save"].tap()
+        app.buttons.ci("Finish").tap()
+        app.buttons.ci("Finish and save").tap()
 
         openHistorySession(app, named: "Lower strength")
 
@@ -322,49 +322,49 @@ final class SetlineUITests: XCTestCase {
     func testAuthoredBlockDrivesTodayOnAFreshInstall() {
         let app = launchFreshSettledApp()
 
-        app.tabBars.buttons["Plan"].tap()
+        app.tabBars.buttons.ci("Plan").tap()
         XCTAssertTrue(
-            app.staticTexts["12-Week Strength, Cardio & Mobility Plan"].waitForExistence(timeout: 3)
+            app.staticTexts.ci("12-Week Strength, Cardio & Mobility Plan").waitForExistence(timeout: 3)
         )
         // Checkpoints are part of the authored block, not an afterthought.
-        XCTAssertTrue(app.staticTexts["Baseline"].exists)
-        XCTAssertTrue(app.staticTexts["End of block"].exists)
+        XCTAssertTrue(app.staticTexts.ci("Baseline").exists)
+        XCTAssertTrue(app.staticTexts.ci("End of block").exists)
     }
 
     func testOnboardingStartsRealWorkoutAndRecordsFirstSet() {
         let app = launch(["--onboarding-demo"])
 
-        XCTAssertTrue(app.staticTexts["Follow the plan.\nRecord the truth."].waitForExistence(timeout: 5))
-        app.buttons["Use the bundled programme"].tap()
-        XCTAssertTrue(app.staticTexts["REVIEW BEFORE YOU START"].waitForExistence(timeout: 3))
-        app.buttons["Start this session"].tap()
+        XCTAssertTrue(app.staticTexts.ci("Follow the plan.\nRecord the truth.").waitForExistence(timeout: 5))
+        app.buttons.ci("Use the bundled programme").tap()
+        XCTAssertTrue(app.staticTexts.ci("REVIEW BEFORE YOU START").waitForExistence(timeout: 3))
+        app.buttons.ci("Start this session").tap()
 
-        XCTAssertTrue(app.staticTexts["Easy treadmill, bike or rower"].waitForExistence(timeout: 5))
-        let duration = app.textFields["Duration"]
+        XCTAssertTrue(app.staticTexts.ci("Easy treadmill, bike or rower").waitForExistence(timeout: 5))
+        let duration = app.textFields.ci("Duration")
         duration.tap()
         duration.typeText("3")
         dismissKeyboard(app)
-        app.buttons["Record set · start rest"].tap()
-        XCTAssertTrue(app.staticTexts["Knee-to-wall ankle rocks"].waitForExistence(timeout: 5))
-        app.buttons["Return to Today"].tap()
+        app.buttons.ci("Record set · start rest").tap()
+        XCTAssertTrue(app.staticTexts.ci("Knee-to-wall ankle rocks").waitForExistence(timeout: 5))
+        app.buttons.ci("Return to Today").tap()
 
-        XCTAssertTrue(app.staticTexts["Your workout is underway."].waitForExistence(timeout: 5))
-        app.buttons["See Today"].tap()
-        XCTAssertTrue(app.staticTexts["WORKOUT IN PROGRESS"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.ci("Your workout is underway.").waitForExistence(timeout: 5))
+        app.buttons.ci("See Today").tap()
+        XCTAssertTrue(app.staticTexts.ci("WORKOUT IN PROGRESS").waitForExistence(timeout: 5))
     }
 
     func testOnboardingCanConfigureLaterWithoutStartingAWorkout() {
         let app = launch(["--onboarding-demo"])
 
-        app.buttons["Configure later"].tap()
-        XCTAssertTrue(app.tabBars.buttons["Today"].waitForExistence(timeout: 3))
-        XCTAssertFalse(app.staticTexts["Workout in progress"].exists)
+        app.buttons.ci("Configure later").tap()
+        XCTAssertTrue(app.tabBars.buttons.ci("Today").waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts.ci("Workout in progress").exists)
     }
 
     func testTodaySessionCanBeReviewedBeforeStarting() {
         let app = launchFreshSettledApp()
 
-        let review = app.buttons["Review the session first"]
+        let review = app.buttons.ci("Review the session first")
         XCTAssertTrue(review.waitForExistence(timeout: 3))
         review.tap()
         XCTAssertTrue(text(app, containing: "Authored rules").waitForExistence(timeout: 5))
@@ -374,11 +374,11 @@ final class SetlineUITests: XCTestCase {
         let app = launch()
 
         tapTab(app, "Exercises")
-        XCTAssertTrue(app.staticTexts["No recorded working sets"].waitForExistence(timeout: 3))
-        let setTarget = app.buttons["Set a target from the catalogue"]
+        XCTAssertTrue(app.staticTexts.ci("No recorded working sets").waitForExistence(timeout: 3))
+        let setTarget = app.buttons.ci("Set a target from the catalogue")
         XCTAssertTrue(setTarget.exists)
         setTarget.tap()
-        XCTAssertTrue(app.navigationBars["Movement library"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.navigationBars.ci("Movement library").waitForExistence(timeout: 3))
     }
 
     /// With four weeks of recorded evidence, an exercise shows its measured
@@ -421,13 +421,13 @@ final class SetlineUITests: XCTestCase {
     func testPlanOffersNativeTemplateAuthoring() {
         let app = launch()
 
-        app.tabBars.buttons["Plan"].tap()
-        let newTemplate = app.buttons["New template"]
+        app.tabBars.buttons.ci("Plan").tap()
+        let newTemplate = app.buttons.ci("New template")
         XCTAssertTrue(newTemplate.waitForExistence(timeout: 3))
         newTemplate.tap()
-        XCTAssertTrue(app.navigationBars["New template"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.textFields["Name"].exists)
-        let addExercise = app.buttons["Add exercise"]
+        XCTAssertTrue(app.navigationBars.ci("New template").waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields.ci("Name").exists)
+        let addExercise = app.buttons.ci("Add exercise")
         if !addExercise.exists { app.swipeUp() }
         XCTAssertTrue(addExercise.waitForExistence(timeout: 3))
     }
@@ -435,20 +435,20 @@ final class SetlineUITests: XCTestCase {
     func testStorageScreenStatesWhereTrainingLivesWithoutOfferingAnAccount() {
         let app = launch()
 
-        app.tabBars.buttons["You"].tap()
-        XCTAssertTrue(app.staticTexts["On this iPhone"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["STORAGE"].exists)
-        XCTAssertTrue(app.buttons["Export complete Setline data"].exists)
+        app.tabBars.buttons.ci("You").tap()
+        XCTAssertTrue(app.staticTexts.ci("On this iPhone").waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts.ci("STORAGE").exists)
+        XCTAssertTrue(app.buttons.ci("Export complete Setline data").exists)
         // There is no account, so nothing may invite the user to sign in.
-        XCTAssertFalse(app.buttons["Connect Google account"].exists)
-        XCTAssertFalse(app.buttons["apple-account-button"].exists)
+        XCTAssertFalse(app.buttons.ci("Connect Google account").exists)
+        XCTAssertFalse(app.buttons.ci("apple-account-button").exists)
     }
 
     /// Navigates to the Benchmarks view, which lives inside the You tab.
     private func openBenchmarks(_ app: XCUIApplication) {
-        app.tabBars.buttons["You"].tap()
-        XCTAssertTrue(app.staticTexts["BENCHMARKS"].waitForExistence(timeout: 3))
-        app.staticTexts["Capability scorecard"].tap()
+        app.tabBars.buttons.ci("You").tap()
+        XCTAssertTrue(app.staticTexts.ci("BENCHMARKS").waitForExistence(timeout: 3))
+        app.staticTexts.ci("Capability scorecard").tap()
     }
 
     func testBenchmarksTabShowsChecklistAndGuide() {
@@ -459,7 +459,7 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(text(app, containing: "10 km run").exists)
         XCTAssertTrue(text(app, containing: "Strict pull-ups").exists)
         // The guide subview explains the methodology.
-        app.buttons["Guide"].tap()
+        app.buttons.ci("Guide").tap()
         XCTAssertTrue(text(app, containing: "Measure the capability").waitForExistence(timeout: 3))
     }
 
@@ -467,7 +467,7 @@ final class SetlineUITests: XCTestCase {
         let app = launch()
 
         openBenchmarks(app)
-        app.buttons["Check-ins"].tap()
+        app.buttons.ci("Check-ins").tap()
         XCTAssertTrue(text(app, containing: "Your first chapter is unwritten").waitForExistence(timeout: 3))
     }
 
@@ -476,19 +476,19 @@ final class SetlineUITests: XCTestCase {
 
         openBenchmarks(app)
         // Save a check-in with the blank initial state.
-        let saveButton = app.buttons["Save check-in"]
+        let saveButton = app.buttons.ci("Save check-in")
         XCTAssertTrue(saveButton.waitForExistence(timeout: 3))
         saveButton.tap()
         // Navigate to check-ins to verify it was saved.
-        app.buttons["Check-ins"].tap()
+        app.buttons.ci("Check-ins").tap()
         XCTAssertTrue(text(app, containing: "saved snapshot").waitForExistence(timeout: 3))
     }
 
     /// Navigates to the Mobility view, which lives inside the You tab.
     private func openMobility(_ app: XCUIApplication) {
-        app.tabBars.buttons["You"].tap()
-        XCTAssertTrue(app.staticTexts["MOBILITY"].waitForExistence(timeout: 3))
-        app.staticTexts["Movement baseline"].tap()
+        app.tabBars.buttons.ci("You").tap()
+        XCTAssertTrue(app.staticTexts.ci("MOBILITY").waitForExistence(timeout: 3))
+        app.staticTexts.ci("Movement baseline").tap()
     }
 
     func testMobilityCardRecordsACheckResult() {
@@ -505,14 +505,14 @@ final class SetlineUITests: XCTestCase {
         card.tap()
 
         // Each side records independently, so the picker is labelled per slot.
-        let leftResult = app.buttons["Active shoulder flexion Left result"]
+        let leftResult = app.buttons.ci("Active shoulder flexion Left result")
         XCTAssertTrue(leftResult.waitForExistence(timeout: 5))
         leftResult.tap()
-        app.buttons["Completed as shown"].tap()
+        app.buttons.ci("Completed as shown").tap()
 
         // Recording a result reveals the setup, assistance, and symptom fields.
-        XCTAssertTrue(app.staticTexts["SETUP"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["SYMPTOMS"].exists)
+        XCTAssertTrue(app.staticTexts.ci("SETUP").waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts.ci("SYMPTOMS").exists)
     }
 
     func testCapabilityProfileShowsAxesAndPriorities() {
@@ -521,14 +521,14 @@ final class SetlineUITests: XCTestCase {
         // sync refactor's simulator behaviour.
         let app = launch(["--ui-persistent-fixture", UUID().uuidString])
 
-        app.tabBars.buttons["You"].tap()
-        XCTAssertTrue(app.staticTexts["CAPABILITY"].waitForExistence(timeout: 3))
-        app.staticTexts["Capability profile"].tap()
+        app.tabBars.buttons.ci("You").tap()
+        XCTAssertTrue(app.staticTexts.ci("CAPABILITY").waitForExistence(timeout: 3))
+        app.staticTexts.ci("Capability profile").tap()
 
         // The dashboard names every axis and the priorities section, even on a
         // blank profile where everything is unassessed.
-        XCTAssertTrue(app.staticTexts["PRIORITIES"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["AXES"].exists)
+        XCTAssertTrue(app.staticTexts.ci("PRIORITIES").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.ci("AXES").exists)
         for axis in ["Strength", "Endurance", "Mobility", "Balance & control"] {
             XCTAssertTrue(text(app, containing: axis).exists, "\(axis) axis missing")
         }
@@ -539,7 +539,7 @@ final class SetlineUITests: XCTestCase {
         ).firstMatch
         XCTAssertTrue(strength.waitForExistence(timeout: 3))
         strength.tap()
-        XCTAssertTrue(app.staticTexts["CHECKPOINTS"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts.ci("CHECKPOINTS").waitForExistence(timeout: 3))
         XCTAssertTrue(text(app, containing: "Strict pull-ups").exists)
     }
 }

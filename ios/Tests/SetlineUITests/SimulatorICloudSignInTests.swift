@@ -70,12 +70,12 @@ final class SimulatorICloudSignInTests: XCTestCase {
     }
 
     private func alreadySignedIn(_ settings: XCUIApplication) -> Bool {
-        if settings.buttons["Sign Out"].exists { return true }
-        if settings.staticTexts["Sign Out"].exists { return true }
+        if settings.buttons.ci("Sign Out").exists { return true }
+        if settings.staticTexts.ci("Sign Out").exists { return true }
         let subtitle = settings.staticTexts[
             "Sign in to access your iCloud data, the App Store, Apple services and more."
         ]
-        if settings.staticTexts["Apple Account"].exists, !subtitle.exists {
+        if settings.staticTexts.ci("Apple Account").exists, !subtitle.exists {
             return true
         }
         return false
@@ -162,8 +162,8 @@ final class SimulatorICloudSignInTests: XCTestCase {
                 return
             }
         }
-        if settings.keyboards.buttons[">"].firstMatch.exists {
-            settings.keyboards.buttons[">"].firstMatch.tap()
+        if settings.keyboards.buttons.ci(">").firstMatch.exists {
+            settings.keyboards.buttons.ci(">").firstMatch.tap()
         }
     }
 
