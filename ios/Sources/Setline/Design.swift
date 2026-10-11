@@ -2,34 +2,58 @@ import SwiftUI
 import SaaSMakerUI
 
 enum SetlinePalette {
-    /// Neutral sans preset with Setline's authored daylight scorecard colors.
+    /// Dark scorecard tokens for exact native/landing continuity.
     static let theme: SMPalette = {
         let ink = Color(red: 24 / 255, green: 38 / 255, blue: 46 / 255)
+        let chalk = Color(red: 247 / 255, green: 246 / 255, blue: 240 / 255)
         var palette = SMPalette.base.brand(
             Color(red: 185 / 255, green: 232 / 255, blue: 63 / 255),
             foreground: ink
         )
-        palette.background = Color(red: 247 / 255, green: 246 / 255, blue: 240 / 255)
-        palette.foreground = ink
-        palette.primary = ink
+        palette.background = Color(red: 15 / 255, green: 24 / 255, blue: 29 / 255)
+        palette.foreground = chalk
+        palette.card = ink
+        palette.surface = Color(red: 31 / 255, green: 47 / 255, blue: 56 / 255)
+        palette.muted = Color(red: 42 / 255, green: 55 / 255, blue: 62 / 255)
+        palette.mutedForeground = Color(red: 177 / 255, green: 179 / 255, blue: 177 / 255)
+        palette.border = Color(red: 47 / 255, green: 55 / 255, blue: 59 / 255)
+        palette.primary = chalk
         palette.primaryForeground = palette.background
-        palette.border = Color(red: 221 / 255, green: 225 / 255, blue: 220 / 255)
-        palette.surface = palette.border
-        palette.mutedForeground = ink.opacity(0.62)
-        palette.hairline = ink.opacity(0.12)
+        palette.secondary = palette.surface
+        palette.hairline = palette.border
+        palette.input = palette.border
+        palette.brandSoft = palette.brand.opacity(0.14)
+        palette.accentInk = chalk
+        palette.toneInk = ink
         palette.destructive = Color(red: 255 / 255, green: 97 / 255, blue: 77 / 255)
         palette.accent = Color(red: 185 / 255, green: 216 / 255, blue: 232 / 255)
+        palette.warning = Color(red: 245 / 255, green: 217 / 255, blue: 140 / 255)
         palette.radius = 10
+        palette.isDark = true
         return palette
     }()
 
-    static let chalk = theme.background
+    static let background = theme.background
+    static let chalk = theme.foreground
     static let paper = theme.card
-    static let ink = theme.foreground
-    static let steel = theme.border
+    static let surface = theme.surface
+    static let ink = theme.brandForeground
+    static let onSurface = theme.foreground
+    static let onLime = theme.brandForeground
+    static let steel = theme.muted
+    static let border = theme.border
     static let lime = theme.brand
     static let coral = theme.destructive
     static let blue = theme.accent
+    static let caution = theme.warning
+
+    /// Shared labels on the active lime rail tile need the same dark ink as its text.
+    static let onLimeTheme: SMPalette = {
+        var palette = theme
+        palette.foreground = onLime
+        palette.mutedForeground = onLime
+        return palette
+    }()
 }
 
 /// Bundled UI roles scale with the corresponding Dynamic Type role.
@@ -49,9 +73,9 @@ enum SetlineType {
 struct SetlineBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .foregroundStyle(SetlinePalette.ink)
-            .background(SetlinePalette.chalk.ignoresSafeArea())
-            .tint(SetlinePalette.ink)
+            .foregroundStyle(SetlinePalette.onSurface)
+            .background(SetlinePalette.background.ignoresSafeArea())
+            .tint(SetlinePalette.onSurface)
     }
 }
 
@@ -69,7 +93,7 @@ struct SectionLabel: View {
 struct InkRule: View {
     var body: some View {
         Rectangle()
-            .fill(SetlinePalette.ink.opacity(0.16))
+            .fill(SetlinePalette.border)
             .frame(height: 1)
     }
 }
@@ -89,7 +113,7 @@ struct SubviewNav<Item: CaseIterable & Hashable>: View where Item.AllCases: Rand
                     Text(label(item).lowercased())
                         .accessibilityLabel(label(item))
                         .font(SetlineType.subheadline.weight(active == item ? .black : .semibold))
-                        .foregroundStyle(active == item ? SetlinePalette.ink : SetlinePalette.ink.opacity(0.5))
+                        .foregroundStyle(active == item ? SetlinePalette.onLime : SetlinePalette.chalk.opacity(0.7))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(active == item ? SetlinePalette.lime : .clear)
@@ -124,7 +148,7 @@ struct MetricStatTile: View {
             Text(label.lowercased())
                 .accessibilityLabel(label)
                 .font(.custom(SetlinePalette.theme.sansFont, size: 11, relativeTo: .caption2).weight(.bold))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
@@ -144,11 +168,11 @@ struct InfoNote: View {
             if let icon {
                 Image(systemName: icon)
                     .font(SetlineType.body)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
             Text(text)
                 .font(SetlineType.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.72))
         }
         .padding(.top, 8)
     }
@@ -165,7 +189,7 @@ struct GuideCard: View {
                 .accessibilityLabel(title)
             Text(text)
                 .font(SetlineType.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
         }
         .paperCard()
     }
@@ -181,7 +205,7 @@ struct RowChrome: ViewModifier {
                 .font(SetlineType.caption)
                 .foregroundStyle(.secondary)
         }
-        .foregroundStyle(SetlinePalette.ink)
+        .foregroundStyle(SetlinePalette.onSurface)
         .padding(.vertical, 12)
         .frame(minHeight: 44)
         .accessibilityElement(children: .combine)
@@ -222,5 +246,17 @@ private struct SetlineBrandButtonBody: View {
             .contentShape(.capsule)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .opacity(configuration.isPressed ? 0.9 : 1)
+    }
+}
+
+/// Form section that shows a model message, if any, on the dark paper surface.
+struct SetlineMessageSection: View {
+    let message: String?
+
+    var body: some View {
+        if let message {
+            Section { Label(message, systemImage: "exclamationmark.triangle") }
+                .listRowBackground(SetlinePalette.paper)
+        }
     }
 }

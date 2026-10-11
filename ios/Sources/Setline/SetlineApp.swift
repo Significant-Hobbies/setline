@@ -12,6 +12,7 @@ struct SetlineApp: App {
         WindowGroup {
             RootView()
                 .smTheme(SetlinePalette.theme)
+                .preferredColorScheme(.dark)
                 .environment(model)
                 .task {
                     await model.load()

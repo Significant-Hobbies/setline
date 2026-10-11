@@ -30,7 +30,7 @@ struct BenchmarkTargetEditor: View {
                                 .font(.headline.monospacedDigit())
                                 .padding(.horizontal, 12)
                                 .frame(minHeight: 44)
-                                .background(SetlinePalette.chalk)
+                                .background(SetlinePalette.background)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                         }

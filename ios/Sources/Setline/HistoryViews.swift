@@ -42,8 +42,8 @@ struct HistoryView: View {
         let workingSets = sessions.reduce(0) { $0 + $1.completedWorkingSetCount }
         let tonnage = sessions.reduce(0.0) { $0 + $1.tonnage }
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: dynamicTypeSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
-            historyMetric("SESSIONS", "\(sessions.count)", SetlinePalette.blue)
-            historyMetric("WORKING SETS", "\(workingSets)", SetlinePalette.lime)
+            historyMetric("SESSIONS", "\(sessions.count)", SetlinePalette.surface)
+            historyMetric("WORKING SETS", "\(workingSets)", SetlinePalette.paper)
             historyMetric("TONNAGE", tonnage > 0 ? "\(Int(tonnage)) kg" : "—", SetlinePalette.steel)
         }
     }
@@ -66,7 +66,7 @@ struct HistoryView: View {
                         Spacer()
                         Text("\(count) session\(count == 1 ? "" : "s")")
                             .font(SetlineType.subheadline.monospacedDigit())
-                            .foregroundStyle(count == 0 ? SetlinePalette.coral : SetlinePalette.ink)
+                            .foregroundStyle(count == 0 ? SetlinePalette.coral : SetlinePalette.onSurface)
                     }
                     .padding(.vertical, 2)
                 }
@@ -143,6 +143,7 @@ struct HistoryView: View {
             .frame(minWidth: 52, minHeight: 58)
             .padding(6)
             .accessibilityLabel(session.completedAt?.formatted(date: .long, time: .omitted) ?? "Completion date unavailable")
+            .foregroundStyle(SetlinePalette.ink)
             .background(SetlinePalette.blue)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 5) {
@@ -153,13 +154,13 @@ struct HistoryView: View {
                 if let week = session.programmeWeek {
                     Text("Week \(week)")
                         .font(SetlineType.caption.weight(.bold))
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 }
             }
             Spacer()
             Image(systemName: "chevron.right")
         }
-        .foregroundStyle(SetlinePalette.ink)
+        .foregroundStyle(SetlinePalette.onSurface)
         .padding(.vertical, 8)
     }
 
@@ -202,6 +203,7 @@ struct SessionDetailView: View {
                     LabeledContent("Load moved", value: "\(session.tonnage.trimmedString) kg")
                 }
             }
+            .listRowBackground(SetlinePalette.paper)
             Section("Execution ledger") {
                 if session.hubRecordID != nil && session.steps.isEmpty {
                     Text("This Hub summary does not include set-by-set records.")
@@ -231,7 +233,10 @@ struct SessionDetailView: View {
                     .padding(.vertical, 4)
                 }
             }
+            .listRowBackground(SetlinePalette.paper)
         }
+        .scrollContentBackground(.hidden)
+        .setlineBackground()
         .navigationTitle("Recorded workout")
     }
 }

@@ -127,7 +127,8 @@ struct PlanView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .padding(4)
-                    .background(entry.dayIndex == position.dayIndex ? SetlinePalette.lime : SetlinePalette.blue.opacity(0.55))
+                    .foregroundStyle(entry.dayIndex == position.dayIndex ? SetlinePalette.onLime : SetlinePalette.onSurface)
+                    .background(entry.dayIndex == position.dayIndex ? SetlinePalette.lime : SetlinePalette.blue.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .accessibilityLabel("\(entry.dayLabel): \(entry.title)")
                 }
@@ -154,7 +155,7 @@ struct PlanView: View {
                         Spacer()
                         Image(systemName: "chevron.right").font(SetlineType.caption)
                     }
-                    .foregroundStyle(SetlinePalette.ink)
+                    .foregroundStyle(SetlinePalette.onSurface)
                     .padding(.vertical, 6)
                 }
             }
@@ -203,6 +204,7 @@ struct PlanView: View {
                                 .font(SetlineType.caption.weight(.black))
                         }
                         .frame(maxWidth: .infinity, minHeight: 52)
+                        .foregroundStyle(day.templateID == nil ? SetlinePalette.onSurface : SetlinePalette.onLime)
                         .background(day.templateID == nil ? SetlinePalette.steel.opacity(0.55) : SetlinePalette.lime)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
@@ -249,7 +251,8 @@ struct PlanView: View {
                         Text(template.isBundled ? "BUNDLED" : "CUSTOM")
                             .font(SetlineType.caption2.weight(.black))
                             .padding(6)
-                            .background(template.isBundled ? SetlinePalette.blue : SetlinePalette.lime)
+                            .foregroundStyle(template.isBundled ? SetlinePalette.ink : SetlinePalette.onSurface)
+                            .background(template.isBundled ? SetlinePalette.blue : SetlinePalette.surface)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     HStack {
@@ -317,13 +320,12 @@ struct TemplateEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                if let message = model.message {
-                    Section { Label(message, systemImage: "exclamationmark.triangle") }
-                }
+                SetlineMessageSection(message: model.message)
                 Section("Template") {
                     TextField("Name", text: $draft.name)
                     TextField("Short description", text: $draft.detail, axis: .vertical)
                 }
+                .listRowBackground(SetlinePalette.paper)
                 ForEach($draft.exercises) { $exercise in
                     Section {
                         exerciseFields($exercise)
@@ -352,6 +354,7 @@ struct TemplateEditorView: View {
                     } header: {
                         Text(exercise.name.isEmpty ? "Exercise" : exercise.name)
                     }
+                    .listRowBackground(SetlinePalette.paper)
                 }
                 Section {
                     Button {
@@ -360,7 +363,10 @@ struct TemplateEditorView: View {
                         Label("add exercise", systemImage: "plus").accessibilityLabel("Add exercise")
                     }
                 }
+                .listRowBackground(SetlinePalette.paper)
             }
+            .scrollContentBackground(.hidden)
+            .setlineBackground()
             .disabled(model.isSaving)
             .interactiveDismissDisabled(model.isSaving)
             .navigationTitle(draft.name.isEmpty ? "New template" : "Edit template")

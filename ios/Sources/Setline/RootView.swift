@@ -81,7 +81,7 @@ struct TodayView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
-        .background(SetlinePalette.chalk)
+        .background(SetlinePalette.background)
         .navigationBarHidden(true)
     }
 
@@ -136,15 +136,15 @@ struct TodayView: View {
                 .tracking(-0.8)
             Text(resolved.subtitle)
                 .font(SetlineType.title3.weight(.medium))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.66))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.66))
                 .padding(.top, 3)
             if let notice = resolved.outOfBlockNotice {
                 Text(notice)
                     .font(SetlineType.footnote.weight(.medium))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(SetlinePalette.blue.opacity(0.5))
+                    .background(SetlinePalette.blue.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .padding(.top, 12)
             }
@@ -183,7 +183,7 @@ struct TodayView: View {
                     ForEach(Array(resolved.notes.enumerated()), id: \.offset) { _, note in
                         Text("· \(note)")
                             .font(SetlineType.footnote)
-                            .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+                            .foregroundStyle(SetlinePalette.chalk.opacity(0.72))
                     }
                 }
                 .padding(.top, 16)
@@ -248,7 +248,7 @@ struct TodayView: View {
                 .font(SetlineType.headline.monospacedDigit().weight(.black))
             Text(label.lowercased())
                 .font(SetlineType.caption2.weight(.bold))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -265,17 +265,18 @@ struct TodayView: View {
                         Text(stripDayLabel(index))
                             .font(SetlineType.caption2.weight(.bold))
                         Circle()
-                            .fill(hasPlan ? SetlinePalette.ink : SetlinePalette.steel)
+                            .fill(hasPlan ? (index == todayIndex ? SetlinePalette.onLime : SetlinePalette.onSurface) : SetlinePalette.steel)
                             .frame(width: 9, height: 9)
                         Text(stripSessionLabel(day))
                             .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.bold))
                             .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                             .minimumScaleFactor(0.7)
-                            .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                            .foregroundStyle(index == todayIndex ? SetlinePalette.onLime : SetlinePalette.chalk.opacity(0.7))
                     }
+                    .foregroundStyle(index == todayIndex ? SetlinePalette.onLime : SetlinePalette.onSurface)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
-                    .background(index == todayIndex ? SetlinePalette.lime : (hasPlan ? SetlinePalette.blue.opacity(0.65) : .clear))
+                    .background(index == todayIndex ? SetlinePalette.lime : (hasPlan ? SetlinePalette.blue.opacity(0.12) : .clear))
                     .clipShape(RoundedRectangle(cornerRadius: 9))
                     .accessibilityLabel("\(stripDayLabel(index)): \(day.map { $0.isRestDay ? "rest day" : $0.template.name } ?? "nothing scheduled")")
                 }
@@ -326,7 +327,7 @@ struct TodayView: View {
                             .font(.custom(SetlinePalette.theme.monoFont, size: 30, relativeTo: .title).weight(.heavy).monospacedDigit())
                         Text("working sets")
                             .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.bold))
-                            .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                            .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                     }
                 }
                 .padding(.vertical, 12)
@@ -334,7 +335,7 @@ struct TodayView: View {
             } else {
                 Text("Your first completed workout will establish the record—not an estimate.")
                     .font(SetlineType.body)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.66))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.66))
             }
         }
     }
@@ -353,6 +354,7 @@ struct SessionPreviewView: View {
                         Text(note).font(SetlineType.footnote)
                     }
                 }
+                .listRowBackground(SetlinePalette.paper)
             }
             ForEach(resolved.template.exercises) { exercise in
                 Section {
@@ -364,7 +366,7 @@ struct SessionPreviewView: View {
                                 Spacer()
                                 Text(plannedSet.stepType.title.uppercased())
                                     .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy))
-                                    .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+                                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                             }
                             Text(plannedSet.target.displayString)
                                 .font(SetlineType.headline.monospacedDigit())
@@ -385,8 +387,11 @@ struct SessionPreviewView: View {
                 } header: {
                     Text(exercise.name)
                 }
+                .listRowBackground(SetlinePalette.paper)
             }
         }
+        .scrollContentBackground(.hidden)
+        .setlineBackground()
         .navigationTitle(resolved.template.name)
         .navigationBarTitleDisplayMode(.inline)
     }

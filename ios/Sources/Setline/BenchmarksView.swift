@@ -134,7 +134,7 @@ struct BenchmarksView: View {
                 Text("\(title) \u{00B7} \(metrics.count)")
                     .font(.system(size: 11, weight: .black))
             }
-            .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+            .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             VStack(spacing: 14) {
                 ForEach(metrics, id: \.id) { metric in
                     BenchmarkMetricCard(metric: metric)
@@ -158,7 +158,7 @@ struct BenchmarksView: View {
                     Image(systemName: showAllBenchmarks ? "chevron.up" : "chevron.down")
                         .font(.caption)
                 }
-                .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 .padding(.vertical, 8)
             }
             if showAllBenchmarks {
@@ -191,7 +191,7 @@ struct BenchmarksView: View {
                     Text("From your workouts")
                         .font(.system(size: 11, weight: .black))
                 }
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 ForEach(unapplied, id: \.metricID) { suggestion in
                     suggestionCard(suggestion)
                 }
@@ -204,9 +204,9 @@ struct BenchmarksView: View {
         return HStack(alignment: .top, spacing: 12) {
             Image(systemName: metric?.systemImage ?? "questionmark")
                 .font(.body)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 .frame(width: 32, height: 32)
-                .background(SetlinePalette.lime.opacity(0.5))
+                .background(SetlinePalette.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 3) {
                 Text(metric?.name ?? suggestion.metricID)
@@ -229,7 +229,7 @@ struct BenchmarksView: View {
             }
         }
         .padding(12)
-        .background(SetlinePalette.lime.opacity(0.2))
+        .background(SetlinePalette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -238,8 +238,8 @@ struct BenchmarksView: View {
         let recorded = BenchmarkCatalog.recordedCount(in: model.document.benchmarks)
         let history = model.document.benchmarks.history.count
         return HStack(spacing: 10) {
-            MetricStatTile(value: "\(reached)", suffix: "/ \(BenchmarkCatalog.metrics.count)", label: "Targets reached", background: SetlinePalette.lime)
-            MetricStatTile(value: "\(recorded)", suffix: "/ \(BenchmarkCatalog.metrics.count)", label: "Starting points", background: SetlinePalette.blue)
+            MetricStatTile(value: "\(reached)", suffix: "/ \(BenchmarkCatalog.metrics.count)", label: "Targets reached", background: SetlinePalette.paper)
+            MetricStatTile(value: "\(recorded)", suffix: "/ \(BenchmarkCatalog.metrics.count)", label: "Starting points", background: SetlinePalette.surface)
             MetricStatTile(value: "\(history)", label: "Saved check-ins", background: SetlinePalette.paper)
         }
     }
@@ -248,13 +248,13 @@ struct BenchmarksView: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "scope")
                 .font(.title3)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             Text("A checkpoint list, not 15 daily workouts. Test consistently, roughly every 8\u{2013}12 weeks; do not chase every target at once.")
                 .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
         }
         .padding(14)
-        .background(SetlinePalette.blue.opacity(0.4))
+        .background(SetlinePalette.blue.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -297,7 +297,7 @@ struct BenchmarksView: View {
                     } label: {
                         Text("\(group.name) \(count)")
                             .font(.caption.weight(activeGroup == group.id ? .black : .semibold))
-                            .foregroundStyle(activeGroup == group.id ? SetlinePalette.chalk : SetlinePalette.ink)
+                            .foregroundStyle(activeGroup == group.id ? SetlinePalette.onSurface : SetlinePalette.chalk.opacity(0.7))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .background(activeGroup == group.id ? SetlinePalette.ink : SetlinePalette.steel.opacity(0.5))

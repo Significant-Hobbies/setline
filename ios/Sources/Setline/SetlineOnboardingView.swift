@@ -93,7 +93,7 @@ struct SetlineOnboardingView: View {
                     .tracking(-1)
                 Text("Setline keeps the authored target in view, records only what you enter, and runs entirely on this device during a workout.")
                     .font(.body)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
 
             VStack(alignment: .leading, spacing: 14) {
@@ -149,7 +149,7 @@ struct SetlineOnboardingView: View {
                     .font(.system(.largeTitle, design: .rounded, weight: .black))
                 Text(preview.subtitle)
                     .font(.headline)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.65))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.65))
             }
 
             VStack(alignment: .leading, spacing: 14) {
@@ -174,7 +174,7 @@ struct SetlineOnboardingView: View {
 
             Text("The first screen shows the target. Enter your actual result, then Setline starts the authored rest. Notification permission is requested only when that first rest needs an alert.")
                 .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.68))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.68))
 
             Button(model.isExistingOwnerOrientation ? "Return to Setline" : "Start this session") {
                 if model.isExistingOwnerOrientation {
@@ -196,14 +196,14 @@ struct SetlineOnboardingView: View {
         VStack(alignment: .leading, spacing: 24) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 44))
-                .foregroundStyle(SetlinePalette.ink)
+                .foregroundStyle(SetlinePalette.onSurface)
                 .accessibilityHidden(true)
             SectionLabel(text: "First set recorded")
             Text("Your workout is underway.")
                 .font(.system(.largeTitle, design: .rounded, weight: .black))
             Text("The set is saved locally, the rest clock is tied to real time, and the authored target remains unchanged.")
                 .font(.body)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             Button("See Today") {
                 model.completeOnboarding()
             }
