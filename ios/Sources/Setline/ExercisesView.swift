@@ -534,10 +534,7 @@ private struct GoalEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                if let message = model.message {
-                    Section { Label(message, systemImage: "exclamationmark.triangle") }
-                        .listRowBackground(SetlinePalette.paper)
-                }
+                SetlineMessageSection(message: model.message)
                 Section("Movement") {
                     LabeledContent("Exercise", value: exerciseName)
                     Picker("Measure", selection: $metric) {

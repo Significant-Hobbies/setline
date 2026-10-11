@@ -320,10 +320,7 @@ struct TemplateEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                if let message = model.message {
-                    Section { Label(message, systemImage: "exclamationmark.triangle") }
-                        .listRowBackground(SetlinePalette.paper)
-                }
+                SetlineMessageSection(message: model.message)
                 Section("Template") {
                     TextField("Name", text: $draft.name)
                     TextField("Short description", text: $draft.detail, axis: .vertical)

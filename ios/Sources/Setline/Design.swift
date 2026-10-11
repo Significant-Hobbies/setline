@@ -248,3 +248,15 @@ private struct SetlineBrandButtonBody: View {
             .opacity(configuration.isPressed ? 0.9 : 1)
     }
 }
+
+/// Form section that shows a model message, if any, on the dark paper surface.
+struct SetlineMessageSection: View {
+    let message: String?
+
+    var body: some View {
+        if let message {
+            Section { Label(message, systemImage: "exclamationmark.triangle") }
+                .listRowBackground(SetlinePalette.paper)
+        }
+    }
+}
