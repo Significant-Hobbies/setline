@@ -88,7 +88,7 @@ struct ExercisesView: View {
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                 }
-                                .foregroundStyle(SetlinePalette.ink)
+                                .foregroundStyle(SetlinePalette.onSurface)
                                 .padding(.vertical, 8)
                             }
                             InkRule()
@@ -116,8 +116,8 @@ struct ExercisesView: View {
         }
         let achieved = progresses.count(where: \.isAchieved)
         return HStack(spacing: 10) {
-            summaryTile("TARGETS", "\(progresses.count)", SetlinePalette.blue)
-            summaryTile("REACHED", "\(achieved)", SetlinePalette.lime)
+            summaryTile("TARGETS", "\(progresses.count)", SetlinePalette.surface)
+            summaryTile("REACHED", "\(achieved)", SetlinePalette.paper)
         }
     }
 
@@ -159,6 +159,7 @@ struct ExercisesView: View {
                                 .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy))
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
+                                .foregroundStyle(SetlinePalette.onLime)
                                 .background(SetlinePalette.lime)
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
                         } else if let fraction = progress.fraction {
@@ -172,7 +173,7 @@ struct ExercisesView: View {
             Spacer()
             Image(systemName: "chevron.right").foregroundStyle(.secondary)
         }
-        .foregroundStyle(SetlinePalette.ink)
+        .foregroundStyle(SetlinePalette.onSurface)
         .padding(.vertical, 8)
     }
 }
@@ -243,7 +244,7 @@ struct ExerciseDetailView: View {
                 if !definition.cue.isEmpty {
                     Text(definition.cue)
                         .font(SetlineType.subheadline)
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 }
             }
         }
@@ -268,7 +269,7 @@ struct ExerciseDetailView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(metric.title)
                                 .font(SetlineType.caption.weight(.bold))
-                                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                             Text(metric.format(value.value))
                                 .font(.custom(SetlinePalette.theme.monoFont, size: 28, relativeTo: .title).weight(.heavy).monospacedDigit())
                             Text(value.provenance)
@@ -283,7 +284,7 @@ struct ExerciseDetailView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(metric.title)
                                 .font(SetlineType.caption.weight(.bold))
-                                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                             Text("Unavailable")
                                 .font(SetlineType.headline)
                                 .foregroundStyle(.secondary)
@@ -331,7 +332,7 @@ struct ExerciseDetailView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(progress.goal.metric.title)
                         .font(SetlineType.caption.weight(.bold))
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                     Text(progress.goal.metric.format(progress.goal.targetValue))
                         .font(.custom(SetlinePalette.theme.monoFont, size: 26, relativeTo: .title).weight(.heavy).monospacedDigit())
                 }
@@ -341,6 +342,7 @@ struct ExerciseDetailView: View {
                         .font(SetlineType.caption2.weight(.black))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
+                        .foregroundStyle(SetlinePalette.onLime)
                         .background(SetlinePalette.lime)
                         .clipShape(Capsule())
                 }
@@ -359,7 +361,7 @@ struct ExerciseDetailView: View {
             }
             if let fraction = progress.fraction {
                 ProgressView(value: fraction)
-                    .tint(progress.isAchieved ? SetlinePalette.lime : SetlinePalette.ink)
+                    .tint(progress.isAchieved ? SetlinePalette.lime : SetlinePalette.onSurface)
             }
             HStack(spacing: 16) {
                 if let current = progress.current {
@@ -392,7 +394,7 @@ struct ExerciseDetailView: View {
         VStack(alignment: .leading, spacing: 3) {
             Text(label)
                 .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             Text(value).font(SetlineType.subheadline.monospacedDigit().weight(.bold))
         }
     }
@@ -410,9 +412,9 @@ struct ExerciseDetailView: View {
             Chart {
                 ForEach(points) { point in
                     LineMark(x: .value("Date", point.achievedAt), y: .value(progress.goal.metric.title, point.value))
-                        .foregroundStyle(SetlinePalette.ink)
+                        .foregroundStyle(SetlinePalette.onSurface)
                     PointMark(x: .value("Date", point.achievedAt), y: .value(progress.goal.metric.title, point.value))
-                        .foregroundStyle(SetlinePalette.ink)
+                        .foregroundStyle(SetlinePalette.onSurface)
                 }
                 RuleMark(y: .value("Target", progress.goal.targetValue))
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
@@ -447,11 +449,11 @@ struct ExerciseDetailView: View {
                 }
                 Text(recommendation.rationale)
                     .font(SetlineType.footnote)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.72))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(SetlinePalette.blue.opacity(0.45))
+            .background(SetlinePalette.blue.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
     }
@@ -491,7 +493,7 @@ struct ExerciseDetailView: View {
                 SectionLabel(text: "Authored progression")
                 Text("\(rule.repsLow)–\(rule.repsHigh) reps. \(rule.specialRule)")
                     .font(SetlineType.footnote)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.72))
             }
         }
         .font(SetlineType.subheadline)
@@ -534,6 +536,7 @@ private struct GoalEditorView: View {
             Form {
                 if let message = model.message {
                     Section { Label(message, systemImage: "exclamationmark.triangle") }
+                        .listRowBackground(SetlinePalette.paper)
                 }
                 Section("Movement") {
                     LabeledContent("Exercise", value: exerciseName)
@@ -543,6 +546,7 @@ private struct GoalEditorView: View {
                         }
                     }
                 }
+                .listRowBackground(SetlinePalette.paper)
                 Section("Ideal") {
                     HStack {
                         TextField("Target", text: $value)
@@ -566,10 +570,14 @@ private struct GoalEditorView: View {
                         DatePicker("By", selection: $targetDate, displayedComponents: .date)
                     }
                 }
+                .listRowBackground(SetlinePalette.paper)
                 Section("Note") {
                     TextField("Optional", text: $note, axis: .vertical)
                 }
+                .listRowBackground(SetlinePalette.paper)
             }
+            .scrollContentBackground(.hidden)
+            .setlineBackground()
             .disabled(model.isSaving)
             .interactiveDismissDisabled(model.isSaving)
             .navigationTitle(existing == nil ? "New target" : "Edit target")
@@ -632,6 +640,7 @@ private struct CataloguePickerView: View {
                     }
                     .pickerStyle(.segmented)
                 }
+                .listRowBackground(SetlinePalette.paper)
                 ForEach(results) { definition in
                     NavigationLink {
                         ExerciseDetailView(exerciseName: definition.name)
@@ -644,7 +653,10 @@ private struct CataloguePickerView: View {
                         }
                     }
                 }
+                .listRowBackground(SetlinePalette.paper)
             }
+            .scrollContentBackground(.hidden)
+            .setlineBackground()
             .searchable(text: $query, prompt: "Search \(ExerciseCatalogue.all.count) movements")
             .navigationTitle("Movement library")
             .navigationBarTitleDisplayMode(.inline)

@@ -2,10 +2,10 @@
 
 ## Direction
 
-Setline is a daylight strength-training scorecard: the legibility of an interval
+Setline is a dark strength-training scorecard: the legibility of an interval
 timer, the notation of a training journal, and the command hierarchy of a
 competition attempt board. Its quieter second pass keeps the instrument-like
-structure while letting neutral paper, spacing, and authored workout content
+structure while letting matte dark surfaces, spacing, and authored workout content
 carry the page. Lime is an execution signal, not the atmosphere.
 
 The first release uses three structural probes within this world:
@@ -18,17 +18,35 @@ The delegated selection is **Scoreboard split** because it keeps target, actuals
 
 ## Physical Scene
 
-A user checks Setline between sets under bright overhead gym lights, sometimes one-handed and out of breath. The surface is light, matte, and high-contrast; important numerals are readable at arm's length. Dark mode is not the default because this is not a bedroom or cinema interface.
+A user checks Setline between sets under bright overhead gym lights, sometimes
+one-handed and out of breath. The surface is dark, matte, and high-contrast;
+important numerals remain readable at arm's length.
+
+Owner decision (Phase C): **DARK EVERYWHERE**. Dark is the default and first-run
+appearance, forced throughout the native app regardless of the device setting.
+This overrides the previous guidance that dark mode was not the default. The
+public landing must use these exact app tokens; its source remains ios-landings.
 
 ## Palette
 
-- `chalk`: `#f7f6f0` — primary field.
-- `paper`: `#ffffff` — raised data surface.
-- `ink`: `#18262e` — primary type and structural lines.
-- `steel`: `#dde1dc` — dividers, inactive tracks, and quiet surfaces.
-- `lime`: `#b9e83f` — primary action and compact active signal.
-- `coral`: `#ff614d` — pain, destructive, over-target, and urgent state only.
+- `background`: `#0f181d` — primary matte field.
+- `foreground` / `chalk` / `onSurface`: `#f7f6f0` — primary text on dark surfaces.
+- `card` / `paper`: `#18262e` — raised data surface.
+- `surface`: `#1f2f38` — rest board, rail, and supporting surfaces.
+- `muted` / `steel`: `#2a373e` — inactive tracks and quiet fills.
+- `mutedForeground`: `#b1b3b1` — supporting text.
+- `border`: `#2f373b` — dividers and card rules.
+- `brand` / `lime`: `#b9e83f` — actions and compact active/status signals only.
+- `brandForeground` / `ink` / `onLime`: `#18262e` — text on lime actions.
+- `destructive` / `coral`: `#ff614d` — pain, destructive, over-target, urgent state.
 - `blue`: `#b9d8e8` — recorded/history evidence and informational state.
+- `caution`: `#f5d98c` — the existing benchmark caution badge, with ink text.
+
+Text and rules formerly drawn with translucent ink now use chalk-based roles.
+Small secondary text uses at least 62% chalk; informational blue washes use 12%
+blue so chalk remains legible. Solid blue and coral controls use ink text.
+Summary tiles use dark fills; lime is not a large decorative field. Native
+forms and lists share the field/card tokens, and system controls use dark mode.
 
 Color never carries status alone. Every state has text, position, or shape support.
 
@@ -77,7 +95,7 @@ Color never carries status alone. Every state has text, position, or shape suppo
 - Starting the next step records actual rest from wall-clock timestamps whether
   the user starts early or waits after zero.
 - Motion is limited to a progress sweep, numeric countdown change, and short state confirmation. Reduced-motion users receive immediate state changes.
-- Focus rings use a two-layer ink/lime treatment and never rely on browser defaults alone.
+- Focus rings use a two-layer chalk/lime treatment and never rely on browser defaults alone.
 - Touch targets are at least 44 pixels.
 - Destructive or irreversible actions require a secondary confirmation; skipping a set is reversible until session save.
 

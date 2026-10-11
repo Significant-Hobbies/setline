@@ -67,7 +67,7 @@ struct CapabilityView: View {
                     i == 0 ? next.move(to: p) : next.addLine(to: p)
                 }
                 next.closeSubpath()
-                context.stroke(next, with: .color(SetlinePalette.ink.opacity(0.45)), style: StrokeStyle(lineWidth: 1.25, dash: [5, 4]))
+                context.stroke(next, with: .color(SetlinePalette.chalk.opacity(0.45)), style: StrokeStyle(lineWidth: 1.25, dash: [5, 4]))
                 // Solid current outline.
                 var current = Path()
                 for i in 0..<4 {
@@ -77,7 +77,7 @@ struct CapabilityView: View {
                 }
                 current.closeSubpath()
                 context.fill(current, with: .color(SetlinePalette.lime.opacity(0.25)))
-                context.stroke(current, with: .color(SetlinePalette.ink), lineWidth: 2)
+                context.stroke(current, with: .color(SetlinePalette.onSurface), lineWidth: 2)
                 // Goal markers.
                 for i in 0..<4 {
                     guard let target = CapabilityEngine.goalProjectedScore(axes[i], in: model.document) else { continue }
@@ -100,7 +100,7 @@ struct CapabilityView: View {
     private var axisLabels: some View {
         Text("Strength ↑ · Endurance → · Mobility ↓ · Balance & control ←")
             .font(.system(size: 10, weight: .black))
-            .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+            .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             .frame(maxWidth: .infinity, alignment: .center)
     }
 
@@ -111,7 +111,7 @@ struct CapabilityView: View {
             Label("your goal", systemImage: "circle").accessibilityLabel("Your goal")
         }
         .font(.caption2.weight(.bold))
-        .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
     }
 
     // MARK: - Priorities
@@ -129,7 +129,7 @@ struct CapabilityView: View {
                 ForEach(plan.axes.filter { $0.priorityRank != nil }, id: \.axis) { axisPlan in
                     Text(axisPlan.rationale)
                         .font(.footnote)
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
                 }
             }
         }
@@ -186,17 +186,17 @@ struct CapabilityView: View {
             .buttonStyle(SetlineBrandButtonStyle())
             Text("One programme across the axes — priorities first, maintenance retained — installed as an ordinary custom programme you can still edit and skip.")
                 .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.72))
         }
     }
 
     private var bottomNote: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "info.circle")
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             Text("Scores measure this curriculum, version \(CapabilityEngine.curriculumVersion). A symmetrical diamond is not the goal — your selected targets are. Unsupported comparisons are never shown.")
                 .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.72))
         }
         .padding(.top, 8)
     }
@@ -218,7 +218,7 @@ struct CapabilityAxisRow: View {
                             .font(.system(size: 9, weight: .black))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(statusColor.opacity(0.5))
+                            .background(statusColor.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
                 }
@@ -251,7 +251,7 @@ struct CapabilityAxisRow: View {
         case .maintain: SetlinePalette.lime
         case .specialize: SetlinePalette.blue
         case .unassessed: SetlinePalette.steel
-        default: SetlinePalette.chalk
+        default: SetlinePalette.surface
         }
     }
 }
@@ -294,14 +294,14 @@ struct CapabilityAxisView: View {
                         .font(.caption.weight(.black))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(SetlinePalette.blue.opacity(0.5))
+                        .background(SetlinePalette.blue.opacity(0.12))
                         .clipShape(Capsule())
                 }
             }
             if let rationale = plan?.rationale {
                 Text(rationale)
                     .font(.subheadline)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
             }
             if let next = plan?.nextCheckpoint {
                 Text("Next checkpoint: \(next.title)")
@@ -310,7 +310,7 @@ struct CapabilityAxisView: View {
             if let due = plan?.verificationDue {
                 Text("Verify again by \(due.formatted(date: .abbreviated, time: .omitted))")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
         }
     }
@@ -375,7 +375,7 @@ struct CapabilityCheckpointRow: View {
             if !result.isPassed {
                 Text("Start here: \(result.assessment.easierVariation)")
                     .font(.footnote)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
                 Text("Then: \(result.assessment.nextProgression)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -404,6 +404,7 @@ struct CapabilityCheckpointRow: View {
                 .font(.system(size: 9, weight: .black))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
+                .foregroundStyle(result.isPassed ? SetlinePalette.onLime : SetlinePalette.onSurface)
                 .background(result.isPassed ? SetlinePalette.lime : SetlinePalette.steel.opacity(0.6))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
         }
@@ -424,6 +425,7 @@ struct CapabilityCheckpointRow: View {
                         .font(.caption2.weight(.bold))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
+                        .foregroundStyle(result.feedback == verdict ? SetlinePalette.ink : SetlinePalette.onSurface)
                         .background(result.feedback == verdict ? SetlinePalette.blue : SetlinePalette.steel.opacity(0.4))
                         .clipShape(Capsule())
                 }
@@ -443,7 +445,7 @@ struct CapabilityCheckpointRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Population: \(reference.finding)")
                         .font(.caption2)
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
                     Text("\(reference.population) · \(reference.protocolText) · \(reference.source)")
                         .font(.system(size: 9))
                         .foregroundStyle(.secondary)

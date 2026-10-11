@@ -28,7 +28,7 @@ struct BenchmarkCheckInRow: View {
                             .font(.caption)
                     }
                 }
-                .foregroundStyle(SetlinePalette.ink)
+                .foregroundStyle(SetlinePalette.onSurface)
                 .padding(16)
             }
             if isExpanded {

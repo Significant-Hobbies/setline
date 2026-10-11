@@ -178,6 +178,11 @@ struct SettingsView: View {
                     }
                     .signInWithAppleButtonStyle(.black)
                     .frame(minHeight: 46)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(SetlinePalette.chalk.opacity(0.45))
+                            .allowsHitTesting(false)
+                    }
                     .disabled(account.isConnecting)
                     Button("Continue with Google") {
                         Task {
@@ -193,7 +198,7 @@ struct SettingsView: View {
                 }
                 if account.isConnecting { ProgressView() }
                 if let error = account.errorMessage {
-                    Text(error).font(SetlineType.footnote).foregroundStyle(.red)
+                    Text(error).font(SetlineType.footnote).foregroundStyle(SetlinePalette.coral)
                 }
             }
             if model.document.activeSession != nil {
@@ -217,6 +222,7 @@ struct SettingsView: View {
                 Image(systemName: icon)
                     .font(SetlineType.title2)
                     .frame(width: 44, height: 44)
+                    .foregroundStyle(SetlinePalette.ink)
                     .background(color)
                     .clipShape(RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 3) {
@@ -257,7 +263,7 @@ struct SettingsView: View {
         let recorded = BenchmarkCatalog.recordedCount(in: model.document.benchmarks)
         return settingsSection("Benchmarks") {
             settingsLinkRow(
-                icon: "checkmark.seal", color: SetlinePalette.lime, title: "Capability scorecard",
+                icon: "checkmark.seal", color: SetlinePalette.blue, title: "Capability scorecard",
                 subtitle: "\(reached) of \(BenchmarkCatalog.metrics.count) targets reached · \(recorded) starting points · \(model.document.benchmarks.history.count) check-ins"
             ) { BenchmarksView() }
         }
@@ -283,6 +289,7 @@ struct SettingsView: View {
                 Image(systemName: "iphone.gen3")
                     .font(SetlineType.title2)
                     .frame(width: 44, height: 44)
+                    .foregroundStyle(SetlinePalette.ink)
                     .background(SetlinePalette.blue)
                     .clipShape(RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 3) {

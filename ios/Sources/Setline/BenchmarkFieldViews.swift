@@ -15,7 +15,7 @@ struct BenchmarkProfileCard: View {
                 Spacer()
                 Text("All units metric")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
             HStack(spacing: 24) {
                 profileField("Bodyweight", text: $weightText, unit: "kg", key: \.weight)
@@ -23,7 +23,7 @@ struct BenchmarkProfileCard: View {
             }
             Text("Enter your bodyweight and height. Weight-based targets update automatically.")
                 .font(.system(size: 11))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
         }
         .padding(16)
         .background(SetlinePalette.paper)
@@ -52,14 +52,14 @@ struct BenchmarkProfileCard: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             HStack(spacing: 6) {
                 TextField("", text: text)
                     .keyboardType(.decimalPad)
                     .font(.system(.title2, design: .rounded).monospacedDigit().weight(.black))
                     .frame(minHeight: 44)
                     .padding(.horizontal, 10)
-                    .background(SetlinePalette.chalk)
+                    .background(SetlinePalette.background)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 Text(unit)
                     .font(.subheadline.weight(.bold))
@@ -118,17 +118,17 @@ struct BenchmarkMetricCard: View {
             DisclosureGroup("Test protocol & notes") {
                 Text(metric.protocolText)
                     .font(.footnote)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.72))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.72))
             }
-            .tint(SetlinePalette.ink.opacity(0.6))
+            .tint(SetlinePalette.chalk.opacity(0.7))
             sourceNote
         }
         .padding(20)
-        .background(assessment.reached ? SetlinePalette.lime.opacity(0.3) : SetlinePalette.paper)
+        .background(SetlinePalette.paper)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay {
             RoundedRectangle(cornerRadius: 16)
-                .stroke(SetlinePalette.ink.opacity(0.1), lineWidth: 1)
+                .stroke(SetlinePalette.chalk.opacity(0.1), lineWidth: 1)
         }
     }
 
@@ -140,7 +140,7 @@ struct BenchmarkMetricCard: View {
                 Text(metric.group.title)
                     .font(.system(size: 10, weight: .black))
             }
-            .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+            .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             Spacer()
             badge
         }
@@ -149,13 +149,14 @@ struct BenchmarkMetricCard: View {
     private var badge: some View {
         let bg: Color = switch assessment.tone {
         case .good: SetlinePalette.lime
-        case .caution: Color(red: 0.96, green: 0.85, blue: 0.55)
+        case .caution: SetlinePalette.caution
         case .neutral: SetlinePalette.steel
         }
         return Text(assessment.status)
             .font(.system(size: 10, weight: .black))
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
+            .foregroundStyle(assessment.tone == .neutral ? SetlinePalette.onSurface : SetlinePalette.ink)
             .background(bg)
             .clipShape(Capsule())
     }
@@ -165,7 +166,7 @@ struct BenchmarkMetricCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("CURRENT")
                     .font(.system(size: 9, weight: .black))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 Text(assessment.current)
                     .font(.system(size: 26, weight: .black, design: .rounded).monospacedDigit())
                 Text(assessment.currentSub)
@@ -177,7 +178,7 @@ struct BenchmarkMetricCard: View {
                 HStack(spacing: 4) {
                     Text(isCustomTarget ? "YOUR TARGET" : "TARGET")
                         .font(.system(size: 9, weight: .black))
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                     if !metric.targets.isEmpty {
                         Button {
                             // Navigate via the environment — handled by parent sheet
@@ -189,7 +190,7 @@ struct BenchmarkMetricCard: View {
                         } label: {
                             Image(systemName: "pencil")
                                 .font(.system(size: 11))
-                                .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+                                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                         }
                     }
                 }
@@ -206,10 +207,10 @@ struct BenchmarkMetricCard: View {
     private var messageRow: some View {
         Text(assessment.message)
             .font(.footnote)
-            .foregroundStyle(assessment.reached ? SetlinePalette.ink : SetlinePalette.ink.opacity(0.72))
+            .foregroundStyle(SetlinePalette.chalk.opacity(0.72))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
-            .background(assessment.reached ? SetlinePalette.lime.opacity(0.4) : SetlinePalette.chalk)
+            .background(SetlinePalette.surface)
             .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
@@ -240,7 +241,7 @@ struct BenchmarkMetricCard: View {
         }
         return Text(text)
             .font(.system(size: 11))
-            .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+            .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
     }
 }
 
@@ -279,13 +280,13 @@ struct BenchmarkNumberField: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             TextField(placeholder, text: $text)
                 .keyboardType(.decimalPad)
                 .font(.headline.monospacedDigit())
                 .padding(.horizontal, 12)
                 .frame(minHeight: 44)
-                .background(SetlinePalette.chalk)
+                .background(SetlinePalette.background)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .onChange(of: text) { _, newValue in
                     let value = Double(newValue.trimmingCharacters(in: .whitespaces))
@@ -322,13 +323,13 @@ struct BenchmarkTimeField: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             TextField(placeholder, text: $text)
                 .keyboardType(.numbersAndPunctuation)
                 .font(.headline.monospacedDigit())
                 .padding(.horizontal, 12)
                 .frame(minHeight: 44)
-                .background(SetlinePalette.chalk)
+                .background(SetlinePalette.background)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .onChange(of: text) { _, newValue in
                     let modelValue = model.document.benchmarks.metrics[metricID]?.text(key)
@@ -362,7 +363,7 @@ struct BenchmarkSelectField: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             Picker(label, selection: $selection) {
                 ForEach(options, id: \.self) { option in
                     Text(option).tag(option)
@@ -371,7 +372,7 @@ struct BenchmarkSelectField: View {
             .pickerStyle(.menu)
             .frame(minHeight: 44)
             .padding(.horizontal, 10)
-            .background(SetlinePalette.chalk)
+            .background(SetlinePalette.background)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .onChange(of: selection) { _, newValue in
                 let modelValue = model.document.benchmarks.metrics[metricID]?.text(key)

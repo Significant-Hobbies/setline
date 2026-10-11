@@ -82,8 +82,8 @@ struct MobilityView: View {
     private var statsRow: some View {
         let coverage = MobilityEngine.coverage(in: model.document.mobility)
         return HStack(spacing: 10) {
-            MetricStatTile(value: "\(coverage.cardsStarted)", suffix: "/ 15", label: "Cards started", background: SetlinePalette.lime)
-            MetricStatTile(value: "\(coverage.recorded)", suffix: "/ \(coverage.total)", label: "Checks recorded", background: SetlinePalette.blue)
+            MetricStatTile(value: "\(coverage.cardsStarted)", suffix: "/ 15", label: "Cards started", background: SetlinePalette.paper)
+            MetricStatTile(value: "\(coverage.recorded)", suffix: "/ \(coverage.total)", label: "Checks recorded", background: SetlinePalette.surface)
             MetricStatTile(value: "\(model.document.mobility.practising.count)", suffix: "/ \(MobilityEngine.maxPractising)", label: "Practising", background: SetlinePalette.paper)
         }
     }
@@ -115,7 +115,8 @@ struct MobilityView: View {
                             Image(systemName: "repeat")
                                 .font(.subheadline)
                                 .frame(width: 32, height: 32)
-                                .background(SetlinePalette.lime.opacity(0.5))
+                                .foregroundStyle(SetlinePalette.lime)
+                                .background(SetlinePalette.surface)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(card.name).font(.subheadline.weight(.bold))
@@ -128,7 +129,7 @@ struct MobilityView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        .foregroundStyle(SetlinePalette.ink)
+                        .foregroundStyle(SetlinePalette.onSurface)
                     }
                     .frame(minHeight: 44)
                 }
@@ -142,17 +143,17 @@ struct MobilityView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "calendar.badge.clock")
                     .font(.title3)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 Text(
                     due <= .now
                         ? "A retest under the same setup is due — the suggested cadence is about every two weeks."
                         : "Next suggested retest under the same setup: \(due.formatted(date: .abbreviated, time: .omitted))."
                 )
                 .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
             }
             .padding(14)
-            .background(SetlinePalette.blue.opacity(0.4))
+            .background(SetlinePalette.blue.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -255,7 +256,7 @@ struct MobilityView: View {
             Text("Sources").font(.headline.weight(.black))
             Text("These references support the underlying exercises and published protocols — not this assembled curriculum or its checkpoints.")
                 .font(.footnote)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
             ForEach(MobilityCatalog.sources) { source in
                 if let url = URL(string: source.url) {
                     Link(destination: url) {
@@ -299,6 +300,7 @@ struct MobilityCardRow: View {
                             .font(.system(size: 9, weight: .black))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
+                            .foregroundStyle(SetlinePalette.onLime)
                             .background(SetlinePalette.lime)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
@@ -361,7 +363,7 @@ struct MobilityCardView: View {
                     .font(.caption2.weight(.black))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(card.role == .functionalBenchmark ? SetlinePalette.blue.opacity(0.7) : SetlinePalette.steel.opacity(0.7))
+                    .background(card.role == .functionalBenchmark ? SetlinePalette.blue.opacity(0.12) : SetlinePalette.steel.opacity(0.7))
                     .clipShape(Capsule())
                 Text(card.regions.joined(separator: " · "))
                     .font(.caption)
@@ -370,13 +372,13 @@ struct MobilityCardView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.subheadline)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 Text(card.measurementCaveat)
                     .font(.footnote)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
             }
             .padding(12)
-            .background(SetlinePalette.blue.opacity(0.35))
+            .background(SetlinePalette.blue.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
@@ -386,7 +388,7 @@ struct MobilityCardView: View {
             SectionLabel(text: "Assessment setup")
             Text(card.assessmentSetup)
                 .font(.subheadline)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.85))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.85))
             Text("Keep separate: \(card.recordSeparately.joined(separator: " · ")).")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -412,7 +414,7 @@ struct MobilityCardView: View {
             ForEach(card.validAttemptRules, id: \.self) { rule in
                 Label(rule, systemImage: "checkmark.circle")
                     .font(.footnote)
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
             }
         }
     }
@@ -430,7 +432,7 @@ struct MobilityCardView: View {
                 ForEach(card.progressionOptions, id: \.self) { option in
                     Label(option, systemImage: "arrow.right")
                         .font(.footnote)
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.75))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.75))
                 }
             }
             let exercises = MobilityEngine.practiceExercises(for: card)
@@ -438,7 +440,7 @@ struct MobilityCardView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("In the exercise catalogue")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                     ForEach(exercises) { definition in
                         NavigationLink {
                             ExerciseDetailView(exerciseName: definition.name)
@@ -469,7 +471,7 @@ struct MobilityCardView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(isPractising ? SetlinePalette.lime : SetlinePalette.ink)
-                .foregroundStyle(isPractising ? SetlinePalette.ink : SetlinePalette.chalk)
+                .foregroundStyle(isPractising ? SetlinePalette.onLime : SetlinePalette.onSurface)
                 .clipShape(Capsule())
         }
         .disabled(!isPractising && !MobilityEngine.canPractise(card.id, in: model.document.mobility))
@@ -554,7 +556,7 @@ struct MobilitySlotEditor: View {
                 if let side {
                     Text(side.title.uppercased())
                         .font(.system(size: 10, weight: .black))
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 }
                 Spacer()
                 statusPicker
@@ -565,7 +567,7 @@ struct MobilitySlotEditor: View {
             seriesNote
         }
         .padding(10)
-        .background(SetlinePalette.chalk)
+        .background(SetlinePalette.background)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
@@ -686,7 +688,7 @@ struct MobilitySlotFields: View {
             HStack {
                 Text("Confidence")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 Spacer()
                 Picker("Confidence", selection: confidenceBinding) {
                     ForEach(MobilityConfidence.allCases, id: \.self) { confidence in
@@ -718,7 +720,7 @@ struct MobilitySlotFields: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label.uppercased())
                 .font(.system(size: 9, weight: .black))
-                .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             TextField(prompt, text: text)
                 .font(.subheadline)
                 .frame(minHeight: 40)

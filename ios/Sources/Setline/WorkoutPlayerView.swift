@@ -24,7 +24,7 @@ struct WorkoutPlayerView: View {
                     }
                     SetRail(session: session)
                 }
-                .background(SetlinePalette.chalk)
+                .background(SetlinePalette.background)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: session.rest != nil)
             } else {
                 ContentUnavailableView("Workout complete", systemImage: "checkmark.seal.fill")
@@ -37,7 +37,7 @@ struct WorkoutPlayerView: View {
                     .font(SetlineType.footnote)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(SetlinePalette.chalk)
+                    .background(SetlinePalette.background)
             }
         }
         .interactiveDismissDisabled(model.document.activeSession != nil)
@@ -101,7 +101,7 @@ struct WorkoutPlayerView: View {
             if session.tonnage > 0 {
                 Text("\(session.tonnage.trimmedString) kg total load moved")
                     .font(SetlineType.subheadline.monospacedDigit())
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
             Button { Task { await model.finishWorkout() } } label: {
                 Text("save workout").frame(maxWidth: .infinity)
@@ -239,12 +239,13 @@ private struct AttemptBoard: View {
                     .font(SetlineType.headline.monospacedDigit().weight(.black))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
+                    .foregroundStyle(SetlinePalette.ink)
                     .background(step.stepType.countsAsWorkingSet ? SetlinePalette.lime : SetlinePalette.blue)
                     .clipShape(RoundedRectangle(cornerRadius: 7))
                 if step.isOptional {
                     Text("optional")
                         .font(.custom(SetlinePalette.theme.sansFont, size: 9, relativeTo: .caption2).weight(.heavy))
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                 }
             }
         }
@@ -271,17 +272,17 @@ private struct AttemptBoard: View {
             if !step.target.qualifiers.isEmpty {
                 Text(step.target.qualifiers.joined(separator: " · "))
                     .font(SetlineType.subheadline.weight(.bold))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.7))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
             if !step.rest.isEmpty {
                 Text("Authored rest \(step.rest.displayString)")
                     .font(SetlineType.caption.monospacedDigit())
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
             if !step.cue.isEmpty {
                 Text(step.cue)
                     .font(SetlineType.body.weight(.medium))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.65))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.65))
                     .padding(.top, 4)
             }
         }
@@ -306,7 +307,8 @@ private struct AttemptBoard: View {
                 .accessibilityLabel(workStartedAt == nil ? "Start set" : "Stop")
                 .font(SetlineType.subheadline.weight(.bold))
                 .frame(minWidth: 96, minHeight: 44)
-                .background(workStartedAt == nil ? SetlinePalette.blue : SetlinePalette.coral.opacity(0.85))
+                .foregroundStyle(SetlinePalette.ink)
+                .background(workStartedAt == nil ? SetlinePalette.blue : SetlinePalette.coral)
                 .clipShape(RoundedRectangle(cornerRadius: 9))
                 if accumulatedWorkSeconds > 0 || workStartedAt != nil {
                     Button("Reset") { resetWorkTimer() }
@@ -318,7 +320,7 @@ private struct AttemptBoard: View {
             }
             Text("Timed independently of rest, so time under load is recorded rather than estimated.")
                 .font(SetlineType.caption)
-                .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
         }
     }
 
@@ -386,7 +388,7 @@ private struct AttemptBoard: View {
             if drafts.count > 1 {
                 Text("All \(drafts.count) segments record as one set.")
                     .font(SetlineType.caption.weight(.semibold))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.6))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
         }
     }
@@ -398,7 +400,7 @@ private struct AttemptBoard: View {
                 HStack {
                     Text("SEGMENT \(index + 1)")
                         .font(.custom(SetlinePalette.theme.sansFont, size: 10, relativeTo: .caption2).weight(.heavy))
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.5))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
                     Spacer()
                     if step.target.perSide {
                         Picker("Side", selection: draft.side) {
@@ -458,7 +460,7 @@ private struct AttemptBoard: View {
                         .font(SetlineType.caption.weight(.semibold))
                         .foregroundStyle(parsed.segments.isEmpty
                             ? SetlinePalette.coral
-                            : SetlinePalette.ink.opacity(0.75))
+                            : SetlinePalette.chalk.opacity(0.75))
                     if !parsed.unrecognised.isEmpty {
                         Text("Ignored: \(parsed.unrecognised.joined(separator: ", "))")
                             .font(SetlineType.caption)
@@ -475,7 +477,7 @@ private struct AttemptBoard: View {
                 .disabled(parsed.segments.isEmpty)
             }
             .padding(14)
-            .background(SetlinePalette.chalk)
+            .background(SetlinePalette.background)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
@@ -554,11 +556,11 @@ private struct AttemptBoard: View {
                     .accessibilityLabel(title)
                 Text(unit)
                     .font(SetlineType.caption.weight(.bold))
-                    .foregroundStyle(SetlinePalette.ink.opacity(0.55))
+                    .foregroundStyle(SetlinePalette.chalk.opacity(0.7))
             }
             .padding(.horizontal, 12)
             .frame(minHeight: 58)
-            .background(SetlinePalette.chalk)
+            .background(SetlinePalette.background)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .frame(maxWidth: .infinity)
@@ -597,7 +599,7 @@ private struct RestBoard: View {
                     }
                     .buttonStyle(SMButtonStyle(.outline))
                     .font(SetlineType.subheadline.weight(.bold))
-                    .tint(SetlinePalette.ink)
+                    .tint(SetlinePalette.onSurface)
                     if let next {
                         InkRule()
                         SectionLabel(text: "Next in authored order")
@@ -616,12 +618,12 @@ private struct RestBoard: View {
                     }
                     Text("Authored \(rest.authoredSeconds)s · adjusted \(rest.adjustedSeconds)s · actual \(rest.actual(at: context.date))s")
                         .font(SetlineType.caption.monospacedDigit())
-                        .foregroundStyle(SetlinePalette.ink.opacity(0.62))
+                        .foregroundStyle(SetlinePalette.chalk.opacity(0.62))
                 }
                 .padding(24)
             }
         }
-        .background(SetlinePalette.chalk)
+        .background(SetlinePalette.surface)
     }
 }
 
@@ -650,6 +652,8 @@ private struct SetRail: View {
                         }
                         .frame(width: 112, alignment: .leading)
                         .padding(9)
+                        .foregroundStyle(index == session.activeIndex ? SetlinePalette.onLime : SetlinePalette.onSurface)
+                        .environment(\.smPalette, index == session.activeIndex ? SetlinePalette.onLimeTheme : SetlinePalette.theme)
                         .background(railColor(step, index: index))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
@@ -657,14 +661,14 @@ private struct SetRail: View {
             }
         }
         .padding(12)
-        .background(SetlinePalette.chalk)
+        .background(SetlinePalette.surface)
     }
 
     private func railColor(_ step: WorkoutStep, index: Int) -> Color {
         if index == session.activeIndex { return SetlinePalette.lime }
         return switch step.status {
-        case .complete: SetlinePalette.blue
-        case .skipped: SetlinePalette.coral.opacity(0.5)
+        case .complete: SetlinePalette.blue.opacity(0.12)
+        case .skipped: SetlinePalette.coral.opacity(0.12)
         case .deferred: SetlinePalette.steel
         case .planned: SetlinePalette.paper
         }
