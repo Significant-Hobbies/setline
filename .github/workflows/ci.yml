@@ -25,6 +25,8 @@ jobs:
   native-quality:
     runs-on: macos-15
     timeout-minutes: 20
+    env:
+      SETLINE_DERIVED_DATA: ${{ runner.temp }}/setline-native-derived
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -44,3 +46,10 @@ jobs:
           sudo xcode-select -s "$latest"
           xcodebuild -version
       - run: pnpm quality:native
+      - name: Retain native failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: setline-native-failure-${{ github.run_id }}
+          path: ${{ runner.temp }}/setline-native-derived/Logs/Test/
+          retention-days: 7
