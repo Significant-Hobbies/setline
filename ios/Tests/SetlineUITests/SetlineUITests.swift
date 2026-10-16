@@ -234,7 +234,10 @@ final class SetlineUITests: XCTestCase {
 
     private func recordShorthand(_ app: XCUIApplication, _ value: String) {
         let typeIt = app.buttons.ci("Type it")
-        if typeIt.exists { typeIt.tap() }
+        // Ending rest commits asynchronously; wait for the next set's entry
+        // action instead of skipping the tap while that transition is pending.
+        XCTAssertTrue(typeIt.waitForExistence(timeout: 5))
+        typeIt.tap()
         let entry = app.textFields.ci("Shorthand set entry")
         XCTAssertTrue(entry.waitForExistence(timeout: 5))
         entry.tap()
