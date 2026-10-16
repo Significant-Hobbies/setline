@@ -313,9 +313,20 @@ final class SetlineUITests: XCTestCase {
     func testCoreTabsAreReachable() {
         let app = launch()
 
-        for tab in ["Plan", "History", "You", "Exercises"] {
+        // The shared section heading is an accessibility container, so its
+        // label is not necessarily a static text. Verify each page's content.
+        let pages = [
+            ("Plan", "Templates stay authored. Sessions record deviations."),
+            ("History", "Recorded, calculated, and unavailable stay distinct."),
+            ("You", "Device-first. Choose how your data follows you."),
+            ("Exercises", "Measured current, authored ideal, and the gap between them."),
+        ]
+        for (tab, subtitle) in pages {
             tapTab(app, tab)
-            XCTAssertTrue(app.staticTexts.ci(tab).waitForExistence(timeout: 2))
+            let button = app.tabBars.buttons.ci(tab)
+            if button.exists { XCTAssertTrue(button.isSelected, "\(tab) must be selected") }
+            XCTAssertTrue(app.staticTexts.ci(subtitle).waitForExistence(timeout: 5),
+                          "\(tab) must display its own page content")
         }
     }
 
