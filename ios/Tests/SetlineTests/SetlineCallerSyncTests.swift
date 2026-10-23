@@ -6,6 +6,40 @@ import XCTest
 
 @MainActor
 final class SetlineCallerSyncTests: XCTestCase {
+    func testActualCallerPushesOnlySummaryFieldsToHub() async throws {
+        let f = try SetlineCallerFixture()
+        defer { f.cleanup() }
+        var document = SetlineDocument.sample
+        document.hubAccountID = "a"
+        let template = try XCTUnwrap(document.templates.first)
+        try document.startWorkout(templateID: template.id, at: Date(timeIntervalSince1970: 1_700_000_000))
+        try document.completeCurrent(with: [.init(loadMetrics: .init(weight: 43, repetitions: 9))],
+                                     workSeconds: 32, at: Date(timeIntervalSince1970: 1_700_000_032))
+        try document.finishWorkout(at: Date(timeIntervalSince1970: 1_700_001_500))
+        try await f.store.save(document)
+        await f.tokens.save("account-a")
+        f.released.continuation.finish()
+        await f.model.load()
+        await f.model.restoreAccountIfIdle()
+        await f.model.syncWithPlatform(announcing: true)
+        let payloads = await f.requests.payloads()
+        XCTAssertFalse(payloads.isEmpty, "The real AppModel → runtime → Hub HTTP path must execute")
+        for payload in payloads {
+            let body = try XCTUnwrap(JSONSerialization.jsonObject(with: payload) as? [String: Any])
+            let mutations = try XCTUnwrap(body["mutations"] as? [[String: Any]])
+            for mutation in mutations {
+                XCTAssertTrue((mutation["id"] as? String)?.hasPrefix("summary-") == true)
+                let envelope = try XCTUnwrap(mutation["record"] as? [String: Any])
+                let data = try XCTUnwrap(envelope["data"] as? [String: Any])
+                XCTAssertEqual(Set(data.keys), ["name", "startedAt", "durationSeconds", "completedStepCount"])
+                XCTAssertEqual(data["completedStepCount"] as? Int, 1)
+            }
+        }
+        let persisted = try await f.store.load()
+        XCTAssertEqual(persisted.history.first { $0.id == document.history[0].id }?.steps,
+                       document.history[0].steps, "Summary exchange must preserve native detail")
+    }
+
     func testAccountSwitchMidSyncKeepsBoundDocumentAndBlocksPushToNewAccount() async throws {
         let f = try SetlineCallerFixture()
         defer { f.cleanup() }
@@ -94,8 +128,10 @@ private actor CallerTokens: PersonalBearerTokenStore {
 
 private actor CallerRequests {
     private var pushes: [String] = []
-    func record(_ token: String) { pushes.append(token) }
+    private var bodies: [Data] = []
+    func record(_ token: String, body: Data) { pushes.append(token); bodies.append(body) }
     func snapshot() -> [String] { pushes }
+    func payloads() -> [Data] { bodies }
 }
 
 private final class CallerProtocol: URLProtocol, @unchecked Sendable {
@@ -219,11 +255,11 @@ private final class SetlineCallerFixture {
                 return "{\"userId\":\"\(id)\",\"email\":\"\(id)@example.invalid\"}"
             }
             if request.url!.path.hasSuffix("push") {
-                await requests.record(token)
                 // The Hub returns one result per mutation; echo them back so the
                 // transport's optimistic-concurrency check sees what a real
                 // server would return for an accepted batch.
                 let body = CallerProtocol.bodyData(of: request)
+                await requests.record(token, body: body)
                 let mutations = (try? JSONSerialization.jsonObject(with: body) as? [String: Any])?["mutations"] as? [[String: Any]] ?? []
                 let results = mutations.map { mutation -> [String: Any] in
                     [

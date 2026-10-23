@@ -1,5 +1,22 @@
 # Setline Project Status
 
+## 2026-10-23 — Hub summary boundary candidate; public hold remains
+
+The sync caller now supplies transport-specific records through the already
+pinned PersonalSyncKit API. Hub pushes contain only the disclosed completed
+workout name, start, duration and completed-step count. CloudKit keeps full
+entity records. Restored Hub summaries contain no invented set detail and
+cannot replace native history; old Hub session payloads are reduced on read.
+
+Outbound allowlist, restore/ownership and actual HTTP caller tests were added.
+`pnpm check` passes. App and test targets compile under beta and stable Xcode,
+but local simulator test services have not connected; no native test success
+is claimed. Native CI and real-device recovery/privacy qualification remain.
+Previously retained Hub records are not removed by this source change. Public
+submission stays held pending legacy retention review and a qualified package;
+build 11 is not approved for submission.
+
+
 ## Why / What
 
 Setline helps people execute a structured workout programme precisely without referring to another document or deciding what to do between sets. The user controls the programme; Setline presents the current action, records explicit results, controls rest, and separates recorded values from calculations. A Benchmarks scorecard inside the You tab provides 15 periodic capability checkpoints — strength, endurance, movement, power, skills, and body composition — with editable targets, test protocols, and check-in snapshots that preserve the distinction between recorded, estimated, reported, and unknown values.

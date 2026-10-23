@@ -546,15 +546,15 @@ final class AppModel {
 
     // MARK: - Mirror sync (iCloud + Hub)
 
-    /// The document as the mirror runtime's record set: every syncable entity
-    /// plus tombstones for entities that left it. Sessions are append-only;
+    /// CloudKit receives every syncable entity plus its tombstones. The Hub
+    /// receives only the completed-workout summary allowlist. Sessions are append-only;
     /// the active session is deliberately excluded — a workout in progress
     /// belongs to the phone in your hand.
     ///
     /// The snapshot is taken under the local write lock and refused while the
     /// store is being replaced, or when a pass's captured document or store
     /// generation is no longer current.
-    func mirrorRecords(from supplied: SetlineDocument? = nil, generation: UUID? = nil) async throws -> [MirrorRecord] {
+    func mirrorRecords(transportID: String = "cloudkit", from supplied: SetlineDocument? = nil, generation: UUID? = nil) async throws -> [MirrorRecord] {
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         guard !isReplacingStore, generation == nil || generation == storeGeneration else {
@@ -562,6 +562,7 @@ final class AppModel {
         }
         let snapshot = supplied ?? document
         guard snapshot == document else { throw SetlineHubCommitError.localDocumentUnavailable }
+        if transportID == "hub" { return try HubWorkoutSummary.records(for: snapshot) }
         var bookkeeping = try await syncStateStore.load()
         var records = try SyncEngine.records(for: snapshot, ledger: &bookkeeping.ledger, now: .now)
         records.append(
@@ -573,8 +574,8 @@ final class AppModel {
 
     /// Wraps a `SyncRecord` in the mirror envelope: the entity payload stays
     /// byte-identical inside `data`, while `recordType`, `entityId`, and an ISO
-    /// `occurredAt` give the Hub's contract and reads what they need without
-    /// understanding Setline's entity encoding.
+    /// `occurredAt` preserve the existing CloudKit envelope. Hub records use
+    /// their separate summary projection.
     private static func mirrorRecord(from record: SyncRecord) throws -> MirrorRecord {
         let payload = try record.payload.map {
             try mirrorEnvelope(entity: $0, kind: record.kind, entityID: record.entityID, occurredAt: record.modifiedAt)
@@ -620,7 +621,7 @@ final class AppModel {
     /// re-offered on the next pass instead of being acknowledged and lost.
     /// With a `pass`, winners merged against a document that changed since the
     /// pass captured it are refused, so they retry against the current one.
-    func commitMirrorRecords(_ records: [MirrorRecord], pass: MirrorPass? = nil) async throws {
+    func commitMirrorRecords(_ records: [MirrorRecord], pass: MirrorPass? = nil, transportID: String = "cloudkit") async throws {
         await acquireLocalWrite()
         defer { releaseLocalWrite() }
         guard hasLoadedDocument, document.activeSession == nil else {
@@ -629,7 +630,11 @@ final class AppModel {
         if let pass { try await validateMirrorPassLocked(pass) }
         var next = document
         for record in records {
-            try Self.apply(record, to: &next)
+            if transportID == "hub" {
+                try HubWorkoutSummary.apply(record, to: &next)
+            } else {
+                try Self.apply(record, to: &next)
+            }
         }
         next.history.sort { $0.startedAt > $1.startedAt }
         if next != document {
@@ -720,12 +725,12 @@ final class AppModel {
         MirrorPass(document: document, generation: storeGeneration, account: account)
     }
 
-    private func mirrorRecords(for pass: MirrorPass) async throws -> [MirrorRecord] {
+    private func mirrorRecords(for pass: MirrorPass, transportID: String) async throws -> [MirrorRecord] {
         guard !isReplacingStore, pass.generation == storeGeneration else {
             throw SetlineHubCommitError.localDocumentUnavailable
         }
         pass.expected = document
-        return try await mirrorRecords(from: pass.expected, generation: pass.generation)
+        return try await mirrorRecords(transportID: transportID, from: pass.expected, generation: pass.generation)
     }
 
     private func validateMirrorPass(_ pass: MirrorPass, transportID: String) async throws {
@@ -804,7 +809,7 @@ final class AppModel {
     func refreshHubSyncStatus() async {
         guard let mirror else { return }
         hubPendingCount = (try? await mirror.runtime.unpushedCount(
-            transportID: "hub", records: mirrorRecords()
+            transportID: "hub", records: mirrorRecords(transportID: "hub")
         )) ?? 0
     }
 
@@ -858,15 +863,15 @@ final class AppModel {
             if recover { try await mirror.runtime.repullAll() }
             let verified = try? await mirror.identity.verifiedSyncAccount()
             let pass = makeMirrorPass(account: verified)
-            let outcome = try await mirror.runtime.synchronize(records: {
-                try await self.mirrorRecords(for: pass)
+            let outcome = try await mirror.runtime.synchronize(recordsForTransport: { transportID in
+                try await self.mirrorRecords(for: pass, transportID: transportID)
             }, validateLocalSnapshot: { transportID in
                 try await self.validateMirrorPass(pass, transportID: transportID)
-            }) { pulled in
-                try await self.commitMirrorRecords(pulled, pass: pass)
-            }
+            }, applyFromTransport: { transportID, pulled in
+                try await self.commitMirrorRecords(pulled, pass: pass, transportID: transportID)
+            })
             hubPendingCount = (try? await mirror.runtime.unpushedCount(
-                transportID: "hub", records: mirrorRecords()
+                transportID: "hub", records: mirrorRecords(transportID: "hub")
             )) ?? 0
             try await applySyncOutcome(outcome, pass: pass)
             return outcome
@@ -1046,7 +1051,7 @@ final class AppModel {
             cloudKitZone: "Training",
             cloudKitRecordType: "SyncRecord",
             appendOnly: { name in
-                SyncEngine.parse(name)?.0.isAppendOnly ?? false
+                HubWorkoutSummary.isSummaryName(name) || (SyncEngine.parse(name)?.0.isAppendOnly ?? false)
             },
             // The Hub leg stays quiet until the committed document is bound to
             // the verified account; CloudKit syncs regardless.

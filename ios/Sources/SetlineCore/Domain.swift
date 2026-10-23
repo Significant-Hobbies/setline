@@ -575,6 +575,8 @@ public struct WorkoutSession: Codable, Equatable, Identifiable, Sendable {
     public var hubRecordID: String?
     /// Preserved inside the existing session payload when iCloud transports it.
     public var hubAccountID: String?
+    /// A restored summary's reported count, never synthetic set records.
+    public var hubSummaryCompletedStepCount: Int?
     public var templateID: UUID
     public var templateName: String
     public var startedAt: Date
@@ -592,11 +594,13 @@ public struct WorkoutSession: Codable, Equatable, Identifiable, Sendable {
         context: SessionContext,
         state: SessionState,
         hubRecordID: String? = nil,
-        hubAccountID: String? = nil
+        hubAccountID: String? = nil,
+        hubSummaryCompletedStepCount: Int? = nil
     ) {
         self.id = id
         self.hubRecordID = hubRecordID
         self.hubAccountID = hubAccountID
+        self.hubSummaryCompletedStepCount = hubSummaryCompletedStepCount
         self.templateID = context.templateID
         self.templateName = context.templateName
         self.startedAt = context.startedAt

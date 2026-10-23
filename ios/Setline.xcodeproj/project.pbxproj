@@ -19,10 +19,12 @@
 		3120400F1A39A6AE513A7DDA /* SyncRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9405EFEDE8A70CC15F9E0309 /* SyncRecord.swift */; };
 		3185F3557EBA6472DC951926 /* MobilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38C833ED129CE0CA67637EEE /* MobilityTests.swift */; };
 		326CD8AE0B8D86B2954E301E /* PlanViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 396D4D1100A1E0FACCD8953A /* PlanViews.swift */; };
+		3581EBA187B96D0BDA056754 /* HubWorkoutSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1CD4345AE00741E8E26B86C /* HubWorkoutSummary.swift */; };
 		39689A8E263CF1D51EB0247D /* BenchmarkFieldViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FF0973877D58DCB151511D /* BenchmarkFieldViews.swift */; };
 		3B412D8E5DD82AE196CB2A51 /* BenchmarkEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD5FD8927A948FA78B819E0 /* BenchmarkEngineTests.swift */; };
 		3BBA35B8612998A8EB3205F2 /* ExerciseCatalogue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 602F0E123ED63C93EDDBA179 /* ExerciseCatalogue.swift */; };
 		3CE2DEDE101DA826A45AC5F8 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2CB1821B5B5AE4C75873C6 /* Design.swift */; };
+		3E84B8A2DEA4FE31E13F66EC /* HubWorkoutSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400B7BF34C4A7F219FBBF968 /* HubWorkoutSummaryTests.swift */; };
 		401D75E9685D1937CEA9AF16 /* SetEntryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE77BBBECF6D7ED1F7E8047E /* SetEntryParser.swift */; };
 		41092DD166867E3D4756B641 /* SyncTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FD72F322ADA3467147FD40 /* SyncTypes.swift */; };
 		412B172BACABB019395D63DD /* SyncStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E9F7783F28C53B367D7F90 /* SyncStateStore.swift */; };
@@ -140,6 +142,7 @@
 		38C833ED129CE0CA67637EEE /* MobilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobilityTests.swift; sourceTree = "<group>"; };
 		396D4D1100A1E0FACCD8953A /* PlanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanViews.swift; sourceTree = "<group>"; };
 		3C2CB1821B5B5AE4C75873C6 /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
+		400B7BF34C4A7F219FBBF968 /* HubWorkoutSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubWorkoutSummaryTests.swift; sourceTree = "<group>"; };
 		40CADB4F69054A14B366A16D /* Setline.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Setline.entitlements; sourceTree = "<group>"; };
 		41FF0973877D58DCB151511D /* BenchmarkFieldViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkFieldViews.swift; sourceTree = "<group>"; };
 		4833E444B40BC982AC57AACC /* TwelveWeekProgramme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwelveWeekProgramme.swift; sourceTree = "<group>"; };
@@ -165,6 +168,7 @@
 		A9D3388CFC26F3C282170264 /* HubSyncStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubSyncStatusTests.swift; sourceTree = "<group>"; };
 		AD2130D9792A60D8E3EC5484 /* SetlineTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SetlineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0859DE334CC4D97FFE0DFDA /* Domain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
+		B1CD4345AE00741E8E26B86C /* HubWorkoutSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubWorkoutSummary.swift; sourceTree = "<group>"; };
 		B1F5DA4EB37759476E57B69F /* SetlineUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SetlineUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B7B0A3E4EF45F3C038E3C265 /* SetlineCoreTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SetlineCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B839442BFCCB000A563CD704 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -235,6 +239,7 @@
 			isa = PBXGroup;
 			children = (
 				A9D3388CFC26F3C282170264 /* HubSyncStatusTests.swift */,
+				400B7BF34C4A7F219FBBF968 /* HubWorkoutSummaryTests.swift */,
 				D0903001D1E060A30E0E771A /* PersistentUIFixtureTests.swift */,
 				FD0F45743D45AA79513293AE /* SetlineCallerSyncTests.swift */,
 				E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */,
@@ -258,6 +263,7 @@
 				5D9600ED385C5C29CB0702D3 /* ExercisesView.swift */,
 				18C887472FBEDF36FD127C32 /* HistoryViews.swift */,
 				87A8A906EC9D20CDB2473537 /* HubSyncStatus.swift */,
+				B1CD4345AE00741E8E26B86C /* HubWorkoutSummary.swift */,
 				15268979096821BD9ABB22E0 /* Info.plist */,
 				30B08FE921A3BBE059875924 /* MobilityView.swift */,
 				396D4D1100A1E0FACCD8953A /* PlanViews.swift */,
@@ -556,6 +562,7 @@
 				8CCC1E8C5F455AF8C9B8EFD7 /* ExercisesView.swift in Sources */,
 				0C260E4D0C6C142C45B3AC6D /* HistoryViews.swift in Sources */,
 				DDDC1CABAD9E660942D68508 /* HubSyncStatus.swift in Sources */,
+				3581EBA187B96D0BDA056754 /* HubWorkoutSummary.swift in Sources */,
 				5E20E3A4B120C46D131F17B2 /* MobilityView.swift in Sources */,
 				326CD8AE0B8D86B2954E301E /* PlanViews.swift in Sources */,
 				171B1B9E0DDE084379BB9DF8 /* RestNotifier.swift in Sources */,
@@ -612,6 +619,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				89B22987796BA062333DE325 /* HubSyncStatusTests.swift in Sources */,
+				3E84B8A2DEA4FE31E13F66EC /* HubWorkoutSummaryTests.swift in Sources */,
 				F6CE55F86C0AB13C47AA5BFF /* PersistentUIFixtureTests.swift in Sources */,
 				E626F70B38623615066FAC91 /* SetlineCallerSyncTests.swift in Sources */,
 				025ECF89A98B12D3E73330F1 /* SetlineLocalSaveTests.swift in Sources */,
