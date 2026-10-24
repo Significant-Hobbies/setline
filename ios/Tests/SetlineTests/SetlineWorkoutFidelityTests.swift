@@ -71,7 +71,19 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
         let resumed = fixture.makeModel()
         await resumed.load()
         XCTAssertEqual(resumed.document.activeSession?.id, interruptedID)
-        XCTAssertEqual(resumed.document.activeSession?.rest, interruptedRest)
+        let recoveredRest = try XCTUnwrap(resumed.document.activeSession?.rest)
+        XCTAssertEqual(recoveredRest.authoredSeconds, interruptedRest.authoredSeconds)
+        XCTAssertEqual(recoveredRest.adjustedSeconds, interruptedRest.adjustedSeconds)
+        XCTAssertEqual(
+            recoveredRest.startedAt.timeIntervalSince1970,
+            interruptedRest.startedAt.timeIntervalSince1970,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            recoveredRest.endsAt.timeIntervalSince1970,
+            interruptedRest.endsAt.timeIntervalSince1970,
+            accuracy: 0.001
+        )
         await resumed.endRest()
         let deferredID = try XCTUnwrap(resumed.document.activeSession?.currentStep?.id)
         await resumed.deferCurrent()

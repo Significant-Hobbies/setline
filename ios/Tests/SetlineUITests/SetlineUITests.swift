@@ -145,7 +145,9 @@ final class SetlineUITests: XCTestCase {
     }
 
     private func assertDeferredHistorySummary(_ app: XCUIApplication) {
-        let summary = text(app, containing: "1 working · 2 completed · 1 skipped · 1 deferred")
+        let summary = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS[c] %@", "1 working · 2 completed · 1 skipped · 1 deferred")
+        ).firstMatch
         XCTAssertTrue(
             scrollUntil(app, summary, scanning: .down, hittable: true),
             "History must keep completed, skipped, and deferred work distinct"
