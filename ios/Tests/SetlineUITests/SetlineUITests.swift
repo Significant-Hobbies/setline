@@ -144,6 +144,15 @@ final class SetlineUITests: XCTestCase {
         row.tap()
     }
 
+    private func assertDeferredHistorySummary(_ app: XCUIApplication) {
+        let summary = text(app, containing: "1 working · 2 completed · 1 skipped · 1 deferred")
+        XCTAssertTrue(
+            scrollUntil(app, summary, scanning: .down, hittable: true),
+            "History must keep completed, skipped, and deferred work distinct"
+        )
+        keepWorkoutScreenshot(app, named: "Setline History summary distinguishes deferred work")
+    }
+
     func testUnreadableDocumentShowsBackupRecoveryInsteadOfAnEmptyWorkout() {
         let app = launch(["--recovery-demo"])
         let alert = app.alerts.ci("Setline")
@@ -216,9 +225,14 @@ final class SetlineUITests: XCTestCase {
         let next = app.buttons.ci("Start next early").exists ? app.buttons.ci("Start next early") : app.buttons.ci("Start next set")
         XCTAssertTrue(next.waitForExistence(timeout: 3))
         next.tap()
+        let deferStep = app.buttons.ci("Do later")
+        XCTAssertTrue(deferStep.waitForExistence(timeout: 3))
+        deferStep.tap()
         recordShorthand(app, "4x55")
         app.buttons.ci("Finish").tap()
         app.buttons.ci("Finish and save").tap()
+        app.tabBars.buttons.ci("History").tap()
+        assertDeferredHistorySummary(app)
         openHistorySession(app, named: "Lower strength")
         assertInterruptedWorkoutReceipt(app)
         keepWorkoutScreenshot(app, named: "Setline detailed workout after finish")
@@ -250,8 +264,10 @@ final class SetlineUITests: XCTestCase {
         XCTAssertTrue(scrollUntil(app, text(app, containing: "Recorded: 5 × 40 kg + 2 × 30 kg"), scanning: .up))
         XCTAssertTrue(text(app, containing: "planned #1 · performed #1").exists)
         XCTAssertTrue(scrollUntil(app, text(app, containing: "Recorded: 4 × 55 kg"), scanning: .down))
-        XCTAssertTrue(text(app, containing: "planned #2 · performed #2").exists)
-        XCTAssertTrue(scrollUntil(app, text(app, containing: "planned #3 · performed —"), scanning: .down), "Unperformed authored work must not acquire a fabricated result")
+        XCTAssertTrue(text(app, containing: "planned #3 · performed #2").exists)
+        XCTAssertTrue(scrollUntil(app, text(app, containing: "planned #2 · performed —"), scanning: .down))
+        XCTAssertTrue(app.staticTexts.ci("deferred").exists, "The explicit Do later status must survive in the receipt")
+        XCTAssertTrue(scrollUntil(app, text(app, containing: "planned #4 · performed —"), scanning: .down), "Unperformed authored work must not acquire a fabricated result")
     }
 
     private func keepWorkoutScreenshot(_ app: XCUIApplication, named name: String) {

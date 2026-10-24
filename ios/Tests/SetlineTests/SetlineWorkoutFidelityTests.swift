@@ -21,7 +21,7 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
         XCTAssertEqual(fixture.model.document.activeSession?.steps.last?.status, .deferred)
         await fixture.model.finishWorkout()
 
-        let reopened = AppModel(store: fixture.store, mirror: nil)
+        let reopened = fixture.makeModel()
         await reopened.load()
         let saved = try XCTUnwrap(reopened.document.history.first)
         let deferred = try XCTUnwrap(saved.steps.first { $0.id == deferredID })
@@ -68,7 +68,7 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
         await fixture.model.completeCurrent(segments: [SetSegment(loadMetrics: .init(weight: 42, repetitions: 6))])
         let interruptedRest = try XCTUnwrap(fixture.model.document.activeSession?.rest)
         XCTAssertEqual(interruptedRest.authoredSeconds, 35)
-        let resumed = AppModel(store: fixture.store, mirror: nil)
+        let resumed = fixture.makeModel()
         await resumed.load()
         XCTAssertEqual(resumed.document.activeSession?.id, interruptedID)
         XCTAssertEqual(resumed.document.activeSession?.rest, interruptedRest)
@@ -82,7 +82,7 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
         // remain separate from the authored time target and rest prescription.
         await resumed.startWorkout(timedTemplate)
         await resumed.completeCurrent(segments: [SetSegment(enduranceMetrics: .init(durationSeconds: 123))])
-        let resumedTimed = AppModel(store: fixture.store, mirror: nil)
+        let resumedTimed = fixture.makeModel()
         await resumedTimed.load()
         XCTAssertEqual(resumedTimed.document.activeSession?.currentStep?.exerciseName, "Fixture mobility")
         await resumedTimed.completeCurrent(segments: [SetSegment(enduranceMetrics: .init(durationSeconds: 118))])
@@ -99,14 +99,14 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
         await resumedTimed.startWorkout(interruptedTemplate)
         let repeatID = try XCTUnwrap(resumedTimed.document.activeSession?.id)
         await resumedTimed.deferCurrent()
-        let repeated = AppModel(store: fixture.store, mirror: nil)
+        let repeated = fixture.makeModel()
         await repeated.load()
         XCTAssertEqual(repeated.document.activeSession?.id, repeatID)
         await repeated.completeCurrent(segments: [SetSegment(loadMetrics: .init(weight: 42, repetitions: 6))])
         await repeated.completeCurrent(segments: [SetSegment(loadMetrics: .init(weight: 52, repetitions: 5))])
         await repeated.finishWorkout()
 
-        let persistedModel = AppModel(store: fixture.store, mirror: nil)
+        let persistedModel = fixture.makeModel()
         await persistedModel.load()
         let history = persistedModel.document.history
         XCTAssertEqual(history.count, 4)
@@ -140,11 +140,20 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
 private final class LocalWorkoutFixture {
     let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     lazy var store = SetlineStore(fileURL: root.appending(path: "setline.json"))
-    lazy var model = AppModel(store: store, mirror: nil)
+    lazy var model = makeModel()
+
+    func makeModel() -> AppModel {
+        AppModel(store: store, restNotifier: NoopRestNotifier(), mirror: nil)
+    }
 
     func cleanup() {
         try? FileManager.default.removeItem(at: root)
     }
+}
+
+@MainActor
+private struct NoopRestNotifier: RestNotifying {
+    func update(for rest: RestState?, nextStep: WorkoutStep?) async {}
 }
 
 private func authoredTemplate(name: String, rests: [Int]) -> WorkoutTemplate {
