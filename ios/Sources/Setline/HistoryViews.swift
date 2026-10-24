@@ -148,7 +148,7 @@ struct HistoryView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 5) {
                 Text(session.templateName).font(SetlineType.headline.weight(.black))
-                Text(session.hubRecordID != nil ? "Hub summary · set details unavailable" : "\(session.completedWorkingSetCount) working · \(session.completedCount) completed · \(session.steps.count - session.completedCount) skipped")
+                Text(session.hubRecordID != nil ? "Hub summary · set details unavailable" : historyCounts(session))
                     .font(SetlineType.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
                 if let week = session.programmeWeek {
@@ -162,6 +162,12 @@ struct HistoryView: View {
         }
         .foregroundStyle(SetlinePalette.onSurface)
         .padding(.vertical, 8)
+    }
+
+    private func historyCounts(_ session: WorkoutSession) -> String {
+        let skipped = session.steps.count { $0.status == .skipped }
+        let deferred = session.steps.count { $0.status == .deferred }
+        return "\(session.completedWorkingSetCount) working · \(session.completedCount) completed · \(skipped) skipped · \(deferred) deferred"
     }
 
     private func historyMetric(_ label: String, _ value: String, _ color: Color) -> some View {

@@ -1114,7 +1114,7 @@ public extension SetlineDocument {
 
     mutating func finishWorkout(at date: Date = .now) throws {
         guard var session = activeSession else { throw SetlineError.noActiveSession }
-        for index in session.steps.indices where session.steps[index].status == .planned || session.steps[index].status == .deferred {
+        for index in session.steps.indices where session.steps[index].status == .planned {
             session.steps[index].status = .skipped
         }
         session.completedAt = date
