@@ -130,7 +130,14 @@ final class SetlineUITests: XCTestCase {
     private func openHistorySession(_ app: XCUIApplication, named name: String) {
         let historyTab = app.tabBars.buttons.ci("History")
         XCTAssertTrue(historyTab.waitForExistence(timeout: 5))
+        XCTAssertTrue(historyTab.isHittable, "History must be reachable from the current screen")
         historyTab.tap()
+        XCTAssertTrue(
+            app.staticTexts.ci("Recorded, calculated, and unavailable stay distinct.")
+                .waitForExistence(timeout: 5),
+            "The History tab must finish opening before searching for a session row"
+        )
+        XCTAssertTrue(historyTab.isSelected, "History must be the selected tab before finding a session")
 
         // A NavigationLink is a button; the summary sections above the list also
         // contain this text, and tapping one of those navigates nowhere.
@@ -242,7 +249,17 @@ final class SetlineUITests: XCTestCase {
         recordShorthand(app, "4x55")
         app.buttons.ci("Finish").tap()
         app.buttons.ci("Finish and save").tap()
-        app.tabBars.buttons.ci("History").tap()
+        XCTAssertTrue(
+            app.buttons.ci("Start workout").waitForExistence(timeout: 5),
+            "Saving must dismiss the workout and return to Today"
+        )
+        tapTab(app, "History")
+        XCTAssertTrue(
+            app.staticTexts.ci("Recorded, calculated, and unavailable stay distinct.")
+                .waitForExistence(timeout: 5),
+            "The History tab must finish opening before checking the saved summary"
+        )
+        XCTAssertTrue(app.tabBars.buttons.ci("History").isSelected, "History must be selected")
         assertDeferredHistorySummary(app)
         openHistorySession(app, named: "Lower strength")
         assertInterruptedWorkoutReceipt(app)
