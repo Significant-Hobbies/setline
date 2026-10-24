@@ -435,6 +435,10 @@ public struct WorkoutStep: Codable, Equatable, Identifiable, Sendable {
     public var completedAt: Date?
     /// Measured duration of the set itself, distinct from the rest that follows.
     public var workSeconds: Int?
+    /// Rest prescription changes and wall-clock execution for the rest after this set.
+    /// These remain optional so older local and CloudKit workout records still decode.
+    public var adjustedRestSeconds: Int?
+    public var actualRestSeconds: Int?
 
     public init(
         id: UUID = UUID(),
@@ -461,6 +465,8 @@ public struct WorkoutStep: Codable, Equatable, Identifiable, Sendable {
         self.performedPosition = state.performedPosition
         self.completedAt = state.completedAt
         self.workSeconds = state.workSeconds
+        self.adjustedRestSeconds = nil
+        self.actualRestSeconds = nil
     }
 
     public init(from decoder: any Decoder) throws {
@@ -484,6 +490,8 @@ public struct WorkoutStep: Codable, Equatable, Identifiable, Sendable {
         performedPosition = try container.decodeIfPresent(Int.self, forKey: .performedPosition)
         completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt)
         workSeconds = try container.decodeIfPresent(Int.self, forKey: .workSeconds)
+        adjustedRestSeconds = try container.decodeIfPresent(Int.self, forKey: .adjustedRestSeconds)
+        actualRestSeconds = try container.decodeIfPresent(Int.self, forKey: .actualRestSeconds)
     }
 
     /// The cue shown to the lifter: the set's own instruction when it has one.
@@ -506,12 +514,14 @@ public struct WorkoutStep: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct RestState: Codable, Equatable, Sendable {
+    public var stepID: UUID?
     public var authoredSeconds: Int
     public var adjustedSeconds: Int
     public var startedAt: Date
     public var endsAt: Date
 
-    public init(authoredSeconds: Int, adjustedSeconds: Int, startedAt: Date, endsAt: Date) {
+    public init(stepID: UUID? = nil, authoredSeconds: Int, adjustedSeconds: Int, startedAt: Date, endsAt: Date) {
+        self.stepID = stepID
         self.authoredSeconds = authoredSeconds
         self.adjustedSeconds = adjustedSeconds
         self.startedAt = startedAt
@@ -1044,16 +1054,21 @@ public extension SetlineDocument {
         guard var session = activeSession, session.steps.indices.contains(session.activeIndex) else {
             throw SetlineError.noActiveStep
         }
+        recordRestOutcome(in: &session, at: date)
         session.steps[session.activeIndex].segments = segments
         session.steps[session.activeIndex].status = .complete
         session.steps[session.activeIndex].completedAt = date
         session.steps[session.activeIndex].workSeconds = workSeconds
         session.steps[session.activeIndex].performedPosition = session.completedCount
+        let completedStepIndex = session.activeIndex
+        let completedStepID = session.steps[completedStepIndex].id
         let authoredRest = session.steps[session.activeIndex].rest
         session.activeIndex = nextPendingIndex(in: session.steps, after: session.activeIndex) ?? session.steps.count
         if session.activeIndex < session.steps.count && !authoredRest.isEmpty {
             let seconds = authoredRest.timerSeconds
+            session.steps[completedStepIndex].adjustedRestSeconds = seconds
             session.rest = RestState(
+                stepID: completedStepID,
                 authoredSeconds: seconds,
                 adjustedSeconds: seconds,
                 startedAt: date,
@@ -1069,6 +1084,7 @@ public extension SetlineDocument {
         guard var session = activeSession, session.steps.indices.contains(session.activeIndex) else {
             throw SetlineError.noActiveStep
         }
+        recordRestOutcome(in: &session, at: .now)
         session.steps[session.activeIndex].status = .skipped
         session.activeIndex = nextPendingIndex(in: session.steps, after: session.activeIndex) ?? session.steps.count
         session.rest = nil
@@ -1079,6 +1095,7 @@ public extension SetlineDocument {
         guard var session = activeSession, session.steps.indices.contains(session.activeIndex) else {
             throw SetlineError.noActiveStep
         }
+        recordRestOutcome(in: &session, at: .now)
         var step = session.steps.remove(at: session.activeIndex)
         step.status = .deferred
         session.steps.append(step)
@@ -1104,16 +1121,22 @@ public extension SetlineDocument {
         guard var session = activeSession, var rest = session.rest else { return }
         rest.adjustedSeconds = max(0, rest.adjustedSeconds + seconds)
         rest.endsAt = rest.startedAt.addingTimeInterval(TimeInterval(rest.adjustedSeconds))
+        if let stepIndex = restStepIndex(in: session, for: rest) {
+            session.steps[stepIndex].adjustedRestSeconds = rest.adjustedSeconds
+        }
         session.rest = rest
         activeSession = session
     }
 
-    mutating func endRest() {
-        activeSession?.rest = nil
+    mutating func endRest(at date: Date = .now) {
+        guard var session = activeSession else { return }
+        recordRestOutcome(in: &session, at: date)
+        activeSession = session
     }
 
     mutating func finishWorkout(at date: Date = .now) throws {
         guard var session = activeSession else { throw SetlineError.noActiveSession }
+        recordRestOutcome(in: &session, at: date)
         for index in session.steps.indices where session.steps[index].status == .planned {
             session.steps[index].status = .skipped
         }
@@ -1121,6 +1144,27 @@ public extension SetlineDocument {
         session.rest = nil
         history.insert(session, at: 0)
         activeSession = nil
+    }
+
+    private func restStepIndex(in session: WorkoutSession, for rest: RestState) -> Int? {
+        if let stepID = rest.stepID {
+            return session.steps.firstIndex(where: { $0.id == stepID })
+        }
+        // Older in-progress records do not have a rest-to-step link. Attribute
+        // only when the completed-set timestamp exactly proves the association.
+        let matches = session.steps.indices.filter {
+            session.steps[$0].status == .complete && session.steps[$0].completedAt == rest.startedAt
+        }
+        return matches.count == 1 ? matches.first : nil
+    }
+
+    private func recordRestOutcome(in session: inout WorkoutSession, at date: Date) {
+        guard let rest = session.rest else { return }
+        if let stepIndex = restStepIndex(in: session, for: rest) {
+            session.steps[stepIndex].adjustedRestSeconds = rest.adjustedSeconds
+            session.steps[stepIndex].actualRestSeconds = rest.actual(at: date)
+        }
+        session.rest = nil
     }
 
     mutating func duplicateTemplate(_ id: UUID) throws {

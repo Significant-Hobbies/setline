@@ -1,11 +1,53 @@
 import Foundation
-import SetlineCore
+@testable import SetlineCore
 import XCTest
 
 @testable import Setline
 
 @MainActor
 final class SetlineWorkoutFidelityTests: XCTestCase {
+    func testRestOutcomeUsesExactElapsedTimeAndLegacyLinksMustBeProven() throws {
+        let start = Date(timeIntervalSince1970: 10_000)
+        var document = SetlineDocument()
+        let template = authoredTemplate(name: "Rest timestamps", rests: [45, 0])
+        try document.startWorkout(template: template, at: start)
+        try document.completeCurrent(
+            with: [SetSegment(loadMetrics: .init(weight: 40, repetitions: 5))],
+            at: start.addingTimeInterval(100)
+        )
+        document.adjustRest(by: 15, at: start.addingTimeInterval(101))
+        try document.completeCurrent(
+            with: [SetSegment(loadMetrics: .init(weight: 45, repetitions: 6))],
+            at: start.addingTimeInterval(132)
+        )
+        try document.finishWorkout(at: start.addingTimeInterval(133))
+        let measured = try XCTUnwrap(document.history.first?.steps.first)
+        XCTAssertEqual(measured.rest.timerSeconds, 45)
+        XCTAssertEqual(measured.adjustedRestSeconds, 60)
+        XCTAssertEqual(measured.actualRestSeconds, 32)
+
+        var unknownLinkDocument = SetlineDocument()
+        try unknownLinkDocument.startWorkout(template: template, at: start)
+        try unknownLinkDocument.completeCurrent(
+            with: [SetSegment(loadMetrics: .init(weight: 40, repetitions: 5))],
+            at: start.addingTimeInterval(100)
+        )
+        unknownLinkDocument.activeSession?.rest?.stepID = UUID()
+        unknownLinkDocument.endRest(at: start.addingTimeInterval(110))
+        XCTAssertNil(unknownLinkDocument.activeSession?.steps.first?.actualRestSeconds, "An unresolved explicit link must not guess another step")
+
+        var mismatchedLegacyDocument = SetlineDocument()
+        try mismatchedLegacyDocument.startWorkout(template: template, at: start)
+        try mismatchedLegacyDocument.completeCurrent(
+            with: [SetSegment(loadMetrics: .init(weight: 40, repetitions: 5))],
+            at: start.addingTimeInterval(100)
+        )
+        mismatchedLegacyDocument.activeSession?.rest?.stepID = nil
+        mismatchedLegacyDocument.activeSession?.rest?.startedAt = start.addingTimeInterval(101)
+        mismatchedLegacyDocument.endRest(at: start.addingTimeInterval(110))
+        XCTAssertNil(mismatchedLegacyDocument.activeSession?.steps.first?.actualRestSeconds, "A legacy link with no exact timestamp proof must remain unavailable")
+    }
+
     func testFinishedHistoryPreservesAnExplicitDeferral() async throws {
         let fixture = try LocalWorkoutFixture()
         defer { fixture.cleanup() }
@@ -27,6 +69,56 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
         let deferred = try XCTUnwrap(saved.steps.first { $0.id == deferredID })
         XCTAssertEqual(deferred.status, .deferred, "Saving a finished workout must not turn Do later into Skip")
         XCTAssertEqual(saved.steps.filter { $0.status == .skipped }.count, 2)
+    }
+
+    func testRestOutcomeSurvivesHistoryAndLegacyRecordsDecodeWithoutIt() async throws {
+        let fixture = try LocalWorkoutFixture()
+        defer { fixture.cleanup() }
+
+        await fixture.model.load()
+        let template = authoredTemplate(name: "Rest outcome", rests: [45, 0])
+        let templateSaved = await fixture.model.saveTemplate(template)
+        XCTAssertTrue(templateSaved)
+        await fixture.model.startWorkout(template)
+        await fixture.model.completeCurrent(segments: [SetSegment(loadMetrics: .init(weight: 40, repetitions: 5))])
+        await fixture.model.adjustRest(by: 15)
+        XCTAssertEqual(fixture.model.document.activeSession?.steps.first?.adjustedRestSeconds, 60)
+        await fixture.model.endRest()
+        let measured = try XCTUnwrap(fixture.model.document.activeSession?.steps.first)
+        XCTAssertEqual(measured.rest.timerSeconds, 45)
+        XCTAssertEqual(measured.adjustedRestSeconds, 60)
+        XCTAssertNotNil(measured.actualRestSeconds)
+        XCTAssertGreaterThanOrEqual(try XCTUnwrap(measured.actualRestSeconds), 0)
+        await fixture.model.finishWorkout()
+
+        let reopened = fixture.makeModel()
+        await reopened.load()
+        let saved = try XCTUnwrap(reopened.document.history.first?.steps.first)
+        XCTAssertEqual(saved.rest.timerSeconds, 45)
+        XCTAssertEqual(saved.adjustedRestSeconds, 60)
+        XCTAssertEqual(saved.actualRestSeconds, measured.actualRestSeconds)
+
+        let encoder = JSONEncoder()
+        let encodedStep = try XCTUnwrap(try JSONSerialization.jsonObject(with: encoder.encode(saved)) as? [String: Any])
+        var oldStep = encodedStep
+        oldStep.removeValue(forKey: "adjustedRestSeconds")
+        oldStep.removeValue(forKey: "actualRestSeconds")
+        let legacyStep = try JSONDecoder().decode(WorkoutStep.self, from: JSONSerialization.data(withJSONObject: oldStep))
+        XCTAssertNil(legacyStep.adjustedRestSeconds)
+        XCTAssertNil(legacyStep.actualRestSeconds)
+
+        let encodedRest = try XCTUnwrap(try JSONSerialization.jsonObject(with: encoder.encode(RestState(
+            stepID: saved.id,
+            authoredSeconds: 45,
+            adjustedSeconds: 60,
+            startedAt: .now,
+            endsAt: .now.addingTimeInterval(60)
+        ))) as? [String: Any])
+        var oldRest = encodedRest
+        oldRest.removeValue(forKey: "stepID")
+        let legacyRest = try JSONDecoder().decode(RestState.self, from: JSONSerialization.data(withJSONObject: oldRest))
+        XCTAssertNil(legacyRest.stepID)
+        XCTAssertEqual(legacyRest.authoredSeconds, 45)
     }
 
     func testThreeAuthoredSessionLedgersAndCorrectionRepeatSurviveLocalRecovery() async throws {
@@ -126,10 +218,15 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
         XCTAssertEqual(queue.steps.map(\.authoredPosition), [0, 1, 2, 2])
         XCTAssertEqual(queue.steps.map(\.status), [.complete, .skipped, .complete, .complete])
         XCTAssertEqual(queue.steps.first?.segments.count, 2)
+        XCTAssertEqual(queue.steps.first?.rest.timerSeconds, 45)
+        XCTAssertEqual(queue.steps.first?.adjustedRestSeconds, 60)
+        XCTAssertNotNil(queue.steps.first?.actualRestSeconds)
         XCTAssertTrue(queue.steps.last?.isExtra == true)
         XCTAssertEqual(fixture.model.document.templates.first { $0.id == queueTemplate.id }, queueTemplate)
 
         let interrupted = try XCTUnwrap(history.first { $0.id == interruptedID })
+        XCTAssertEqual(interrupted.steps.first?.adjustedRestSeconds, 35)
+        XCTAssertNotNil(interrupted.steps.first?.actualRestSeconds, "The rest that crossed local-store recovery must retain elapsed wall time")
         let deferred = try XCTUnwrap(interrupted.steps.first { $0.id == deferredID })
         XCTAssertEqual(deferred.status, .deferred)
         XCTAssertEqual(deferred.authoredPosition, 1)

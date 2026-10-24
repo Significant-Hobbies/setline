@@ -28,6 +28,7 @@
 		401D75E9685D1937CEA9AF16 /* SetEntryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE77BBBECF6D7ED1F7E8047E /* SetEntryParser.swift */; };
 		41092DD166867E3D4756B641 /* SyncTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FD72F322ADA3467147FD40 /* SyncTypes.swift */; };
 		412B172BACABB019395D63DD /* SyncStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E9F7783F28C53B367D7F90 /* SyncStateStore.swift */; };
+		45412424EE66DA528630F9D3 /* SetlineWorkoutFidelityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1046742E744639A11E892C6 /* SetlineWorkoutFidelityTests.swift */; };
 		4D32E4DE1B4B35D3A3303C81 /* SimulatorICloudSignInTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D638AFB5C0FF38C44F3DE880 /* SimulatorICloudSignInTests.swift */; };
 		5E20E3A4B120C46D131F17B2 /* MobilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B08FE921A3BBE059875924 /* MobilityView.swift */; };
 		5FDD1235ADE7D25DC029C4F6 /* TwelveWeekProgramme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4833E444B40BC982AC57AACC /* TwelveWeekProgramme.swift */; };
@@ -164,6 +165,7 @@
 		8643354BA741CACC8DA08A94 /* Capability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capability.swift; sourceTree = "<group>"; };
 		87A8A906EC9D20CDB2473537 /* HubSyncStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubSyncStatus.swift; sourceTree = "<group>"; };
 		9405EFEDE8A70CC15F9E0309 /* SyncRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecord.swift; sourceTree = "<group>"; };
+		A1046742E744639A11E892C6 /* SetlineWorkoutFidelityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineWorkoutFidelityTests.swift; sourceTree = "<group>"; };
 		A44D414639A072B1BF75C6DE /* SetlineSyncCommitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetlineSyncCommitTests.swift; sourceTree = "<group>"; };
 		A9D3388CFC26F3C282170264 /* HubSyncStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubSyncStatusTests.swift; sourceTree = "<group>"; };
 		AD2130D9792A60D8E3EC5484 /* SetlineTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SetlineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -245,6 +247,7 @@
 				E480F78686B5EB052ED5B468 /* SetlineLocalSaveTests.swift */,
 				E180D0758429234D40B8D466 /* SetlineOnboardingTests.swift */,
 				A44D414639A072B1BF75C6DE /* SetlineSyncCommitTests.swift */,
+				A1046742E744639A11E892C6 /* SetlineWorkoutFidelityTests.swift */,
 			);
 			name = SetlineTests;
 			path = Tests/SetlineTests;
@@ -625,6 +628,7 @@
 				025ECF89A98B12D3E73330F1 /* SetlineLocalSaveTests.swift in Sources */,
 				EF2F1E65C908FD5457895DBA /* SetlineOnboardingTests.swift in Sources */,
 				C20BF009E36C2FF70A1357E8 /* SetlineSyncCommitTests.swift in Sources */,
+				45412424EE66DA528630F9D3 /* SetlineWorkoutFidelityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
