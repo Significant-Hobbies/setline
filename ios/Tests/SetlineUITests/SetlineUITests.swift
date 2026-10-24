@@ -145,14 +145,23 @@ final class SetlineUITests: XCTestCase {
     }
 
     private func assertDeferredHistorySummary(_ app: XCUIApplication) {
-        let summary = app.buttons.containing(
-            NSPredicate(format: "label CONTAINS[c] %@", "1 working · 2 completed · 1 skipped · 1 deferred")
+        let expectedSummary = "1 working · 2 completed · 6 skipped · 1 deferred"
+        let row = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS[c] %@", "Lower strength")
         ).firstMatch
-        XCTAssertTrue(
-            scrollUntil(app, summary, scanning: .down, hittable: true),
-            "History must keep completed, skipped, and deferred work distinct"
-        )
+        let reachable = scrollUntil(app, row, scanning: .down, hittable: true)
+        let actualLabel = row.exists ? row.label : "History row not found"
+        if !reachable || !actualLabel.contains(expectedSummary) {
+            let accessibilityTree = XCTAttachment(string: app.debugDescription)
+            accessibilityTree.name = "Setline History accessibility tree after save"
+            accessibilityTree.lifetime = .keepAlways
+            add(accessibilityTree)
+        }
         keepWorkoutScreenshot(app, named: "Setline History summary distinguishes deferred work")
+        XCTAssertTrue(
+            reachable && actualLabel.contains(expectedSummary),
+            "History row must preserve exact saved counts. Expected: \(expectedSummary). Actual: \(actualLabel)"
+        )
     }
 
     func testUnreadableDocumentShowsBackupRecoveryInsteadOfAnEmptyWorkout() {

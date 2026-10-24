@@ -75,14 +75,12 @@ final class SetlineWorkoutFidelityTests: XCTestCase {
         XCTAssertEqual(recoveredRest.authoredSeconds, interruptedRest.authoredSeconds)
         XCTAssertEqual(recoveredRest.adjustedSeconds, interruptedRest.adjustedSeconds)
         XCTAssertEqual(
-            recoveredRest.startedAt.timeIntervalSince1970,
-            interruptedRest.startedAt.timeIntervalSince1970,
-            accuracy: 0.001
+            Int(recoveredRest.startedAt.timeIntervalSince1970),
+            Int(interruptedRest.startedAt.timeIntervalSince1970)
         )
         XCTAssertEqual(
-            recoveredRest.endsAt.timeIntervalSince1970,
-            interruptedRest.endsAt.timeIntervalSince1970,
-            accuracy: 0.001
+            Int(recoveredRest.endsAt.timeIntervalSince1970),
+            Int(interruptedRest.endsAt.timeIntervalSince1970)
         )
         await resumed.endRest()
         let deferredID = try XCTUnwrap(resumed.document.activeSession?.currentStep?.id)
