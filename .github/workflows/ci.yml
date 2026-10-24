@@ -46,6 +46,25 @@ jobs:
       - run: pnpm quality:native
         env:
           SETLINE_DERIVED_DATA: ${{ runner.temp }}/setline-native-derived
+      - name: Export the deferred-history UI screenshots
+        if: success()
+        env:
+          SETLINE_DERIVED_DATA: ${{ runner.temp }}/setline-native-derived
+        run: |
+          result_bundle=$(printf '%s\n' "$SETLINE_DERIVED_DATA"/Logs/Test/*.xcresult | head -n 1)
+          test -d "$result_bundle"
+          xcrun xcresulttool export attachments \
+            --path "$result_bundle" \
+            --test-id 'SetlineUITests/testRecordedWorkoutSurvivesInterruptionRelaunchAndFinish()' \
+            --output-path "$RUNNER_TEMP/setline-history-ui-evidence" \
+            --filter '*.png'
+      - name: Retain deferred-history UI screenshots
+        if: success()
+        uses: actions/upload-artifact@v5
+        with:
+          name: setline-history-ui-${{ github.run_id }}
+          path: ${{ runner.temp }}/setline-history-ui-evidence/
+          retention-days: 7
       - name: Retain native failure evidence
         if: failure()
         uses: actions/upload-artifact@v5
