@@ -235,6 +235,11 @@ struct SessionDetailView: View {
                                 .font(SetlineType.caption.monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
+                        if let adjustedRestSeconds = step.adjustedRestSeconds {
+                            Text("Rest after: authored \(step.rest.timerSeconds)s · adjusted \(adjustedRestSeconds)s · actual \(step.actualRestSeconds.map { "\($0)s" } ?? "unavailable")")
+                                .font(SetlineType.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.vertical, 4)
                 }
