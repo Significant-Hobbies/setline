@@ -74,6 +74,46 @@ final class HubWorkoutSummaryTests: XCTestCase {
         XCTAssertEqual(native, source, "A Hub tombstone cannot erase native detail")
     }
 
+    func testLegacyFullSessionRestoresOnlySummaryAndIsNeverReprojected() throws {
+        let source = try fixture()
+        let original = try XCTUnwrap(source.history.first)
+        XCTAssertFalse(original.steps.isEmpty)
+
+        let encodedSession = try SyncEngine.makeEncoder().encode(original)
+        let legacyEntity = try XCTUnwrap(JSONSerialization.jsonObject(with: encodedSession) as? [String: Any])
+        let legacyPayload = try JSONSerialization.data(withJSONObject: [
+            "recordType": "session",
+            "entityId": original.id.uuidString.lowercased(),
+            "occurredAt": ISO8601DateFormatter().string(from: original.startedAt),
+            "data": legacyEntity,
+        ], options: [.sortedKeys])
+        let legacyRecord = MirrorRecord(
+            name: SyncRecord.recordName(kind: .session, entityID: original.id),
+            modifiedAt: try XCTUnwrap(original.completedAt), payload: legacyPayload, appendOnly: true
+        )
+
+        var restored = SetlineDocument(hubAccountID: "a")
+        try HubWorkoutSummary.apply(legacyRecord, to: &restored)
+        let summary = try XCTUnwrap(restored.history.first)
+        XCTAssertEqual(restored.history.count, 1)
+        XCTAssertEqual(summary.id, original.id)
+        XCTAssertEqual(summary.templateName, original.templateName)
+        XCTAssertEqual(summary.startedAt, original.startedAt)
+        XCTAssertEqual(summary.completedAt, original.completedAt)
+        XCTAssertEqual(summary.hubSummaryCompletedStepCount, original.completedCount)
+        XCTAssertEqual(summary.hubRecordID, legacyRecord.name)
+        XCTAssertEqual(summary.hubAccountID, "a")
+        XCTAssertTrue(summary.steps.isEmpty, "Legacy Hub set details are not restored")
+        XCTAssertNil(summary.rest)
+
+        var native = source
+        try HubWorkoutSummary.apply(legacyRecord, to: &native)
+        XCTAssertEqual(native, source, "A legacy Hub record cannot overwrite same-ID native history")
+
+        XCTAssertTrue(try HubWorkoutSummary.records(for: restored).isEmpty,
+                      "A restored legacy summary must not be re-emitted as a full workout")
+    }
+
     func testMalformedSummaryCannotChangeStoredHistory() throws {
         let source = try fixture()
         let record = try XCTUnwrap(HubWorkoutSummary.records(for: source).first)
